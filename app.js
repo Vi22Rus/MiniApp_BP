@@ -72,20 +72,36 @@ function updateCountdown() {
 // Отрисовка карточек
 function renderActivities(list) {
   const grid = document.getElementById('activitiesGrid');
-  grid.innerHTML = list.map(a => `
+  grid.innerHTML = list.map(a => {
+  let priceLine = '';
+  switch(a.name) {
+    case 'Mini Siam':
+      priceLine = '<p class="price-tag">Взрослый 230 ฿ / Детский 130 ฿</p>';
+      break;
+    case 'Сад Нонг Нуч':
+      priceLine = '<p class="price-tag">Взрослый 420 ฿ / Детский 320 ฿</p>';
+      break;
+    case 'Дельфинариум':
+      priceLine = '<p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>';
+      break;
+    case 'Музей искусств 3D':
+      priceLine = '<p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>';
+      break;
+    case 'Зоопарк Кхао Кхео':
+      priceLine = '<p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>';
+      break;
+    default:
+      priceLine = '';
+  }
+  return `
     <div class="card">
       <h3>${a.name}</h3>
       <p>${a.date}</p>
+      ${priceLine}
       <button data-name="${a.name}" data-date="${a.date}" class="details">ℹ Подробнее</button>
     </div>
-  `).join('');
-  document.querySelectorAll('.details').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
-      showModal(act);
-    });
-  });
-}
+  `;
+}).join('');
 
 // Модалка
 function showModal(a) {
