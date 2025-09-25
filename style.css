@@ -1,27 +1,21 @@
-/* Сброс и базовые стили */
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:Roboto, sans-serif; background:#FAFAFA; color:#212121; }
 
-/* Шапка и счётчик */
 header { background:#FFFFFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); position:sticky; top:0; z-index:10; }
 .countdown { display:flex; align-items:center; gap:8px; font-weight:500; }
 .countdown-label { font-size:0.875rem; color:#757575; }
 
-/* Вкладки навигации */
 .tabs { display:flex; margin-top:12px; }
 .tabs button { flex:1; background:transparent; border:none; padding:12px; font-size:1rem; cursor:pointer; }
 .tabs button.active { border-bottom:2px solid #6200EE; color:#6200EE; }
 
-/* Секции */
 .tab-content { display:none; padding:16px; }
 .tab-content.active { display:block; }
 
-/* Фильтры */
 .filters { display:flex; gap:8px; margin-bottom:12px; }
 .filters button { padding:8px 12px; border:1px solid #E0E0E0; background:#FFFFFF; cursor:pointer; border-radius:4px; }
 .filters button.active { background:#6200EE; color:#FFFFFF; border-color:#6200EE; }
 
-/* Сетка активностей и карточки */
 .grid { display:grid; grid-template-columns:1fr; gap:12px; }
 @media(min-width:600px) { .grid { grid-template-columns:1fr 1fr; } }
 .card { background:#FFFFFF; padding:12px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
@@ -29,12 +23,10 @@ header { background:#FFFFFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1);
 .card p { font-size:0.9rem; margin:4px 0; }
 .card button { margin-top:8px; padding:6px 10px; border:none; background:#6200EE; color:#FFFFFF; border-radius:4px; cursor:pointer; }
 
-/* Списки Советов и Контактов */
 .tips-list, .contacts-list { list-style:none; }
 .tips-list li, .contacts-list li { margin-bottom:8px; font-size:0.95rem; }
 .contacts-list li a { color:#6200EE; text-decoration:none; }
 
-/* Модалка */
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
 .modal.active { display:flex; }
 .modal-content { background:#FFFFFF; padding:16px; border-radius:8px; max-width:400px; width:90%; position:relative; }
