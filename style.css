@@ -739,9 +739,7 @@ select.form-control {
 
 /* END PERPLEXITY DESIGN SYSTEM */
 ```css
-/* Fix horizontal tabs (
-3. Telegram-app tabs vertical; should be horizontal)
-*/
+/* Исправленные горизонтальные табы для Telegram и браузера */
 .tabs {
   display: flex;
   flex-direction: row;
@@ -749,78 +747,59 @@ select.form-control {
   align-items: stretch;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  font-family: var(--font-family-base);
 }
 
 .tab-button {
   flex: 1;
   min-width: 120px;
-  padding: var(--space-16) var(--space-0);
+  padding: var(--space-12) 0;
   background: none;
   border: none;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard);
   position: relative;
   display: inline-block;
   text-align: center;
-  border-radius: 0;
-  line-height: var(--line-height-normal);
 }
 
 .tab-button:hover {
   color: var(--color-text);
-  background-color: var(--color-secondary);
 }
 
 .tab-button:focus-visible {
   outline: var(--focus-outline);
-  outline-offset: 2px;
-}
-
-.tab-button:active {
-  background-color: var(--color-secondary-active);
+  outline-offset: var(--space-2);
 }
 
 .tab-button.active {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-primary);
 }
 
-.tab-button.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--color-primary);
-  transition: all var(--duration-normal) var(--ease-standard);
+.filter-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-8);
+  margin-top: var(--space-8);
+  justify-content: stretch;
 }
 
-/* Mobile responsive design */
 @media (max-width: 480px) {
-  .tabs {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    justify-content: flex-start;
+  .tabs { 
+    flex-direction: row; 
   }
-  
-  .tabs::-webkit-scrollbar {
-    display: none;
+  .tab-button { 
+    font-size: var(--font-size-sm); 
+    min-width: 90px; 
+    padding: var(--space-10) 0;
   }
-  
-  .tab-button {
-    min-width: 100px;
-    padding: var(--space-12) var(--space-8);
-    font-size: var(--font-size-xs);
-    flex-shrink: 0;
+  .filter-buttons {
+    gap: var(--space-6);
+    margin-top: var(--space-6);
   }
 }
+/* Остальные ваши стили не меняются */
 ```

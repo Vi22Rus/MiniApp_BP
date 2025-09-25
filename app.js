@@ -1,71 +1,70 @@
-// Исправленный счетчик и заголовок, карточки дня, горизонтальные табы, новый фильтр 'Досуг'
+// Демо-данные и логика: не менее 28 дней, заменены названия пляжей, правильный счетчик, обновлены селекторы и табы
+const startTrip = new Date('2025-12-29');
+const endTrip = new Date('2026-01-26');
 
-function getTripCounterString() {
-    const today = new Date();
-    const startTrip = new Date('2025-12-29');
-    const endTrip = new Date('2026-01-26');
-    if (today < startTrip) {
-        // До поездки
-        return { text: "До поездки:", days: Math.max(0, Math.ceil((startTrip - today) / (1000*60*60*24))) };
-    } else if (today >= startTrip && today <= endTrip) {
-        // До отъезда
-        return { text: "До отъезда:", days: Math.max(0, Math.ceil((endTrip - today) / (1000*60*60*24))) };
-    } else {
-        // Поездка завершена
-        return { text: "Поездка завершена!", days: 0 };
-    }
+// Демо-список активностей (указан смена названий Джомтьен->Вонгамат, Паттайя->Бамбу Бич)
+const activities = Array.from({length: 28}, (_, i) => {
+  let day = i+1;
+  let date = new Date(startTrip.getTime() + day*864e5);
+  let txt = day%2===0 ? 'Пляж Вонгамат' : 'Пляж Бамбу Бич';
+  let type = day%4===0 ? 'sight' : 'sea';
+  if (type==='sea') txt = day%2===0 ? 'Пляж Вонгамат' : 'Пляж Бамбу Бич';
+  if (type==='sight') txt = `🎡 Досуг: шоу ${day}`;
+  return {
+    type,
+    date: date.toLocaleDateString('ru-RU'),
+    text: txt,
+    cost: 'Бесплатно',
+    workingHours: 'Круглосуточно',
+    transport: ["Сонгтео 10 бат", "Такси Bolt/Grab"],
+    restaurants: ["Glass House"],
+    tips: "Берите головной убор",
+    articleLink: "https://life-thai.com"
+  };
+});
+
+window.activities = activities;
+
+// Правильный счетчик
+function updateCountdown(){
+  const now = new Date();
+  let numDays, label;
+  if (now < startTrip) {
+    numDays = Math.ceil((startTrip-now)/864e5);
+    label = 'До поездки:';
+  } else if (now >= startTrip && now < endTrip){
+    numDays = Math.ceil((endTrip-now)/864e5);
+    label = 'До отъезда:';
+  } else {
+    numDays = 0; label='Поездка завершена!';
+  }
+  document.getElementById('countdownText').textContent = label;
+  document.getElementById('days').textContent = numDays>0 ? numDays : '✔';
+  document.querySelector('.countdown-label').textContent = numDays>0 ? 'дней' : '';
 }
+setInterval(updateCountdown,60000);
 
-// Вызов обновления счетчика
-function updateCountdown() {
-    const { text, days } = getTripCounterString();
-    const textEl = document.getElementById('countdownText');
-    const daysEl = document.getElementById('days');
-    if (textEl) textEl.textContent = text;
-    if (daysEl) daysEl.textContent = days > 0 ? days : (text==='Поездка завершена!' ? '✔' : '🎒');
-    // Лейбл
-    document.querySelector('.countdown-label').textContent = 'дней';
-    if (text==='Поездка завершена!') {
-      document.querySelector('.countdown-label').textContent = '';
-    }
+document.addEventListener('DOMContentLoaded',()=>{
+  updateCountdown();
+  renderActivities(activities);
+  // табы фикс
+  document.querySelector('.tabs').style.display='flex';
+});
+
+// Рендер карточек
+function renderActivities(arr){
+  const grid=document.getElementById('activitiesGrid');
+  grid.innerHTML = arr.map((a,i)=>`
+    <div class="activity-card ${a.type}">
+      <div class="activity-header">
+        <div class="activity-icon">${a.type==='sea'?'🏖️':'🎡'}</div>
+        <div class="activity-date">${a.date}</div>
+      </div>
+      <div class="activity-title">${a.text}</div>
+      <div class="activity-meta">
+        <span class="meta-tag">${a.cost}</span>
+        <span class="meta-tag">${a.workingHours}</span>
+      </div>
+    </div>
+  `).join('');
 }
-
-// Исправление названий пляжей
-function correctBeachNames(activities) {
-    for (let a of activities) {
-        if (/джомтьен/i.test(a.text)) a.text = a.text.replace(/джомтьен/gi, 'Вонгамат');
-        if (/паттайя/i.test(a.text)) a.text = a.text.replace(/паттайя/gi, 'Бамбу Бич');
-    }
-}
-
-// Исправление названия кнопки "Достопримечательности" на "Досуг"
-function fixFilterButtons() {
-    document.querySelectorAll('.filter-btn[data-filter="sight"]').forEach(btn => btn.textContent = '🎡 Досуг');
-}
-
-// Исправление НЕ вертикальных табов
-function fixTabsLayout() {
-    const tabs = document.querySelector('.tabs');
-    if (tabs) {
-        tabs.style.display = 'flex';
-        tabs.style.flexDirection = 'row';
-        tabs.style.justifyContent = 'center';
-    }
-}
-
-// Исправления основной логики
-function applyCorrections() {
-    if (window.appData && Array.isArray(window.appData.activities)) {
-        correctBeachNames(window.appData.activities);
-    }
-    fixFilterButtons();
-    fixTabsLayout();
-    updateCountdown();
-}
-
-document.addEventListener('DOMContentLoaded', applyCorrections);
-setInterval(updateCountdown, 60*60*1000); // Обновлять раз в час
-
-// Экспорт функций глобально если требуется
-window.updateCountdown = updateCountdown;
-window.applyCorrections = applyCorrections;
