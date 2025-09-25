@@ -35,8 +35,9 @@ const activities=[...generateBeachDays(),...kidsLeisure].sort((a,b)=>{
 // Счётчик
 const startTrip=new Date('2025-12-29'), endTrip=new Date('2026-01-26');
 function updateCountdown(){
-  const now=new Date(), label=now<startTrip?'До поездки:':now<=endTrip?'До отъезда:':'Поездка завершена!';
-  const days= now<startTrip?Math.ceil((startTrip-now)/864e5):now<=endTrip?Math.ceil((endTrip-now)/864e5):0;
+  const now=new Date();
+  const label=now<startTrip?'До поездки:':now<=endTrip?'До отъезда:':'Поездка завершена!';
+  const days=now<startTrip?Math.ceil((startTrip-now)/864e5):now<=endTrip?Math.ceil((endTrip-now)/864e5):0;
   document.getElementById('countdownText').textContent=label;
   document.getElementById('days').textContent=days>0?days:'✔';
   document.querySelector('.countdown-label').textContent=days>0?'дней':'';
@@ -57,6 +58,7 @@ function renderActivities(list){
       case'Зоопарк Кхао Кхео': icon='🦒 '; break;
       case'Плавучий рынок': icon='🛶 '; break;
       case'Пляжинг и Прогулинг': icon='🏖️ '; break;
+      default: icon='';
     }
     let priceLine='';
     switch(a.name){
@@ -65,6 +67,7 @@ function renderActivities(list){
       case'Дельфинариум': priceLine='<p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>'; break;
       case'Музей искусств 3D': priceLine='<p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>'; break;
       case'Зоопарк Кхао Кхео': priceLine='<p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>'; break;
+      default: priceLine='';
     }
     return `
       <div class="card ${a.type}">
@@ -75,16 +78,14 @@ function renderActivities(list){
       </div>
     `;
   }).join('');
+
   document.querySelectorAll('.details').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const act=activities.find(x=>x.name===btn.dataset.name&&x.date===btn.dataset.date);
-      showModal(act);
-    });
+    btn.addEventListener('click',()=>{const act=activities.find(x=>x.name===btn.dataset.name&&x.date===btn.dataset.date);showModal(act);});
   });
 }
 
 // Модалка
-const cafes={/* ... */}; // как было
+const cafes={/* ... */};
 function showModal(a){
   let content=`<h2>${a.name}</h2><p>${a.date}</p>`;
   if(a.coords){
@@ -101,11 +102,31 @@ function showModal(a){
 }
 
 // Инициализация
-function initTabs(){/* ... */} 
-function initFilters(){/* ... */} 
-function closeModal(){/* ... */}
+function initTabs(){
+  const tabButtons=document.querySelectorAll('.tabs .tab-btn'), tabContents=document.querySelectorAll('.tab-content');
+  tabButtons.forEach(btn=>btn.addEventListener('click',()=>{
+    tabButtons.forEach(b=>b.classList.remove('active'));
+    tabContents.forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  }));
+} 
+function initFilters(){
+  document.querySelectorAll('.filters button').forEach(f=>f.addEventListener('click',()=>{
+    document.querySelectorAll('.filters .active').forEach(x=>x.classList.remove('active'));
+    f.classList.add('active');
+    const filtered=f.dataset.filter==='all'?activities:activities.filter(a=>a.type===f.dataset.filter);
+    renderActivities(filtered);
+    localStorage.setItem('filter',f.dataset.filter);
+  }));
+  const saved=localStorage.getItem('filter')||'all';
+  document.querySelector(`.filters button[data-filter="${saved}"]`).click();
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+
 document.addEventListener('DOMContentLoaded',()=>{
   updateCountdown(); setInterval(updateCountdown,3600000);
   initTabs(); initFilters(); renderActivities(activities);
   document.getElementById('closeModal').addEventListener('click',closeModal);
+  document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target.id==='modalOverlay')closeModal();});
 });
