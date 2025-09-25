@@ -32,3 +32,9 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
 .modal.active { display:flex; }
 .modal-content { background:#FFF; padding:16px; border-radius:20px; max-width:400px; width:90%; position:relative; }
 .close-btn { position:absolute; top:8px; right:8px; border:none; background:#CF6679; color:#FFF; border-radius:50%; width:32px; height:32px; cursor:pointer; }
+
+.price-tag {
+  color: #D81B60;    /* яркий контрастный цвет */
+  font-weight: bold;
+  margin: 4px 0;
+}
