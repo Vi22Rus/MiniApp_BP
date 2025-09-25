@@ -19,10 +19,15 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
 .grid { display:grid; grid-template-columns:1fr; gap:12px; }
 @media(min-width:600px){ .grid { grid-template-columns:1fr 1fr; } }
 
-.card { background:#FFF; padding:12px; border-radius:20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); display:flex; flex-direction:column; }
+/* Цвета карточек по типу */
+.card.sea   { background:#FFECB3; } /* пляж */
+.card.sight { background:#C8E6C9; } /* досуг */
+
+.card { padding:12px; border-radius:20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); display:flex; flex-direction:column; }
 .card h3 { margin-bottom:4px; font-size:1.1rem; }
 .card p  { font-size:0.9rem; margin:4px 0; }
 .card .details { margin-top:auto; padding:8px; border:none; background:#BB86FC; color:#FFF; border-radius:20px; cursor:pointer; }
+.price-tag { color:#D81B60; font-weight:bold; margin:4px 0; }
 
 .tips-list, .contacts-list { list-style:none; }
 .tips-list li, .contacts-list li { margin-bottom:8px; font-size:0.95rem; }
@@ -32,9 +37,3 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
 .modal.active { display:flex; }
 .modal-content { background:#FFF; padding:16px; border-radius:20px; max-width:400px; width:90%; position:relative; }
 .close-btn { position:absolute; top:8px; right:8px; border:none; background:#CF6679; color:#FFF; border-radius:50%; width:32px; height:32px; cursor:pointer; }
-
-.price-tag {
-  color: #D81B60;    /* яркий контрастный цвет */
-  font-weight: bold;
-  margin: 4px 0;
-}
