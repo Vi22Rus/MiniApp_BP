@@ -29,10 +29,10 @@ const cafes = {
 
 // Генерация пляжных дней
 function generateBeachDays() {
-  const used = kidsLeisure.map(x=>x.date);
+  const used = kidsLeisure.map(x => x.date);
   const days = [];
-  const start=new Date('2026-01-01'), end=new Date('2026-01-26');
-  for (let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) {
+  const start = new Date('2026-01-01'), end = new Date('2026-01-26');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const date = d.toLocaleDateString('ru-RU');
     if (!used.includes(date)) {
       days.push({
@@ -48,36 +48,40 @@ function generateBeachDays() {
 }
 
 // Все активности
-const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b)=>{
-  const da=a.date.split('.').reverse().join('-');
-  const db=b.date.split('.').reverse().join('-');
+const activities = [...generateBeachDays(), ...kidsLeisure].sort((a, b) => {
+  const da = a.date.split('.').reverse().join('-');
+  const db = b.date.split('.').reverse().join('-');
   return new Date(da) - new Date(db);
 });
 
 // Счётчик
-const startTrip=new Date('2026-01-01'), endTrip=new Date('2026-01-26');
+const startTrip = new Date('2026-01-01'), endTrip = new Date('2026-01-26');
 function updateCountdown() {
-  const now=new Date();
-  const label = now<startTrip?'До поездки:':now<=endTrip?'До отъезда:':'Поездка завершена!';
-  const days  = now<startTrip?Math.ceil((startTrip-now)/864e5):now<=endTrip?Math.ceil((endTrip-now)/864e5):0;
-  document.getElementById('countdownText').textContent=label;
-  document.getElementById('days').textContent=days>0?days:'✔';
-  document.querySelector('.countdown-label').textContent=days>0?'дней':'';
+  const now = new Date();
+  const label = now < startTrip ? 'До поездки:' : now <= endTrip ? 'До отъезда:' : 'Поездка завершена!';
+  const days = now < startTrip
+    ? Math.ceil((startTrip - now) / 864e5)
+    : now <= endTrip
+      ? Math.ceil((endTrip - now) / 864e5)
+      : 0;
+  document.getElementById('countdownText').textContent = label;
+  document.getElementById('days').textContent = days > 0 ? days : '✔';
+  document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
 }
 
 // Отрисовка карточек
 function renderActivities(list) {
-  const grid=document.getElementById('activitiesGrid');
-  grid.innerHTML = list.map(a=>`
+  const grid = document.getElementById('activitiesGrid');
+  grid.innerHTML = list.map(a => `
     <div class="card">
       <h3>${a.name}</h3>
       <p>${a.date}</p>
       <button data-name="${a.name}" data-date="${a.date}" class="details">ℹ Подробнее</button>
     </div>
   `).join('');
-  document.querySelectorAll('.details').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const act = activities.find(x=>x.name===btn.dataset.name && x.date===btn.dataset.date);
+  document.querySelectorAll('.details').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
       showModal(act);
     });
   });
@@ -86,13 +90,17 @@ function renderActivities(list) {
 // Модалка
 function showModal(a) {
   let content = `<h2>${a.name}</h2><p>${a.date}</p>`;
+  // Маршрут до места
   if (a.coords) {
-    const from=`${homeCoords.lat},${homeCoords.lng}`, to=`${a.coords.lat},${a.coords.lng}`;
+    const from = 'My+Location';
+    const to = `${a.coords.lat},${a.coords.lng}`;
     content += `<p>🗺️ <a href="https://www.google.com/maps/dir/${from}/${to}" target="_blank">Маршрут</a></p>`;
   }
+  // Кафе рядом: от текущего местоположения
   if (cafes[a.name]) {
-    const cafe=cafes[a.name];
-    const from=`${homeCoords.lat},${homeCoords.lng}`, toC=`${cafe.coords.lat},${cafe.coords.lng}`;
+    const cafe = cafes[a.name];
+    const from = 'My+Location';
+    const toC = `${cafe.coords.lat},${cafe.coords.lng}`;
     content += `<p>☕ <a href="https://www.google.com/maps/dir/${from}/${toC}" target="_blank">Кафе рядом: ${cafe.name}</a></p>`;
   }
   content += `<p>💡 Совет: ${a.tips}</p>`;
@@ -102,8 +110,8 @@ function showModal(a) {
 
 // Вкладки и фильтры
 function initTabs() {
-  document.querySelectorAll('.tabs button').forEach(btn=>{
-    btn.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
       document.querySelector('.tabs .active').classList.remove('active');
       btn.classList.add('active');
       document.querySelector('.tab-content.active').classList.remove('active');
@@ -112,16 +120,18 @@ function initTabs() {
   });
 }
 function initFilters() {
-  document.querySelectorAll('.filters button').forEach(f=>{
-    f.addEventListener('click',()=>{
-      document.querySelectorAll('.filters .active').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.filters button').forEach(f => {
+    f.addEventListener('click', () => {
+      document.querySelectorAll('.filters .active').forEach(x => x.classList.remove('active'));
       f.classList.add('active');
-      const filtered = f.dataset.filter==='all'?activities:activities.filter(a=>a.type===f.dataset.filter);
+      const filtered = f.dataset.filter === 'all'
+        ? activities
+        : activities.filter(a => a.type === f.dataset.filter);
       renderActivities(filtered);
-      localStorage.setItem('filter',f.dataset.filter);
+      localStorage.setItem('filter', f.dataset.filter);
     });
   });
-  const saved = localStorage.getItem('filter')||'all';
+  const saved = localStorage.getItem('filter') || 'all';
   document.querySelector(`.filters button[data-filter="${saved}"]`).click();
 }
 function closeModal() {
@@ -129,8 +139,8 @@ function closeModal() {
 }
 
 // Инициализация
-document.addEventListener('DOMContentLoaded',()=>{
-  updateCountdown(); setInterval(updateCountdown,3600000);
+document.addEventListener('DOMContentLoaded', () => {
+  updateCountdown(); setInterval(updateCountdown, 3600000);
   initTabs(); initFilters(); renderActivities(activities);
-  document.getElementById('closeModal').addEventListener('click',closeModal);
+  document.getElementById('closeModal').addEventListener('click', closeModal);
 });
