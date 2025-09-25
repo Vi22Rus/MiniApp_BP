@@ -74,3 +74,38 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
   margin-right: 6px;
 }
 
+.for-ivan {
+  border: 2px solid #42A5F5;
+  background: #E3F2FD;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.for-ivan h2 {
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  color: #0D47A1;
+}
+
+.for-ivan ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.for-ivan li {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.for-ivan li span.icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.for-ivan li strong {
+  margin-right: 6px;
+}
+
