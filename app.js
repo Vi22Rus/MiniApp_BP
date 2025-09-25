@@ -1,7 +1,7 @@
 // Дом (Club Royal)
-const homeCoords = { lat:12.96933724471163, lng:100.88800963156544 };
+const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 
-// 9 мест для детей
+// Места для досуга
 const kidsLeisure = [
   { name:'Mini Siam',        date:'01.01.2026', coords:{lat:12.955415713554308,lng:100.90885349381693}, tips:'Парк миниатюр под открытым небом, возьмите головной убор.', type:'sight' },
   { name:'Деревня слонов',   date:'04.01.2026', coords:{lat:12.916042985773633,lng:100.93883440612971}, tips:'Кормление слонов и катание на них. Удобная обувь обязательна.', type:'sight' },
@@ -10,24 +10,34 @@ const kidsLeisure = [
   { name:'Музей искусств 3D',date:'13.01.2026', coords:{lat:12.948323220229895,lng:100.88976287787469}, tips:'Интерактивные фотозоны, безопасно для детей.', type:'sight' },
   { name:'Аюттайя',          date:'16.01.2026', coords:{lat:14.357419046191445,lng:100.5675751166289},   tips:'Посетите самые красивые храмы — Ват Пра Си Санпхет, Ват Чайваттханарам, Ват Ма Хатхат.', type:'sight' },
   { name:'Зоопарк Кхао Кхео',date:'19.01.2026', coords:{lat:13.21500643700206,lng:101.0570009938234},   tips:'Автобус по территории, кормление жирафов в 15:00.', type:'sight' },
-  { name:'Плавучий рынок',    date:'22.01.2026', coords:{lat:12.867993764217232,lng:100.90469403957914},  tips:'Купите фрукты у лодочников и арендуйте лодку.', type:'sight' },
-  { name:'Пляжинг и Прогулинг',date:'29.12.2025',coords:null, tips:'Отдых на пляже и прогулка по набережной Наклуа.', type:'sea' }
+  { name:'Плавучий рынок',    date:'22.01.2026', coords:{lat:12.867993764217232,lng:100.90469403957914},  tips:'Купите фрукты у лодочников и арендуйте лодку.', type:'sight' }
 ];
 
-// Генерация пляжных дней (29.12.2025–26.01.2026)
+// Кафе рядом
+const cafes = {
+  'Mini Siam':         { name:'Fuku Yakiniku',     coords:{lat:12.95486925070086,lng:100.90718264135778} },
+  'Деревня слонов':    { name:'Manee Meena Cafe',  coords:{lat:12.911526837804171,lng:100.9384575576231} },
+  'Дельфинариум':      { name:'Тайское кафе',       coords:{lat:12.951726180432665,lng:100.9381495687648} },
+  'Сад Нонг Нуч':      { name:'Тайское кафе',       coords:{lat:12.770286143945995,lng:100.92978865383589} },
+  'Музей искусств 3D': { name:'Friendly Sea Food', coords:{lat:12.947540042644826,lng:100.8892577395075} },
+  'Аюттайя':           { name:'Lekha',              coords:{lat:14.353322306142793,lng:100.56426912899451} },
+  'Зоопарк Кхао Кхео': { name:'Тайское кафе',       coords:{lat:13.217345661166801,lng:101.05495940409241} },
+  'Плавучий рынок':    { name:'Indian Thai',        coords:{lat:12.867533113850556,lng:100.90534297725313} }
+};
+
+// Генерация пляжных дней
 function generateBeachDays() {
   const used = kidsLeisure.map(x=>x.date);
   const days = [];
   const start=new Date('2025-12-29'), end=new Date('2026-01-26');
-  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
-    const date=d.toLocaleDateString('ru-RU');
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) {
+    const date = d.toLocaleDateString('ru-RU');
     if(!used.includes(date)) days.push({ type:'sea', name:'Пляжинг и Прогулинг', date, coords:null, tips:'Отдых на пляже и прогулка по набережной Наклуа.' });
   }
   return days;
 }
 
-// Все активности
-const activities=[...generateBeachDays(),...kidsLeisure].sort((a,b)=>{
+const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b)=>{
   const da=a.date.split('.').reverse().join('-'), db=b.date.split('.').reverse().join('-');
   return new Date(da)-new Date(db);
 });
@@ -80,12 +90,14 @@ function renderActivities(list){
   }).join('');
 
   document.querySelectorAll('.details').forEach(btn=>{
-    btn.addEventListener('click',()=>{const act=activities.find(x=>x.name===btn.dataset.name&&x.date===btn.dataset.date);showModal(act);});
+    btn.addEventListener('click',()=>{
+      const act=activities.find(x=>x.name===btn.dataset.name&&x.date===btn.dataset.date);
+      showModal(act);
+    });
   });
 }
 
 // Модалка
-const cafes={/* ... */};
 function showModal(a){
   let content=`<h2>${a.name}</h2><p>${a.date}</p>`;
   if(a.coords){
@@ -93,15 +105,17 @@ function showModal(a){
     content+=`<p>🗺️ <a href="https://www.google.com/maps/dir/${from}/${to}" target="_blank">Маршрут</a></p>`;
   }
   if(cafes[a.name]){
-    const cafe=cafes[a.name], toC=`${cafe.coords.lat},${cafe.coords.lng}`;
-    content+=`<p>☕ <a href="https://www.google.com/maps/dir/My+Location/${toC}" target="_blank">Кафе рядом: ${cafe.name}</a></p>`;
+    const cafe=cafes[a.name];
+    const from=`${homeCoords.lat},${homeCoords.lng}`;
+    const toC=`${cafe.coords.lat},${cafe.coords.lng}`;
+    content+=`<p>☕ <a href="https://www.google.com/maps/dir/${from}/${toC}" target="_blank">Кафе рядом: ${cafe.name}</a></p>`;
   }
   content+=`<p>💡 Совет: ${a.tips}</p>`;
   document.getElementById('modalBody').innerHTML=content;
   document.getElementById('modalOverlay').classList.add('active');
 }
 
-// Инициализация
+// Вкладки
 function initTabs(){
   const tabButtons=document.querySelectorAll('.tabs .tab-btn'), tabContents=document.querySelectorAll('.tab-content');
   tabButtons.forEach(btn=>btn.addEventListener('click',()=>{
@@ -110,7 +124,9 @@ function initTabs(){
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
   }));
-} 
+}
+
+// Фильтры
 function initFilters(){
   document.querySelectorAll('.filters button').forEach(f=>f.addEventListener('click',()=>{
     document.querySelectorAll('.filters .active').forEach(x=>x.classList.remove('active'));
@@ -122,11 +138,15 @@ function initFilters(){
   const saved=localStorage.getItem('filter')||'all';
   document.querySelector(`.filters button[data-filter="${saved}"]`).click();
 }
-function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+
+// Закрытие
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
 
 document.addEventListener('DOMContentLoaded',()=>{
   updateCountdown(); setInterval(updateCountdown,3600000);
   initTabs(); initFilters(); renderActivities(activities);
   document.getElementById('closeModal').addEventListener('click',closeModal);
-  document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target.id==='modalOverlay')closeModal();});
+  document.getElementById('modalOverlay').addEventListener('click', e=>{
+    if(e.target.id==='modalOverlay') closeModal();
+  });
 });
