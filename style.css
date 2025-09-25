@@ -25,7 +25,7 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
 .card { padding:12px; border-radius:20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); display:flex; flex-direction:column; }
 .card h3 { margin-bottom:4px; font-size:1.1rem; }
 .card p  { font-size:0.9rem; margin:4px 0; }
-.card .details { margin-top:auto; padding:8px; border:none; background:#BB86FC; color:#FFF; border-radius:20px; cursor:pointer; }
+.card .details { margin-top:auto; padding:8px;	border:none; background:#BB86FC; color:#FFF; border-radius:20px; cursor:pointer; }
 .price-tag { color:#D81B60; font-weight:bold; margin:4px 0; }
 
 .version-info { margin-top:12px; font-size:0.875rem; color:#424242; }
@@ -33,9 +33,9 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
 .must-try {
   border:2px solid #FF7043; background:#FFF3E0; border-radius:12px; padding:16px; margin-top:16px;
 }
-.must-try h2 { margin-bottom:12px; font-size:1.2rem; color:#BF360C; }
+.must-try h2 { margin-bottom:12px; font-size:1.2rem;	color:#BF360C; }
 .must-try ul { list-style:none; padding-left:0; }
-.must-try li { margin-bottom:8px; display:flex; align-items:flex-start; }
+.must-try li { margin-bottom:8px; display:flex;	align-items:flex-start; }
 .must-try li span.icon { margin-right:8px; font-size:1.1rem; line-height:1; }
 .must-try li strong { margin-right:6px; }
 
@@ -49,15 +49,24 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
 .for-ivan li strong { margin-right:6px; }
 
 .cold-drinks {
-  border:2px solid #00796B; background:#E0F2F1; border-radius:12px; padding:16px; margin-top:16px;
+  border:2px solid #00796B;	background:#E0F2F1; border-radius:12px; padding:16px; margin-top:16px;
 }
-.cold-drinks h2 { margin-bottom:12px; font-size:1.2rem; color:#004D40; }
-.cold-drinks ul { list-style:none; padding-left:0; }
+.cold-drinks h2 {	margin-bottom:12px; font-size:1.2rem; color:#004D40; }
+.cold-drinks ul { list-style:none;	padding-left:0; }
 .cold-drinks li { margin-bottom:8px; display:flex; align-items:flex-start; }
 .cold-drinks li span.icon { margin-right:8px; font-size:1.1rem; line-height:1; }
 .cold-drinks li strong { margin-right:6px; }
 
-.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+.med-kit {
+  border:2px solid #8D6E63; background:#EFEBE9; border-radius:12px; padding:16px;	margin-top:16px;
+}
+.med-kit h2 { margin-bottom:12px; font-size:1.2rem; color:#5D4037; }
+.med-kit ul { list-style:none; padding-left:0; }
+.med-kit li { margin-bottom:8px; display:flex; align-items:flex-start; }
+.med-kit li span.icon { margin-right:8px;	font-size:1.1rem; line-height:1; }
+.med-kit li strong {	margin-right:6px; }
+
+.modal { display:none;	position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
 .modal.active { display:flex; }
 .modal-content { background:#FFF; padding:16px; border-radius:20px; max-width:400px; width:90%; position:relative; }
 .close-btn { position:absolute; top:8px; right:8px; border:none; background:#CF6679; color:#FFF; border-radius:50%; width:32px; height:32px; cursor:pointer; }
