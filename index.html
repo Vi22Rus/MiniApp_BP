@@ -7,19 +7,22 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <div class="countdown">
-      <span id="countdownText">До поездки:</span>
-      <span id="days">--</span>
+  <header class="header">
+    <h1>🌴 В Паттайе 🌴</h1>
+    <div class="countdown-item">
+      <span class="countdown-text" id="countdownText">До поездки:</span>
+      <span class="countdown-number" id="days">--</span>
       <span class="countdown-label">дней</span>
     </div>
     <nav class="tabs">
-      <button data-tab="calendar" class="tab-btn active">📅 Календарь</button>
-      <button data-tab="tips" class="tab-btn">💡 Советы</button>
-      <button data-tab="contacts" class="tab-btn">📞 Контакты</button>
+      <button data-tab="calendar" class="tab-button active">📅 Календарь</button>
+      <button data-tab="tips" class="tab-button">💡 Советы</button>
+      <button data-tab="contacts" class="tab-button">📞 Контакты</button>
+      <button id="locateBtn" class="tab-button">📍 Мое местоположение</button>
     </nav>
   </header>
-  <main>
+
+  <main class="app">
     <section id="calendar" class="tab-content active">
       <div class="filters">
         <button data-filter="all" class="filter-btn active">🌟 Все</button>
@@ -28,80 +31,70 @@
       </div>
       <div id="activitiesGrid" class="grid">Загрузка…</div>
     </section>
+
     <section id="tips" class="tab-content">
-      <div class="must-try">
-        <h2>🍽️ <strong>Обязательно попробовать!</strong></h2>
+      <!-- Советы: пример -->
+      <div class="tips-block">
+        <h2>🚕 Транспорт</h2>
         <ul>
-          <li><span class="icon">🍛</span><strong>Массаман карри</strong> – нежное карри с мягким вкусом орехов и специй.</li>
-          <li><span class="icon">🍲</span><strong>Том ям кунг</strong> – острый кислый суп с креветками и лимонной травой.</li>
-          <li><span class="icon">🥢</span><strong>Пад тай</strong> – жареная рисовая лапша с тофу, креветками и арахисом.</li>
-          <li><span class="icon">🥗</span><strong>Сом там</strong> – салат из зеленой папайи с чили и лаймом.</li>
-          <li><span class="icon">🌶️</span><strong>Зеленое карри</strong> – карри с кокосом и базиликом.</li>
-          <li><span class="icon">🍛</span><strong>Пханин карри</strong> – густое красное карри с арахисом.</li>
-          <li><span class="icon">🍜</span><strong>Као сои</strong> – северный суп-лапша с хрустящей вермишелью.</li>
-          <li><span class="icon">🥥</span><strong>Том кха гай</strong> – кокосовый суп с курицей и галангалом.</li>
-          <li><span class="icon">🍗</span><strong>Кай ян</strong> – маринованная курица на гриле.</li>
-          <li><span class="icon">🌿</span><strong>Пат капрао</strong> – острая обжарка мяса с базиликом.</li>
+          <li>Сонгтео: 10 ฿</li>
+          <li>Такси Bolt/Grab: 100–150 ฿</li>
         </ul>
       </div>
-      <div class="for-ivan">
-        <h2>👦 <strong>Для Ивана</strong></h2>
+      <div class="tips-block">
+        <h2>🍽️ Где поесть</h2>
         <ul>
-          <li><span class="icon">🍳</span><strong>Кай джио</strong> – воздушный омлет.</li>
-          <li><span class="icon">🍚</span><strong>Кхао пад</strong> – рис с овощами и яйцом.</li>
-          <li><span class="icon">🥢</span><strong>Пад си ю</strong> – широкая лапша с соевым соусом.</li>
-          <li><span class="icon">🍢</span><strong>Ми сатай</strong> – куриные шашлычки в арахисовом соусе.</li>
-          <li><span class="icon">🥭</span><strong>Као нио ма муанг</strong> – клейкий рис с манго.</li>
+          <li>The Glass House: 200–500 ฿</li>
+          <li>Уличная еда: 30–70 ฿ за порцию</li>
         </ul>
       </div>
-      <div class="cold-drinks">
-        <h2>❄️ <strong>Холодные напитки Таиланда</strong></h2>
+      <div class="tips-block">
+        <h2>🏖️ Пляжный чек-лист</h2>
         <ul>
-          <li><span class="icon">🧋</span><strong>Ча йен</strong> – холодный чай с молоком.</li>
-          <li><span class="icon">☕</span><strong>Кафе йен</strong> – холодный кофе со сгущёнкой.</li>
-          <li><span class="icon">🥥</span><strong>Кокосовая вода</strong> – прямо из ореха.</li>
-          <li><span class="icon">🌾</span><strong>Сок тростника</strong> – натурально-сладкий напиток.</li>
-          <li><span class="icon">🍹</span><strong>Ча манав</strong> – чай с лаймом и льдом.</li>
-          <li><span class="icon">🥛</span><strong>Ном йен</strong> – розовое молоко с сиропом.</li>
-          <li><span class="icon">💙</span><strong>Синий чай</strong> – butterfly pea с лимоном.</li>
-          <li><span class="icon">🥭</span><strong>Манговый смузи</strong> – из спелого манго.</li>
-          <li><span class="icon">🍹</span><strong>Смузи мангостина</strong> – экзотический напиток.</li>
-          <li><span class="icon">🍌</span><strong>Тропический коктейль</strong> – банан/манго/дуриан со льдом.</li>
+          <li>Солнцезащитный крем SPF 50+</li>
+          <li>Бутылка воды</li>
+          <li>Кепка и солнцезащитные очки</li>
         </ul>
       </div>
-      <div class="med-kit">
-        <h2>💊 <strong>Аптечка</strong></h2>
+      <div class="tips-block">
+        <h2>🏛️ Храмы и этикет</h2>
         <ul>
-          <li><span class="icon">🌡️</span><strong>Парацетамол</strong> – жаропонижающее.</li>
-          <li><span class="icon">🩹</span><strong>Ибупрофен</strong> – противовоспалительное.</li>
-          <li><span class="icon">🚽</span><strong>Лоперамид</strong> – при диарее.</li>
-          <li><span class="icon">💧</span><strong>ORS</strong> – регидратация.</li>
-          <li><span class="icon">🤧</span><strong>Цетиризин</strong> – при аллергии.</li>
-          <li><span class="icon">🧴</span><strong>Хлоргексидин</strong> – антисептик.</li>
-          <li><span class="icon">🧪</span><strong>Неомицин</strong> – антибактериальная мазь.</li>
-          <li><span class="icon">🤢</span><strong>Альмагель</strong> – при изжоге.</li>
-          <li><span class="icon">🤢</span><strong>Дименгидринат</strong> – при укачивании.</li>
-          <li><span class="icon">🗣️</span><strong>Спрей горла</strong> – обезболивающий.</li>
+          <li>Закрытая одежда (руки и ноги)</li>
+          <li>Снятие обуви перед входом</li>
+        </ul>
+      </div>
+      <div class="tips-block">
+        <h2>☔ План на случай дождя</h2>
+        <ul>
+          <li>Молл Central Festival</li>
+          <li>Art in Paradise</li>
+        </ul>
+      </div>
+      <div class="tips-block">
+        <h2>💧 Здоровье</h2>
+        <ul>
+          <li>Пить воду из бутылок</li>
+          <li>Использовать аптечку</li>
         </ul>
       </div>
     </section>
+
     <section id="contacts" class="tab-content">
       <ul class="contacts-list">
         <li>🚑 <a href="tel:+661669">Скорая помощь: 1669</a></li>
         <li>🏛️ <a href="tel:+6622434888">Посольство РФ: +66 2 243 4888</a></li>
         <li>👮 <a href="tel:+66191">Полиция: 191</a></li>
       </ul>
-      <div class="version-info">
-        Версия скрипта: <strong>app.js v1.1.1 (123 строки)</strong>
-      </div>
     </section>
   </main>
+
   <div id="modalOverlay" class="modal">
     <div class="modal-content">
       <button id="closeModal" class="close-btn">✖</button>
       <div id="modalBody"></div>
     </div>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>
