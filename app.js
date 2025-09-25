@@ -25,128 +25,161 @@ const cafes = {
   'Плавучий рынок':    { name:'Indian Thai',        coords:{lat:12.867533113850556,lng:100.90534297725313} }
 };
 
-// Генерация пляжных дней
+// Генерация пляжных дней (29.12.2025–26.01.2026)
 function generateBeachDays() {
-  const used = kidsLeisure.map(x=>x.date);
+  const used = kidsLeisure.map(x => x.date);
   const days = [];
-  const start=new Date('2025-12-29'), end=new Date('2026-01-26');
-  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) {
+  const start = new Date('2025-12-29'), end = new Date('2026-01-26');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const date = d.toLocaleDateString('ru-RU');
-    if(!used.includes(date)) days.push({ type:'sea', name:'Пляжинг и Прогулинг', date, coords:null, tips:'Отдых на пляже и прогулка по набережной Наклуа.' });
+    if (!used.includes(date)) {
+      days.push({
+        type: 'sea',
+        name: 'Пляжинг и Прогулинг',
+        date,
+        coords: null,
+        tips: 'Отдых на пляже и прогулка по набережной Наклуа.'
+      });
+    }
   }
   return days;
 }
 
-const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b)=>{
-  const da=a.date.split('.').reverse().join('-'), db=b.date.split('.').reverse().join('-');
-  return new Date(da)-new Date(db);
+const activities = [...generateBeachDays(), ...kidsLeisure].sort((a, b) => {
+  const da = a.date.split('.').reverse().join('-'),
+        db = b.date.split('.').reverse().join('-');
+  return new Date(da) - new Date(db);
 });
 
 // Счётчик
-const startTrip=new Date('2025-12-29'), endTrip=new Date('2026-01-26');
-function updateCountdown(){
-  const now=new Date();
-  const label=now<startTrip?'До поездки:':now<=endTrip?'До отъезда:':'Поездка завершена!';
-  const days=now<startTrip?Math.ceil((startTrip-now)/864e5):now<=endTrip?Math.ceil((endTrip-now)/864e5):0;
-  document.getElementById('countdownText').textContent=label;
-  document.getElementById('days').textContent=days>0?days:'✔';
-  document.querySelector('.countdown-label').textContent=days>0?'дней':'';
+const startTrip = new Date('2025-12-29'), endTrip = new Date('2026-01-26');
+function updateCountdown() {
+  const now = new Date();
+  const label = now < startTrip ? 'До поездки:' : now <= endTrip ? 'До отъезда:' : 'Поездка завершена!';
+  const days  = now < startTrip
+    ? Math.ceil((startTrip - now) / 864e5)
+    : now <= endTrip
+      ? Math.ceil((endTrip - now) / 864e5)
+      : 0;
+  document.getElementById('countdownText').textContent = label;
+  document.getElementById('days').textContent = days > 0 ? days : '✔';
+  document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
 }
 
 // Рендер карточек
-function renderActivities(list){
-  const grid=document.getElementById('activitiesGrid');
-  grid.innerHTML=list.map(a=>{
-    let icon='';
-    switch(a.name){
-      case'Mini Siam': icon='🏛️ '; break;
-      case'Деревня слонов': icon='🐘 '; break;
-      case'Дельфинариум': icon='🐬 '; break;
-      case'Сад Нонг Нуч': icon='🌺 '; break;
-      case'Музей искусств 3D': icon='🎨 '; break;
-      case'Аюттайя': icon='⛩️ '; break;
-      case'Зоопарк Кхао Кхео': icon='🦒 '; break;
-      case'Плавучий рынок': icon='🛶 '; break;
-      case'Пляжинг и Прогулинг': icon='🏖️ '; break;
-      default: icon='';
+function renderActivities(list) {
+  const grid = document.getElementById('activitiesGrid');
+  grid.innerHTML = list.map(a => {
+    let icon = '';
+    switch (a.name) {
+      case 'Mini Siam':         icon = '🏛️ '; break;
+      case 'Деревня слонов':    icon = '🐘 '; break;
+      case 'Дельфинариум':      icon = '🐬 '; break;
+      case 'Сад Нонг Нуч':      icon = '🌺 '; break;
+      case 'Музей искусств 3D': icon = '🎨 '; break;
+      case 'Аюттайя':           icon = '⛩️ '; break;
+      case 'Зоопарк Кхао Кхео': icon = '🦒 '; break;
+      case 'Плавучий рынок':    icon = '🛶 '; break;
+      case 'Пляжинг и Прогулинг': icon = '🏖️ '; break;
+      default:                  icon = '';
     }
-    let priceLine='';
-    switch(a.name){
-      case'Mini Siam': priceLine='<p class="price-tag">Взрослый 230 ฿ / Детский 130 ฿</p>'; break;
-      case'Сад Нонг Нуч': priceLine='<p class="price-tag">Взрослый 420 ฿ / Детский 320 ฿</p>'; break;
-      case'Дельфинариум': priceLine='<p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>'; break;
-      case'Музей искусств 3D': priceLine='<p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>'; break;
-      case'Зоопарк Кхао Кхео': priceLine='<p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>'; break;
-      default: priceLine='';
+
+    let priceLine = '';
+    switch (a.name) {
+      case 'Mini Siam':         priceLine = '<p class="price-tag">Взрослый 230 ฿ / Детский 130 ฿</p>'; break;
+      case 'Сад Нонг Нуч':      priceLine = '<p class="price-tag">Взрослый 420 ฿ / Детский 320 ฿</p>'; break;
+      case 'Дельфинариум':      priceLine = '<p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>'; break;
+      case 'Музей искусств 3D': priceLine = '<p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>'; break;
+      case 'Зоопарк Кхао Кхео': priceLine = '<p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>'; break;
+      default:                  priceLine = '';
     }
+
     return `
       <div class="card ${a.type}">
         <h3>${icon}${a.name}</h3>
         <p>${a.date}</p>
         ${priceLine}
         <button data-name="${a.name}" data-date="${a.date}" class="details">ℹ Подробнее</button>
-      </div>
-    `;
+      </div>`;
   }).join('');
 
-  document.querySelectorAll('.details').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const act=activities.find(x=>x.name===btn.dataset.name&&x.date===btn.dataset.date);
+  document.querySelectorAll('.details').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
       showModal(act);
     });
   });
 }
 
 // Модалка
-function showModal(a){
-  let content=`<h2>${a.name}</h2><p>${a.date}</p>`;
-  if(a.coords){
-    const from=`${homeCoords.lat},${homeCoords.lng}`, to=`${a.coords.lat},${a.coords.lng}`;
-    content+=`<p>🗺️ <a href="https://www.google.com/maps/dir/${from}/${to}" target="_blank">Маршрут</a></p>`;
+function showModal(a) {
+  let content = `<h2>${a.name}</h2><p>${a.date}</p>`;
+
+  // Ссылка на маршрут до места от дома
+  if (a.coords) {
+    const from = `${homeCoords.lat},${homeCoords.lng}`;
+    const to   = `${a.coords.lat},${a.coords.lng}`;
+    content += `<p>🗺️ <a href="https://www.google.com/maps/dir/${from}/${to}" target="_blank">Маршрут</a></p>`;
   }
-  if(cafes[a.name]){
-    const cafe=cafes[a.name];
-    const from=`${homeCoords.lat},${homeCoords.lng}`;
-    const toC=`${cafe.coords.lat},${cafe.coords.lng}`;
-    content+=`<p>☕ <a href="https://www.google.com/maps/dir/${from}/${toC}" target="_blank">Кафе рядом: ${cafe.name}</a></p>`;
+
+  // Кафе рядом от текущей геолокации
+  if (cafes[a.name]) {
+    const cafe = cafes[a.name];
+    const toC  = `${cafe.coords.lat},${cafe.coords.lng}`;
+    content += `<p>☕ <a href="https://www.google.com/maps/dir/My+Location/${toC}" target="_blank">Кафе рядом: ${cafe.name}</a></p>`;
   }
-  content+=`<p>💡 Совет: ${a.tips}</p>`;
-  document.getElementById('modalBody').innerHTML=content;
+
+  content += `<p>💡 Совет: ${a.tips}</p>`;
+  document.getElementById('modalBody').innerHTML = content;
   document.getElementById('modalOverlay').classList.add('active');
 }
 
-// Вкладки
-function initTabs(){
-  const tabButtons=document.querySelectorAll('.tabs .tab-btn'), tabContents=document.querySelectorAll('.tab-content');
-  tabButtons.forEach(btn=>btn.addEventListener('click',()=>{
-    tabButtons.forEach(b=>b.classList.remove('active'));
-    tabContents.forEach(c=>c.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-  }));
+// Инициализация вкладок
+function initTabs() {
+  const tabButtons = document.querySelectorAll('.tabs .tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabButtons.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
 }
 
-// Фильтры
-function initFilters(){
-  document.querySelectorAll('.filters button').forEach(f=>f.addEventListener('click',()=>{
-    document.querySelectorAll('.filters .active').forEach(x=>x.classList.remove('active'));
-    f.classList.add('active');
-    const filtered=f.dataset.filter==='all'?activities:activities.filter(a=>a.type===f.dataset.filter);
-    renderActivities(filtered);
-    localStorage.setItem('filter',f.dataset.filter);
-  }));
-  const saved=localStorage.getItem('filter')||'all';
+// Инициализация фильтров
+function initFilters() {
+  document.querySelectorAll('.filters button').forEach(f => {
+    f.addEventListener('click', () => {
+      document.querySelectorAll('.filters .active').forEach(x => x.classList.remove('active'));
+      f.classList.add('active');
+      const filtered = f.dataset.filter === 'all'
+        ? activities
+        : activities.filter(a => a.type === f.dataset.filter);
+      renderActivities(filtered);
+      localStorage.setItem('filter', f.dataset.filter);
+    });
+  });
+  const saved = localStorage.getItem('filter') || 'all';
   document.querySelector(`.filters button[data-filter="${saved}"]`).click();
 }
 
-// Закрытие
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
+// Закрытие модалки
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
 
-document.addEventListener('DOMContentLoaded',()=>{
-  updateCountdown(); setInterval(updateCountdown,3600000);
-  initTabs(); initFilters(); renderActivities(activities);
-  document.getElementById('closeModal').addEventListener('click',closeModal);
-  document.getElementById('modalOverlay').addEventListener('click', e=>{
-    if(e.target.id==='modalOverlay') closeModal();
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', () => {
+  updateCountdown();
+  setInterval(updateCountdown, 3600000);
+  initTabs();
+  initFilters();
+  renderActivities(activities);
+
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target.id === 'modalOverlay') closeModal();
   });
 });
