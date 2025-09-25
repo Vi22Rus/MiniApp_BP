@@ -13,7 +13,7 @@ const kidsLeisure = [
   { name:'Плавучий рынок', date:'22.01.2026', coords:{lat:12.867993764217232,lng:100.90469403957914}, tips:'Купите фрукты у лодочников и арендуйте лодку.', type:'sight' }
 ];
 
-// Ссылки на сайты достопримечательностей
+// Сайты достопримечательностей
 const attractionSites = {
   'Mini Siam': 'https://www.tripadvisor.ru/Attraction_Review-g293919-d464601-Reviews-Mini_Siam-Pattaya_Chonburi_Province.html',
   'Деревня слонов': 'https://www.tripadvisor.ru/Attraction_Review-g293919-d464600-Reviews-Pattaya_Elephant_Village-Pattaya_Chonburi_Province.html',
@@ -119,27 +119,54 @@ function renderActivities(list) {
 // Модалка
 function showModal(a) {
   let content = `<h2>${a.name}</h2><p>${a.date}</p>`;
+
   if (a.coords) {
     const from = `${homeCoords.lat},${homeCoords.lng}`;
     const to   = `${a.coords.lat},${a.coords.lng}`;
     content += `<p>🗺️ <a href="https://www.google.com/maps/dir/${from}/${to}" target="_blank">Маршрут</a></p>`;
   }
+
   if (a.type === 'sight' && attractionSites[a.name]) {
     content += `<p>🌐 <a href="${attractionSites[a.name]}" target="_blank">Сайт</a></p>`;
   }
+
   if (cafes[a.name]) {
     const cafe = cafes[a.name];
     const toC  = `${cafe.coords.lat},${cafe.coords.lng}`;
     content += `<p>☕ <a href="https://www.google.com/maps/dir/My+Location/${toC}" target="_blank">Кафе рядом: ${cafe.name}</a></p>`;
   }
+
   content += `<p>💡 Совет: ${a.tips}</p>`;
   document.getElementById('modalBody').innerHTML = content;
   document.getElementById('modalOverlay').classList.add('active');
 }
 
 // Инициализация вкладок и фильтров
-function initTabs() { /* ... */ }
-function initFilters() { /* ... */ }
+function initTabs() {
+  const tabs = document.querySelectorAll('.tabs .tab-btn');
+  const contents = document.querySelectorAll('.tab-content');
+  tabs.forEach(btn => btn.addEventListener('click', () => {
+    tabs.forEach(b => b.classList.remove('active'));
+    contents.forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  }));
+}
+
+function initFilters() {
+  const filters = document.querySelectorAll('.filters .filter-btn');
+  filters.forEach(f => f.addEventListener('click', () => {
+    filters.forEach(x => x.classList.remove('active'));
+    f.classList.add('active');
+    const filtered = f.dataset.filter === 'all'
+      ? activities
+      : activities.filter(a => a.type === f.dataset.filter);
+    renderActivities(filtered);
+    localStorage.setItem('filter', f.dataset.filter);
+  }));
+  const saved = localStorage.getItem('filter') || 'all';
+  document.querySelector(`.filter-btn[data-filter="${saved}"]`)?.click();
+}
 
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('active');
@@ -157,4 +184,4 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Версия скрипта: app.js v1.1.0 (192 строки)
+// Версия скрипта: app.js v1.1.0 (122 строки)
