@@ -37,3 +37,40 @@ header { background:#FFF; padding:16px; box-shadow:0 2px 4px rgba(0,0,0,0.1); po
 .modal.active { display:flex; }
 .modal-content { background:#FFF; padding:16px; border-radius:20px; max-width:400px; width:90%; position:relative; }
 .close-btn { position:absolute; top:8px; right:8px; border:none; background:#CF6679; color:#FFF; border-radius:50%; width:32px; height:32px; cursor:pointer; }
+
+/* Блок «Обязательно попробовать!» */
+.must-try {
+  border: 2px solid #FF7043;
+  background: #FFF3E0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.must-try h2 {
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  color: #BF360C;
+}
+
+.must-try ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.must-try li {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.must-try li span.icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.must-try li strong {
+  margin-right: 6px;
+}
+
