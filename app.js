@@ -1,70 +1,119 @@
-// Демо-данные и логика: не менее 28 дней, заменены названия пляжей, правильный счетчик, обновлены селекторы и табы
+// app.js
 const startTrip = new Date('2025-12-29');
 const endTrip = new Date('2026-01-26');
 
-// Демо-список активностей (указан смена названий Джомтьен->Вонгамат, Паттайя->Бамбу Бич)
+// Sample data: 28 days with alternating beaches and leisure
 const activities = Array.from({length: 28}, (_, i) => {
-  let day = i+1;
-  let date = new Date(startTrip.getTime() + day*864e5);
-  let txt = day%2===0 ? 'Пляж Вонгамат' : 'Пляж Бамбу Бич';
-  let type = day%4===0 ? 'sight' : 'sea';
-  if (type==='sea') txt = day%2===0 ? 'Пляж Вонгамат' : 'Пляж Бамбу Бич';
-  if (type==='sight') txt = `🎡 Досуг: шоу ${day}`;
+  const dayNum = i + 1;
+  const date = new Date(startTrip.getTime() + dayNum * 864e5);
+  const formattedDate = date.toLocaleDateString('ru-RU');
+  const isSea = (dayNum % 3) !== 0;
+  const text = isSea
+    ? (dayNum % 2 === 0 ? 'Пляж Вонгамат' : 'Пляж Бамбу Бич')
+    : `Досуг: шоу ${dayNum}`;
   return {
-    type,
-    date: date.toLocaleDateString('ru-RU'),
-    text: txt,
+    type: isSea ? 'sea' : 'sight',
+    date: formattedDate,
+    text,
     cost: 'Бесплатно',
     workingHours: 'Круглосуточно',
-    transport: ["Сонгтео 10 бат", "Такси Bolt/Grab"],
-    restaurants: ["Glass House"],
-    tips: "Берите головной убор",
-    articleLink: "https://life-thai.com"
+    transport: ['Сонгтео (10 бат)', 'Такси Bolt/Grab (100–150 бат)'],
+    restaurants: ['The Glass House (200–500 бат)'],
+    tips: 'Берите головной убор и воду',
+    articleLink: 'https://life-thai.com'
   };
 });
 
-window.activities = activities;
-
-// Правильный счетчик
-function updateCountdown(){
+function updateCountdown() {
   const now = new Date();
-  let numDays, label;
+  let label, days;
   if (now < startTrip) {
-    numDays = Math.ceil((startTrip-now)/864e5);
     label = 'До поездки:';
-  } else if (now >= startTrip && now < endTrip){
-    numDays = Math.ceil((endTrip-now)/864e5);
+    days = Math.ceil((startTrip - now) / 864e5);
+  } else if (now <= endTrip) {
     label = 'До отъезда:';
+    days = Math.ceil((endTrip - now) / 864e5);
   } else {
-    numDays = 0; label='Поездка завершена!';
+    label = 'Поездка завершена!';
+    days = 0;
   }
   document.getElementById('countdownText').textContent = label;
-  document.getElementById('days').textContent = numDays>0 ? numDays : '✔';
-  document.querySelector('.countdown-label').textContent = numDays>0 ? 'дней' : '';
+  document.getElementById('days').textContent = days > 0 ? days : '✔';
+  document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
 }
-setInterval(updateCountdown,60000);
 
-document.addEventListener('DOMContentLoaded',()=>{
-  updateCountdown();
-  renderActivities(activities);
-  // табы фикс
-  document.querySelector('.tabs').style.display='flex';
-});
-
-// Рендер карточек
-function renderActivities(arr){
-  const grid=document.getElementById('activitiesGrid');
-  grid.innerHTML = arr.map((a,i)=>`
-    <div class="activity-card ${a.type}">
+function renderActivities(data) {
+  const grid = document.getElementById('activitiesGrid');
+  grid.innerHTML = data.map((a, idx) => `
+    <div class="activity-card ${a.type}" onclick="openModal(${idx})">
       <div class="activity-header">
         <div class="activity-icon">${a.type==='sea'?'🏖️':'🎡'}</div>
         <div class="activity-date">${a.date}</div>
       </div>
       <div class="activity-title">${a.text}</div>
       <div class="activity-meta">
-        <span class="meta-tag">${a.cost}</span>
-        <span class="meta-tag">${a.workingHours}</span>
+        <span>${a.cost}</span>
+        <span>${a.workingHours}</span>
       </div>
     </div>
   `).join('');
 }
+
+function initTabs() {
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function initFilters() {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      const filtered = filter==='all'
+        ? activities
+        : activities.filter(a=>a.type===filter);
+      renderActivities(filtered);
+    });
+  });
+  document.getElementById('searchInput').addEventListener('input', e => {
+    const term = e.target.value.toLowerCase();
+    renderActivities(activities.filter(a=>
+      a.text.toLowerCase().includes(term) || a.date.includes(term)
+    ));
+  });
+}
+
+function openModal(idx) {
+  const a = activities[idx];
+  document.getElementById('modalTitle').textContent = `День ${idx+1}: ${a.date}`;
+  document.getElementById('modalBody').innerHTML = `
+    <p><strong>${a.text}</strong></p>
+    <p>Стоимость: ${a.cost}</p>
+    <p>Время: ${a.workingHours}</p>
+    <p>Транспорт: ${a.transport.join(', ')}</p>
+    <p>Ресто: ${a.restaurants.join(', ')}</p>
+    <p>Совет: ${a.tips}</p>
+    <a href="${a.articleLink}" target="_blank">Подробнее</a>
+  `;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateCountdown();
+  setInterval(updateCountdown, 3600000);
+  renderActivities(activities);
+  initTabs();
+  initFilters();
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+});
