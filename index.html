@@ -2,70 +2,70 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Паттайя: 28 дней приключений</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Паттайя: 28 дней приключений</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <div class="app">
-        <header class="header">
-            <div class="countdown-container">
-                <h1>🏝️ Паттайя: 28 дней приключений</h1>
-                <div class="countdown" id="countdown">
-                    <div class="countdown-item">
-                        <span class="countdown-text" id="countdownText">До поездки:</span>
-                        <span class="countdown-number" id="days"></span>
-                        <span class="countdown-label">дней</span>
-                    </div>
-                </div>
-            </div>
-        </header>
-        <nav class="tabs">
-            <button class="tab-button active" data-tab="calendar">📅 Календарь</button>
-            <button class="tab-button" data-tab="tips">💡 Советы</button>
-            <button class="tab-button" data-tab="contacts">📞 Контакты</button>
-        </nav>
-        <div class="tab-content active" id="calendar">
-            <div class="filters">
-                <input type="text" class="search-input" id="searchInput" placeholder="🔍 Поиск активностей...">
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-filter="all">🌟 Все</button>
-                    <button class="filter-btn" data-filter="sea">🏖️ Море</button>
-                    <button class="filter-btn" data-filter="sight">🎡 Досуг</button>
-                </div>
-            </div>
-            <div class="activities-grid" id="activitiesGrid"></div>
-            <div class="empty-state" id="emptyState" style="display: none;">
-                <div class="empty-icon">🔍</div>
-                <h3>Ничего не найдено</h3>
-                <p>Попробуйте изменить фильтры или поисковый запрос</p>
-                <button class="btn-secondary" onclick="clearFilters()">Сбросить фильтры</button>
-            </div>
+  <div class="app">
+    <header class="header">
+      <div class="countdown-container">
+        <h1>🏝️ Паттайя: 28 дней приключений</h1>
+        <div class="countdown" id="countdown">
+          <div class="countdown-item">
+            <span class="countdown-text" id="countdownText">До поездки:</span>
+            <span class="countdown-number" id="days"></span>
+            <span class="countdown-label">дней</span>
+          </div>
         </div>
-        <div class="tab-content" id="tips">
-            <div class="tips-container">
-                <h2>💡 Полезные советы</h2>
-                <div class="tips-grid" id="tipsGrid"></div>
-            </div>
+      </div>
+    </header>
+    <nav class="tabs">
+      <button class="tab-button active" data-tab="calendar">📅 Календарь</button>
+      <button class="tab-button" data-tab="tips">💡 Советы</button>
+      <button class="tab-button" data-tab="contacts">📞 Контакты</button>
+    </nav>
+    <div class="tab-content active" id="calendar">
+      <div class="filters">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск активностей...">
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">🌟 Все</button>
+          <button class="filter-btn" data-filter="sea">🏖️ Море</button>
+          <button class="filter-btn" data-filter="sight">🎡 Досуг</button>
         </div>
-        <div class="tab-content" id="contacts">
-            <div class="contacts-container">
-                <h2>📞 Важные контакты</h2>
-                <div class="contacts-grid" id="contactsGrid"></div>
-            </div>
-        </div>
-        <div class="modal-overlay" id="modalOverlay">
-            <div class="modal" id="activityModal">
-                <div class="modal-header">
-                    <h3 id="modalTitle">Детали дня</h3>
-                    <button class="modal-close" id="closeModal">&times;</button>
-                </div>
-                <div class="modal-body" id="modalBody"></div>
-            </div>
-        </div>
+      </div>
+      <div class="activities-grid" id="activitiesGrid"></div>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="empty-icon">🔍</div>
+        <h3>Ничего не найдено</h3>
+        <p>Попробуйте изменить фильтры или поиск</p>
+        <button class="btn-secondary" onclick="clearFilters()">Сбросить фильтры</button>
+      </div>
     </div>
-    <script src="app.js"></script>
+    <div class="tab-content" id="tips">
+      <div class="tips-container">
+        <h2>💡 Полезные советы</h2>
+        <div class="tips-grid" id="tipsGrid"></div>
+      </div>
+    </div>
+    <div class="tab-content" id="contacts">
+      <div class="contacts-container">
+        <h2>📞 Важные контакты</h2>
+        <div class="contacts-grid" id="contactsGrid"></div>
+      </div>
+    </div>
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal" id="activityModal">
+        <div class="modal-header">
+          <h3 id="modalTitle">Детали дня</h3>
+          <button class="modal-close" id="closeModal">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
 </body>
 </html>
