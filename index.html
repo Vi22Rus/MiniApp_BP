@@ -14,41 +14,41 @@
       <span class="countdown-label">дней</span>
     </div>
     <nav class="tabs">
-      <button data-tab="calendar" class="active">📅 Календарь</button>
-      <button data-tab="tips">💡 Советы</button>
-      <button data-tab="contacts">📞 Контакты</button>
+      <button data-tab="calendar" class="tab-btn active">📅 Календарь</button>
+      <button data-tab="tips"     class="tab-btn">💡 Советы</button>
+      <button data-tab="contacts" class="tab-btn">📞 Контакты</button>
     </nav>
   </header>
 
   <main>
     <section id="calendar" class="tab-content active">
       <div class="filters">
-        <button data-filter="all" class="active">🌟 Все</button>
-        <button data-filter="sea">🏖️ Пляж</button>
-        <button data-filter="sight">🎡 Досуг</button>
+        <button data-filter="all" class="filter-btn active">🌟 Все</button>
+        <button data-filter="sea" class="filter-btn">🏖️ Пляж</button>
+        <button data-filter="sight" class="filter-btn">🎡 Досуг</button>
       </div>
       <div id="activitiesGrid" class="grid">Загрузка…</div>
     </section>
 
     <section id="tips" class="tab-content">
       <ul class="tips-list">
-        <li><a href="https://ru.wikipedia.org/wiki/Нонг_Нуч" target="_blank">Лучшее время для посещения Сад Нонг Нуч</a></li>
-        <li><a href="https://ru.wikipedia.org/wiki/Bolt_(сервис)" target="_blank">Как заказать такси Bolt</a></li>
+        <li>🕑 <a href="https://ru.wikipedia.org/wiki/Нонг_Нуч" target="_blank">Лучшее время для посещения Сад Нонг Нуч</a></li>
+        <li>🚕 <a href="https://ru.wikipedia.org/wiki/Bolt_(сервис)" target="_blank">Как заказать такси Bolt</a></li>
       </ul>
     </section>
 
     <section id="contacts" class="tab-content">
       <ul class="contacts-list">
-        <li>📞 <a href="tel:+661669">Скорая помощь: 1669</a></li>
-        <li>📞 <a href="tel:+6622434888">Посольство РФ: +66 2 243 4888</a></li>
-        <li>📞 <a href="tel:+66191">Полиция: 191</a></li>
+        <li>🚑 <a href="tel:+661669">Скорая помощь: 1669</a></li>
+        <li>🏛️ <a href="tel:+6622434888">Посольство РФ: +66 2 243 4888</a></li>
+        <li>👮 <a href="tel:+66191">Полиция: 191</a></li>
       </ul>
     </section>
   </main>
 
   <div id="modalOverlay" class="modal">
     <div class="modal-content">
-      <button id="closeModal" class="close">✖</button>
+      <button id="closeModal" class="close-btn">✖</button>
       <div id="modalBody"></div>
     </div>
   </div>
