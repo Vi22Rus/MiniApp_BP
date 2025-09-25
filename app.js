@@ -90,9 +90,9 @@ function renderActivities(list) {
 // Модалка
 function showModal(a) {
   let content = `<h2>${a.name}</h2><p>${a.date}</p>`;
-  // Маршрут до места
+  // Маршрут от дома до места
   if (a.coords) {
-    const from = 'My+Location';
+    const from = `${homeCoords.lat},${homeCoords.lng}`;
     const to = `${a.coords.lat},${a.coords.lng}`;
     content += `<p>🗺️ <a href="https://www.google.com/maps/dir/${from}/${to}" target="_blank">Маршрут</a></p>`;
   }
