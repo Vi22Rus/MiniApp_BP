@@ -1,171 +1,58 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>GoInPattaya • Планер</title>
-
-  <!-- Telegram Mini Apps SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <!-- Material Symbols (Outlined) -->
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD,opsz,wght@0,0,24,400" rel="stylesheet">
-
-  <!-- Favicon (data URL, чтобы не ловить 404) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='.9em' font-size='14'%3E🏖️%3C/text%3E%3C/svg%3E">
-
-  <!-- Стили и скрипт с cache-buster -->
-  <link rel="stylesheet" href="style.css?v=2025.09.25-UX3.21">
-  <script defer src="app.js?v=2025.09.25-UX3.21"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Планер Паттайя</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body data-version="2025.09.25-UX3.21">
-  <noscript>Для работы приложения требуется JavaScript.</noscript>
-
-  <header class="appbar" role="banner">
-    <div class="appbar__left">
-      <span class="material-symbols-outlined brand">travel</span>
-      <div class="titles">
-        <div class="title">GoInPattaya</div>
-        <div class="subtitle">План поездки</div>
-      </div>
+<body>
+  <header>
+    <div class="countdown">
+      <span id="countdownText">До поездки:</span>
+      <span id="days">--</span>
+      <span class="countdown-label">дней</span>
     </div>
-    <div class="appbar__right">
-      <div class="trip-status">
-        <div class="status-row">
-          <span id="statusLabel" class="status-label">Статус…</span>
-          <span id="statusDays" class="status-days">—</span>
-        </div>
-        <div class="status-bar">
-          <div id="statusBarFill" class="status-bar__fill" style="width:0%"></div>
-        </div>
-      </div>
-    </div>
+    <nav class="tabs">
+      <button data-tab="calendar" class="active">📅 Календарь</button>
+      <button data-tab="tips">💡 Советы</button>
+      <button data-tab="contacts">📞 Контакты</button>
+    </nav>
   </header>
 
-  <nav class="tabs" role="tablist" aria-label="Разделы">
-    <button class="tab active" data-tab="calendar" role="tab" aria-selected="true">
-      <span class="material-symbols-outlined">calendar_month</span> Календарь
-    </button>
-    <button class="tab" data-tab="tips" role="tab" aria-selected="false">
-      <span class="material-symbols-outlined">lightbulb</span> Советы
-    </button>
-    <button class="tab" data-tab="contacts" role="tab" aria-selected="false">
-      <span class="material-symbols-outlined">call</span> Контакты
-    </button>
-  </nav>
-
-  <main class="content">
-    <section id="calendar" class="tab-content" role="tabpanel" aria-labelledby="tab-calendar">
-      <div class="filters sticky" role="toolbar" aria-label="Фильтр активностей">
-        <button class="filter" data-filter="all" aria-pressed="false">
-          <span class="material-symbols-outlined">filter_alt</span> Все
-        </button>
-        <button class="filter" data-filter="sea" aria-pressed="false">
-          <span class="material-symbols-outlined">beach_access</span> Пляж
-        </button>
-        <button class="filter" data-filter="sight" aria-pressed="false">
-          <span class="material-symbols-outlined">temple_buddhist</span> Достопр.
-        </button>
+  <main>
+    <section id="calendar" class="tab-content active">
+      <div class="filters">
+        <button data-filter="all" class="active">🌟 Все</button>
+        <button data-filter="sea">🏖️ Пляж</button>
+        <button data-filter="sight">🎡 Достопримечательность</button>
       </div>
-
-      <div id="skeletons" class="cards-skeleton">
-        <div class="skeleton card"></div><div class="skeleton card"></div><div class="skeleton card"></div>
-        <div class="skeleton card"></div><div class="skeleton card"></div><div class="skeleton card"></div>
-      </div>
-
-      <div id="cards" class="cards hidden" aria-live="polite" aria-busy="true"></div>
-
-      <div id="emptyState" class="empty hidden">
-        <div class="empty__icon"><span class="material-symbols-outlined">search</span></div>
-        <div class="empty__title">Ничего не найдено</div>
-        <div class="empty__text">Попробуйте другой фильтр или сбросьте выбор</div>
-        <button class="chip" id="resetFilters"><span class="material-symbols-outlined">refresh</span> Сбросить фильтры</button>
-      </div>
+      <div id="activitiesGrid" class="grid">Загрузка…</div>
     </section>
 
-    <section id="tips" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-tips">
-      <h2>💡 Полезная информация</h2>
-
-      <div class="section">
-        <h3>Дресс‑код в храмах</h3>
-        <ul class="list">
-          <li>Плечи и колени закрыты; избегать маек без рукавов и коротких шорт. <a class="ext-link" href="https://www.easydaythailand.com/ru/kak-odevatsya-v-hramah/">Подробнее</a></li>
-          <li>Обувь снимают внутри; взять лёгкую накидку/парео. <a class="ext-link" href="https://www.easydaythailand.com/ru/kak-odevatsya-v-hramah/">Подробнее</a></li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>Безопасность воды</h3>
-        <ul class="list">
-          <li>Пить бутилированную/фильтрованную воду; водопроводную не пить. <a class="ext-link" href="https://travelushki.com/guide/drink-tap-water/dw-thailand/">Подробнее</a></li>
-          <li>Для чистки зубов лучше кипячёную или бутилированную. <a class="ext-link" href="https://travelushki.com/guide/drink-tap-water/dw-thailand/">Подробнее</a></li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>Транспорт: сонгтео</h3>
-        <ul class="list">
-          <li>Маршрутные сонгтео по городу обычно 10–20 бат (основные улицы). <a class="ext-link" href="https://pattaya-city.ru/transport/tuk-tuk/">Подробнее</a></li>
-          <li>Найм как такси — цену оговаривать заранее (выше фиксированного тарифа). <a class="ext-link" href="https://pattaya-city.ru/transport/tuk-tuk/">Подробнее</a></li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>Семейный досуг</h3>
-        <ul class="list">
-          <li>Columbia Pictures Aquaverse (бренд сменил Cartoon Network Amazone). <a class="ext-link" href="https://pattaya-city.ru/razvlecheniya/cartoon-network-amazone/">Подробнее</a></li>
-          <li>Harbor Land (крупная крытая площадка для детей). <a class="ext-link" href="https://pattaya.zagranitsa.com/article/3248/harbor-pattaya-9-sposobov-razvlechsia-vsei-semei">Подробнее</a></li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="contacts" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-contacts">
-      <h2>📇 Контакты</h2>
-      <ul class="list">
-        <li><span class="material-symbols-outlined">local_police</span> Полиция: <a href="tel:191">191</a></li>
-        <li><span class="material-symbols-outlined">local_fire_department</span> Пожарная: <a href="tel:199">199</a></li>
-        <li><span class="material-symbols-outlined">local_hospital</span> Скорая помощь: <a href="tel:1669">1669</a></li>
-        <li><span class="material-symbols-outlined">support_agent</span> Туристическая полиция: <a href="tel:1155">1155</a></li>
-        <li><span class="material-symbols-outlined">apartment</span> Call‑центр Паттайи: <a href="tel:1337">1337</a></li>
-        <li><span class="material-symbols-outlined">embassy</span> Посольство РФ (Бангкок): <a href="tel:+6622434888">+66 2 243 4888</a></li>
-        <li><span class="material-symbols-outlined">medical_services</span> Bangkok Hospital Pattaya (рус. контакт): <a class="ext-link" href="https://bangkokpattayahospital.com/ru/about-us/contact-us/">Открыть</a></li>
-        <li><span class="material-symbols-outlined">medical_information</span> Pattaya Memorial Hospital (рус. контакт): <a class="ext-link" href="https://www.pattayamemorial.com/ru/contact-us">Открыть</a></li>
+    <section id="tips" class="tab-content">
+      <ul class="tips-list">
+        <li><a href="https://ru.wikipedia.org/wiki/Нонг_Нуч" target="_blank">Лучшее время для посещения Сад Нонг Нуч</a></li>
+        <li><a href="https://ru.wikipedia.org/wiki/Bolt_(сервис)" target="_blank">Как заказать такси Bolt</a></li>
       </ul>
-      <div id="appVersionFooter" class="contacts-version">v0.0.0</div>
+    </section>
+
+    <section id="contacts" class="tab-content">
+      <ul class="contacts-list">
+        <li>📞 <a href="tel:+661669">Скорая помощь: 1669</a></li>
+        <li>📞 <a href="tel:+6622434888">Посольство РФ: +66 2 243 4888</a></li>
+        <li>📞 <a href="tel:+66191">Полиция: 191</a></li>
+      </ul>
     </section>
   </main>
 
-  <!-- Модалка -->
-  <div id="overlay" class="overlay hidden" style="display:none" aria-hidden="true"></div>
-  <div id="details" class="details hidden" style="display:none" role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
-    <button id="closeBtn" class="close-btn" aria-label="Закрыть"><span class="material-symbols-outlined">close</span></button>
-    <h3 class="dialog-title"><span id="detailsTitle"></span></h3>
-
-    <div class="dialog-body">
-      <div id="detailsMeta" class="meta"></div>
-
-      <details name="acc" class="acc">
-        <summary><span class="material-symbols-outlined">directions</span> Транспорт</summary>
-        <ul id="detailsTransport" class="list"></ul>
-      </details>
-
-      <details name="acc" class="acc">
-        <summary><span class="material-symbols-outlined">restaurant</span> Еда</summary>
-        <ul id="detailsLunch" class="list"></ul>
-      </details>
-
-      <details name="acc" class="acc">
-        <summary><span class="material-symbols-outlined">tips_and_updates</span> Советы</summary>
-        <ul id="detailsTips" class="list"></ul>
-      </details>
-
-      <details name="acc" class="acc">
-        <summary><span class="material-symbols-outlined">schedule</span> Расписание</summary>
-        <ul id="scheduleList" class="schedule"></ul>
-      </details>
-
-      <div id="detailsLinks" class="links"></div>
+  <div id="modalOverlay" class="modal">
+    <div class="modal-content">
+      <button id="closeModal" class="close">✖</button>
+      <div id="modalBody"></div>
     </div>
   </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
