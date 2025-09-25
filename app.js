@@ -27,14 +27,14 @@ const cafes = {
   'Холм Пратамнак':     { name:'City Coffee',        coords:{lat:12.92441949946151,lng:100.86487143268879} }
 };
 
-// Генерация пляжных дней
+// Генерация пляжных дней (включая 29–31.12.2025)
 function generateBeachDays() {
-  const used = kidsLeisure.map(x => x.date);
+  const usedDates = kidsLeisure.map(x => x.date);
   const days = [];
-  const start = new Date('2026-01-01'), end = new Date('2026-01-26');
+  const start = new Date('2025-12-29'), end = new Date('2026-01-26');
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const date = d.toLocaleDateString('ru-RU');
-    if (!used.includes(date)) {
+    if (!usedDates.includes(date)) {
       days.push({
         type: 'sea',
         name: 'Пляжинг и Прогулинг',
@@ -54,8 +54,8 @@ const activities = [...generateBeachDays(), ...kidsLeisure].sort((a, b) => {
   return new Date(da) - new Date(db);
 });
 
-// Счётчик
-const startTrip = new Date('2026-01-01'), endTrip = new Date('2026-01-26');
+// Счётчик (с учётом новой даты старта)
+const startTrip = new Date('2025-12-29'), endTrip = new Date('2026-01-26');
 function updateCountdown() {
   const now = new Date();
   const label = now < startTrip ? 'До поездки:' : now <= endTrip ? 'До отъезда:' : 'Поездка завершена!';
