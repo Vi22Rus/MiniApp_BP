@@ -1,6 +1,6 @@
-/* Version: 1.1.1 */
+/* Version: 1.1.2 */
 /* Last updated: 2025-09-26 */
-/* Версия файла: style.css (305 строк) */
+/* Версия файла: style.css (315 строк) */
 :root {
   --bg: #fff;
   --text: #0b1220;
@@ -176,6 +176,11 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   font-size: 1rem;
   display: flex;
   align-items: center;
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Standard */
+  -webkit-touch-callout: none; /* iOS Safari */
 }
 .geo-item-btn:hover {
     background-color: #f0f0f0;
