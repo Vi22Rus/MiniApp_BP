@@ -1,4 +1,4 @@
-// Version: 1.1.0
+// Version: 1.1.1
 // Last updated: 2025-09-26
 // Версия скрипта: app.js (315 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
@@ -281,18 +281,19 @@ function renderActivities(list) {
     const grid = document.getElementById('activitiesGrid');
     if (!grid) return;
     grid.innerHTML = list.map(a => {
+        const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
         let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
         const prices = {
-            'Mini Siam': `<p class="price-tag">Взрослый 230 ฿ / Детский 130 ฿</p>`,
-            'Деревня слонов': `<p class="price-tag">Взрослый 650 ฿ / Детский 500 ฿</p>`,
-            'Дельфинариум': `<p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>`,
-            'Сад Нонг Нуч': `<p class="price-tag">Взрослый 420 ฿ / Детский 320 ฿</p>`,
-            'Музей искусств 3D': `<p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>`,
-            'Зоопарк Кхао Кхео': `<p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>`,
+            'Mini Siam': `<p class="price-tag"><span class="price-label">Взрослый</span> 230 ฿ / <span class="price-label">Детский</span> 130 ฿</p>`,
+            'Деревня слонов': `<p class="price-tag"><span class="price-label">Взрослый</span> 650 ฿ / <span class="price-label">Детский</span> 500 ฿</p>`,
+            'Дельфинариум': `<p class="price-tag"><span class="price-label">Взрослый</span> 630 ฿ / <span class="price-label">Детский</span> 450 ฿</p>`,
+            'Сад Нонг Нуч': `<p class="price-tag"><span class="price-label">Взрослый</span> 420 ฿ / <span class="price-label">Детский</span> 320 ฿</p>`,
+            'Музей искусств 3D': `<p class="price-tag"><span class="price-label">Взрослый</span> 235 ฿ / <span class="price-label">Детский</span> 180 ฿</p>`,
+            'Зоопарк Кхао Кхео': `<p class="price-tag"><span class="price-label">Взрослый</span> 350 ฿ / <span class="price-label">Детский</span> 120 ฿</p>`,
         };
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
-        return `<div class="card"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : ''}</div>`;
+        return `<div class="${cardClass}"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : ''}</div>`;
     }).join('');
     bindDetailButtons();
 }
