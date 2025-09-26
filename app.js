@@ -1,26 +1,38 @@
-// Version: 1.1.1
+// Version: 1.2.0
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (315 строк)
+// Версия скрипта: app.js (345 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
-let activeGeoFilter = 'naklua';
+let activeGeoFilter = 'cafe'; // Теперь это основной фильтр
 
-const geoCafeData = [
-    { link: "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8", coords: [12.965314728870327, 100.88574547083675], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/fCCogyeGKWqJca8g7", coords: [12.964959752753911, 100.88655104216504], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/Fba5C2aJVW7YxLz98", coords: [12.965151141707688, 100.88674436342762], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/UagUbAPDmdJBAbCJ6", coords: [12.964288806741925, 100.88816176884599], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/dXaCX7UgmriNPEpm8", coords: [12.96424632513826, 100.88873268926864], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/Zn15kwEB5i9bfJGL6", coords: [12.964275050492303, 100.88867431363093], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/VyE7D7gwHRL4nMNc6", coords: [12.967898770765563, 100.89741326647155], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/DwNiL8531uQVURRZ9", coords: [12.973265034689499, 100.90657393095435], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/VFFio7Q6t9qgJk4A9", coords: [12.968006641294641, 100.89704079447756], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/UpRFKn6nAgTa1sNS8", coords: [12.96748945294801, 100.88317093728782], subblock: 'naklua' },
-    { link: "https://maps.app.goo.gl/fn868NKBZYGE4tUJ7", coords: [12.892621251136807, 100.87323076484746], subblock: 'jomtien' },
-    { link: "https://maps.app.goo.gl/d6Wp4s38aTAPBCFz9", coords: [12.909346981806133, 100.85799998332298], subblock: 'pratamnak' },
-    { link: "https://maps.app.goo.gl/LGssrnWfy3KEZJ9u6", coords: [12.909615777640497, 100.86413037030111], subblock: 'pratamnak' },
-    { link: "https://maps.app.goo.gl/zPpiXtiNQts6f1Tb6", coords: [12.909461552901218, 100.86416750079316], subblock: 'pratamnak' },
-    { link: "https://maps.app.goo.gl/rFeQbBftxVTd2M6j9", coords: [12.91753238629045, 100.86705154538753], subblock: 'pratamnak' }
+const allGeoData = [
+    // Кафе (0-14)
+    { type: 'cafe', link: "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8", coords: [12.965314, 100.885745], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/fCCogyeGKWqJca8g7", coords: [12.964959, 100.886551], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/Fba5C2aJVW7YxLz98", coords: [12.965151, 100.886744], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/UagUbAPDmdJBAbCJ6", coords: [12.964288, 100.888161], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/dXaCX7UgmriNPEpm8", coords: [12.964246, 100.888732], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/Zn15kwEB5i9bfJGL6", coords: [12.964275, 100.888674], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/VyE7D7gwHRL4nMNc6", coords: [12.967898, 100.897413], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/DwNiL8531uQVURRZ9", coords: [12.973265, 100.906573], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/VFFio7Q6t9qgJk4A9", coords: [12.968006, 100.897040], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/UpRFKn6nAgTa1sNS8", coords: [12.967489, 100.883170], subblock: 'naklua' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/d6Wp4s38aTAPBCFz9", coords: [12.909346, 100.857999], subblock: 'pratamnak' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/LGssrnWfy3KEZJ9u6", coords: [12.909615, 100.864130], subblock: 'pratamnak' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/zPpiXtiNQts6f1Tb6", coords: [12.909461, 100.864167], subblock: 'pratamnak' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/rFeQbBftxVTd2M6j9", coords: [12.917532, 100.867051], subblock: 'pratamnak' },
+    { type: 'cafe', link: "https://maps.app.goo.gl/fn868NKBZYGE4tUJ7", coords: [12.892621, 100.873230], subblock: 'jomtien' },
+    // Храмы (15-24)
+    { type: 'temple', link: "https://maps.app.goo.gl/VzHiKzb1UDQwrJ7SA", coords: [12.925998, 100.876540] },
+    { type: 'temple', link: "https://maps.app.goo.gl/1Tho69ErwjcJoLZu6", coords: [12.925280, 100.877069] },
+    { type: 'temple', link: "https://maps.app.goo.gl/ZaWV44GNL86E9Hdq9", coords: [12.938062, 100.892092] },
+    { type: 'temple', link: "https://maps.app.goo.gl/QfwfiipfFmXzfJhCA", coords: [12.961507, 100.893974] },
+    { type: 'temple', link: "https://maps.app.goo.gl/UTn8gqefDwgPeZxh6", coords: [12.969608, 100.909430] },
+    { type: 'temple', link: "https://maps.app.goo.gl/xsj9jnGkWduQ6MQV6", coords: [12.952028, 100.908180] },
+    { type: 'temple', link: "https://maps.app.goo.gl/wz7LAkoqXd1LHHhw7", coords: [12.914219, 100.868615] },
+    { type: 'temple', link: "https://maps.app.goo.gl/LXmseuFjDPQtyewQ6", coords: [12.885197, 100.879626] },
+    { type: 'temple', link: "https://maps.app.goo.gl/LWeDMe2wMJsvQr5N8", coords: [12.791474, 100.928825] },
+    { type: 'temple', link: "https://maps.app.goo.gl/LpMDiXaHFnE7Aa8w7", coords: [12.765905, 100.956783] },
 ];
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
@@ -106,21 +118,22 @@ function initGeoFeatures() {
         });
     });
 
-    document.querySelectorAll('.geo-cafe-btn').forEach(initGeoCafeButton);
+    document.querySelectorAll('.geo-cafe-btn, .geo-temple-btn').forEach(initGeoItemButton);
 }
 
 function updateGeoView() {
-    updateGeoCafeDistances();
-    sortCafeSubblocks();
+    updateAllDistances();
+    sortAllGeoBlocks();
     applyGeoFilter();
 }
 
-function updateGeoCafeDistances() {
-    document.querySelectorAll('.geo-cafe-btn').forEach(button => {
+function updateAllDistances() {
+    if (!userCoords) return;
+    document.querySelectorAll('.geo-cafe-btn, .geo-temple-btn').forEach(button => {
         const id = parseInt(button.dataset.id, 10);
-        if (isNaN(id) || !userCoords) return;
+        if (isNaN(id)) return;
         
-        const distance = getDistance(userCoords, geoCafeData[id].coords);
+        const distance = getDistance(userCoords, allGeoData[id].coords);
         button.dataset.distance = distance;
         let distSpan = button.querySelector('.distance-tag');
         if (!distSpan) {
@@ -132,47 +145,60 @@ function updateGeoCafeDistances() {
     });
 }
 
-function sortCafeSubblocks() {
+function sortAllGeoBlocks() {
     ['naklua', 'pratamnak', 'jomtien'].forEach(subblockName => {
         const container = document.querySelector(`.cafe-sub-block[data-subblock-name="${subblockName}"]`);
-        const buttons = Array.from(container.querySelectorAll('.geo-cafe-btn'));
-        buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
-        buttons.forEach(button => container.appendChild(button));
+        if(container) {
+            const buttons = Array.from(container.querySelectorAll('.geo-cafe-btn'));
+            buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
+            buttons.forEach(button => container.appendChild(button));
+        }
     });
-}
 
-function applyGeoFilter() {
-    restoreCafeButtonsVisibility();
-    const nearbyContainer = document.getElementById('nearbyItems');
-    nearbyContainer.innerHTML = '';
-
-    const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeGeoFilter}"]`);
-    if (!targetSubblock) return;
-    
-    const closestButton = targetSubblock.querySelector('.geo-cafe-btn');
-    if (closestButton) {
-        const clone = closestButton.cloneNode(true);
-        initGeoCafeButton(clone);
-        nearbyContainer.appendChild(clone);
-        closestButton.style.display = 'none';
-    } else {
-        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений в этом районе</div>`;
+    const templesContainer = document.querySelector('.geo-temples .geo-items-container');
+    if(templesContainer) {
+        const buttons = Array.from(templesContainer.querySelectorAll('.geo-temple-btn'));
+        buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
+        buttons.forEach(button => templesContainer.appendChild(button));
     }
 }
 
-function restoreCafeButtonsVisibility() {
-    document.querySelectorAll('.geo-cafe-btn').forEach(btn => btn.style.display = 'flex');
+function applyGeoFilter() {
+    restoreAllButtonsVisibility();
+    const nearbyContainer = document.getElementById('nearbyItems');
+    nearbyContainer.innerHTML = '';
+    
+    let closestButton;
+    if (activeGeoFilter === 'cafe') {
+        const targetSubblock = document.querySelector(`.cafe-sub-block.${document.querySelector('.geo-filter-btn.active[data-filter^=naklua], .geo-filter-btn.active[data-filter^=pratamnak], .geo-filter-btn.active[data-filter^=jomtien]')?.dataset.filter || 'naklua'}`);
+        closestButton = targetSubblock ? targetSubblock.querySelector('.geo-cafe-btn') : null;
+    } else { // temples
+        closestButton = document.querySelector('.geo-temples .geo-temple-btn');
+    }
+    
+    if (closestButton) {
+        const clone = closestButton.cloneNode(true);
+        initGeoItemButton(clone);
+        nearbyContainer.appendChild(clone);
+        closestButton.style.display = 'none';
+    } else {
+        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений</div>`;
+    }
+}
+
+function restoreAllButtonsVisibility() {
+    document.querySelectorAll('.geo-cafe-btn, .geo-temple-btn').forEach(btn => btn.style.display = 'flex');
 }
 
 function resetGeoState() {
     userCoords = null;
     document.getElementById('nearbyItems').innerHTML = `<div class="empty-state">Нажмите "Получить местоположение"</div>`;
-    restoreCafeButtonsVisibility();
-    document.querySelectorAll('.geo-cafe-btn .distance-tag').forEach(tag => tag.remove());
-    document.querySelectorAll('.geo-cafe-btn').forEach(btn => delete btn.dataset.distance);
+    restoreAllButtonsVisibility();
+    document.querySelectorAll('.distance-tag').forEach(tag => tag.remove());
+    document.querySelectorAll('[data-distance]').forEach(el => delete el.dataset.distance);
 }
 
-function initGeoCafeButton(button) {
+function initGeoItemButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
 
@@ -189,7 +215,7 @@ function initGeoCafeButton(button) {
         pressTimer = setTimeout(() => {
             if (!isScrolling) {
                 if (!userCoords) return alert('Сначала определите ваше местоположение.');
-                const destination = geoCafeData[id].coords.join(',');
+                const destination = allGeoData[id].coords.join(',');
                 const origin = userCoords.join(',');
                 window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
             }
@@ -212,16 +238,13 @@ function initGeoCafeButton(button) {
         if (!isScrolling && pressTimer) {
             e.preventDefault();
             clearTimeout(pressTimer);
-            window.open(geoCafeData[id].link, '_blank');
+            window.open(allGeoData[id].link, '_blank');
         }
         pressTimer = null;
     };
 
-    const handlePressCancel = () => {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-    };
-    
+    const handlePressCancel = () => { clearTimeout(pressTimer); pressTimer = null; };
+
     button.removeEventListener('mousedown', handlePressStart);
     button.removeEventListener('mousemove', handlePressMove);
     button.removeEventListener('mouseup', handlePressEnd);
@@ -240,6 +263,7 @@ function initGeoCafeButton(button) {
     button.addEventListener('touchend', handlePressEnd);
     button.addEventListener('touchcancel', handlePressCancel);
 }
+
 
 // -- Остальная логика приложения --
 
