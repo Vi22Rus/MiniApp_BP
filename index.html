@@ -16,9 +16,9 @@
     </div>
     <nav class="tabs">
       <button data-tab="calendar" class="tab-button active">📅 Календарь</button>
-      <button data-tab="tips" class="tab-button">💡 Советы</button>
+      <button data-tab="tips"      class="tab-button">💡 Советы</button>
       <button data-tab="contacts" class="tab-button">📞 Контакты</button>
-      <button id="locateBtn" class="tab-button">📍</button>
+      <button data-tab="nearby"   class="tab-button">📍 Моё местоположение</button>
     </nav>
   </header>
 
@@ -26,7 +26,7 @@
     <section id="calendar" class="tab-content active">
       <div class="filters">
         <button data-filter="all" class="filter-btn active">🌟 Все</button>
-        <button data-filter="sea" class="filter-btn">🏖️ Пляж</button>
+        <button data-filter="sea" class="filter-btn">🏖️ Пляжи</button>
         <button data-filter="sight" class="filter-btn">🎡 Досуг</button>
       </div>
       <div id="activitiesGrid" class="grid">Загрузка…</div>
@@ -91,7 +91,24 @@
     </section>
 
     <section id="contacts" class="tab-content">
-      <div id="contactsGrid" class="grid"></div>
+      <ul class="contacts-list">
+        <li>🚑 <a href="tel:+661669">Скорая помощь: 1669</a></li>
+        <li>🏛️ <a href="tel:+6622434888">Посольство РФ: +66 2 243 4888</a></li>
+        <li>👮 <a href="tel:+66191">Полиция: 191</a></li>
+      </ul>
+    </section>
+
+    <section id="nearby" class="tab-content">
+      <button id="locateBtn" class="locate-button">📍 Получить местоположение</button>
+      
+      <div class="nearby-block">
+        <h3 class="nearby-header">📍 Рядом</h3>
+        <div id="nearbyItems" class="nearby-items">
+          <p class="empty-state">Нажмите "Получить местоположение" чтобы увидеть ближайшие места</p>
+        </div>
+      </div>
+
+      <div id="contactsGrid" class="contacts-col"></div>
     </section>
   </main>
 
