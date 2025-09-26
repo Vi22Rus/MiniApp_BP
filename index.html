@@ -4,36 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Планер Паттайя</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; }
-    .header { background-color: #fff; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .countdown-item { display: inline-flex; align-items: baseline; gap: 5px; }
-    .tabs { margin-top: 10px; }
-    .tab-button { background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 16px; }
-    .tab-button.active { border-bottom: 2px solid #333; }
-    .app { padding: 20px; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .filters { margin-bottom: 15px; }
-    .filter-btn { margin-right: 10px; padding: 8px 12px; border: none; cursor: pointer; }
-    .filter-btn.active { background-color: #333; color: #fff; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 15px; }
-    .must-try ul, .for-ivan ul, .cold-drinks ul, .med-kit ul { list-style: none; padding: 0; }
-    .must-try li, .for-ivan li, .cold-drinks li, .med-kit li { margin-bottom: 8px; }
-    .contacts-list { list-style: none; padding: 0; }
-    .contacts-list li { margin-bottom: 8px; }
-    .locate-button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    .nearby-block { margin-top: 20px; }
-    .nearby-items { margin-top: 10px; }
-    .contacts-col { margin-top: 20px; }
-    .cafe-block { border: 2px solid #ccc; background-color: #f0f8ff; padding: 15px; border-radius: 8px; margin-top: 20px; }
-    .cafe-block h3 { margin-top: 0; font-size: 18px; }
-    .cafe-items { display: flex; gap: 10px; margin-top: 10px; }
-    .cafe-item { flex: 1; padding: 10px; border: 1px solid #bbb; border-radius: 6px; text-align: center; font-weight: bold; }
-    .item-naklua { background-color: #ffe4e1; }
-    .item-pratamnak { background-color: #e6ffe6; }
-    .item-jomtien { background-color: #e6f7ff; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="header">
@@ -45,9 +16,9 @@
     </div>
     <nav class="tabs">
       <button data-tab="calendar" class="tab-button active">📅 Календарь</button>
-      <button data-tab="tips" class="tab-button">💡 Советы</button>
+      <button data-tab="tips"      class="tab-button">💡 Советы</button>
       <button data-tab="contacts" class="tab-button">📞 Контакты</button>
-      <button data-tab="nearby" class="tab-button">📍 Гео</button>
+      <button data-tab="nearby"   class="tab-button">📍 Моё местоположение</button>
     </nav>
   </header>
 
@@ -138,15 +109,6 @@
       </div>
 
       <div id="contactsGrid" class="contacts-col"></div>
-
-      <div class="cafe-block">
-        <h3>КАФЕ</h3>
-        <div class="cafe-items">
-          <div class="cafe-item item-naklua">Наклуа</div>
-          <div class="cafe-item item-pratamnak">Пратамнак</div>
-          <div class="cafe-item item-jomtien">Джомтьен</div>
-        </div>
-      </div>
     </section>
   </main>
 
@@ -160,5 +122,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
-<!-- index.html v1.5.3, 154 lines -->
