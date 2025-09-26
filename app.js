@@ -1,30 +1,26 @@
-// Version: 1.0.7
+// Version: 1.0.8
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (337 строк)
-// Дом (Club Royal)
+// Версия скрипта: app.js (315 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
-
-// Глобальные переменные
 let userCoords = null;
-let activeGeoFilter = 'naklua'; // Фильтр по умолчанию
+let activeGeoFilter = 'naklua';
 
-// Данные по кафе
 const geoCafeData = [
-    { link: "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8", coords: [12.965314728870327, 100.88574547083675] },
-    { link: "https://maps.app.goo.gl/fCCogyeGKWqJca8g7", coords: [12.964959752753911, 100.88655104216504] },
-    { link: "https://maps.app.goo.gl/Fba5C2aJVW7YxLz98", coords: [12.965151141707688, 100.88674436342762] },
-    { link: "https://maps.app.goo.gl/UagUbAPDmdJBAbCJ6", coords: [12.964288806741925, 100.88816176884599] },
-    { link: "https://maps.app.goo.gl/dXaCX7UgmriNPEpm8", coords: [12.96424632513826, 100.88873268926864] },
-    { link: "https://maps.app.goo.gl/Zn15kwEB5i9bfJGL6", coords: [12.964275050492303, 100.88867431363093] },
-    { link: "https://maps.app.goo.gl/VyE7D7gwHRL4nMNc6", coords: [12.967898770765563, 100.89741326647155] },
-    { link: "https://maps.app.goo.gl/DwNiL8531uQVURRZ9", coords: [12.973265034689499, 100.90657393095435] },
-    { link: "https://maps.app.goo.gl/VFFio7Q6t9qgJk4A9", coords: [12.968006641294641, 100.89704079447756] },
-    { link: "https://maps.app.goo.gl/UpRFKn6nAgTa1sNS8", coords: [12.96748945294801, 100.88317093728782] },
-    { link: "https://maps.app.goo.gl/fn868NKBZYGE4tUJ7", coords: [12.892621251136807, 100.87323076484746] },
-    { link: "https://maps.app.goo.gl/d6Wp4s38aTAPBCFz9", coords: [12.909346981806133, 100.85799998332298] },
-    { link: "https://maps.app.goo.gl/LGssrnWfy3KEZJ9u6", coords: [12.909615777640497, 100.86413037030111] },
-    { link: "https://maps.app.goo.gl/zPpiXtiNQts6f1Tb6", coords: [12.909461552901218, 100.86416750079316] },
-    { link: "https://maps.app.goo.gl/rFeQbBftxVTd2M6j9", coords: [12.91753238629045, 100.86705154538753] }
+    { link: "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8", coords: [12.965314728870327, 100.88574547083675], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/fCCogyeGKWqJca8g7", coords: [12.964959752753911, 100.88655104216504], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/Fba5C2aJVW7YxLz98", coords: [12.965151141707688, 100.88674436342762], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/UagUbAPDmdJBAbCJ6", coords: [12.964288806741925, 100.88816176884599], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/dXaCX7UgmriNPEpm8", coords: [12.96424632513826, 100.88873268926864], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/Zn15kwEB5i9bfJGL6", coords: [12.964275050492303, 100.88867431363093], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/VyE7D7gwHRL4nMNc6", coords: [12.967898770765563, 100.89741326647155], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/DwNiL8531uQVURRZ9", coords: [12.973265034689499, 100.90657393095435], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/VFFio7Q6t9qgJk4A9", coords: [12.968006641294641, 100.89704079447756], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/UpRFKn6nAgTa1sNS8", coords: [12.96748945294801, 100.88317093728782], subblock: 'naklua' },
+    { link: "https://maps.app.goo.gl/fn868NKBZYGE4tUJ7", coords: [12.892621251136807, 100.87323076484746], subblock: 'jomtien' },
+    { link: "https://maps.app.goo.gl/d6Wp4s38aTAPBCFz9", coords: [12.909346981806133, 100.85799998332298], subblock: 'pratamnak' },
+    { link: "https://maps.app.goo.gl/LGssrnWfy3KEZJ9u6", coords: [12.909615777640497, 100.86413037030111], subblock: 'pratamnak' },
+    { link: "https://maps.app.goo.gl/zPpiXtiNQts6f1Tb6", coords: [12.909461552901218, 100.86416750079316], subblock: 'pratamnak' },
+    { link: "https://maps.app.goo.gl/rFeQbBftxVTd2M6j9", coords: [12.91753238629045, 100.86705154538753], subblock: 'pratamnak' }
 ];
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
@@ -41,14 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         initApp();
     } catch (e) {
-        console.error("Ошибка при инициализации приложения:", e);
-        alert("Произошла ошибка при загрузке приложения. Пожалуйста, проверьте консоль.");
+        console.error("Критическая ошибка при инициализации:", e);
     }
 });
 
 function initApp() {
     initTabs();
-    initFilters();
+    initCalendarFilters();
     initGeoFeatures();
     
     updateCountdown();
@@ -66,15 +61,14 @@ function initApp() {
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-button, .tab-content').forEach(el => el.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(btn.dataset.tab).classList.add('active');
         });
     });
 }
 
-function initFilters() {
+function initCalendarFilters() {
     document.querySelectorAll('.filter-btn').forEach(f => {
         f.addEventListener('click', () => {
             document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
@@ -88,15 +82,11 @@ function initFilters() {
     document.querySelector(`.filter-btn[data-filter="${saved}"]`)?.click();
 }
 
-// --- Логика для вкладки "Гео" ---
-
 function initGeoFeatures() {
-    // Кнопка "Получить местоположение"
     document.getElementById('locateBtn').addEventListener('click', () => {
         if (!navigator.geolocation) {
-            alert('Геолокация не поддерживается вашим браузером.');
-            resetGeoState();
-            return;
+            alert('Геолокация не поддерживается.');
+            return resetGeoState();
         }
         navigator.geolocation.getCurrentPosition(pos => {
             userCoords = [pos.coords.latitude, pos.coords.longitude];
@@ -107,19 +97,15 @@ function initGeoFeatures() {
         });
     });
 
-    // Кнопки-фильтры районов
     document.querySelectorAll('.geo-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.geo-filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeGeoFilter = btn.dataset.filter;
-            if (userCoords) {
-                updateGeoView();
-            }
+            if (userCoords) updateGeoView();
         });
     });
 
-    // Кнопки кафе
     document.querySelectorAll('.geo-cafe-btn').forEach(initGeoCafeButton);
 }
 
@@ -156,7 +142,7 @@ function sortCafeSubblocks() {
 }
 
 function applyGeoFilter() {
-    restoreAllCafeButtons();
+    restoreCafeButtonsVisibility();
     const nearbyContainer = document.getElementById('nearbyItems');
     nearbyContainer.innerHTML = '';
 
@@ -165,32 +151,23 @@ function applyGeoFilter() {
     
     const closestButton = targetSubblock.querySelector('.geo-cafe-btn');
     if (closestButton) {
-        nearbyContainer.appendChild(closestButton);
+        const clone = closestButton.cloneNode(true);
+        initGeoCafeButton(clone); // Важно переинициализировать события на клоне
+        nearbyContainer.appendChild(clone);
+        closestButton.style.display = 'none'; // Скрываем оригинал
     } else {
         nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений в этом районе</div>`;
     }
 }
 
-function restoreAllCafeButtons() {
-    document.querySelectorAll('.geo-cafe-btn').forEach(button => {
-        const id = parseInt(button.dataset.id, 10);
-        const parentSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${getSubblockNameForButton(id)}"]`);
-        if (parentSubblock && !parentSubblock.contains(button)) {
-            parentSubblock.appendChild(button);
-        }
-    });
-}
-
-function getSubblockNameForButton(id) {
-    const btn = document.querySelector(`.geo-cafe-btn[data-id="${id}"]`);
-    const subblock = btn?.closest('.cafe-sub-block');
-    return subblock?.dataset.subblockName;
+function restoreCafeButtonsVisibility() {
+    document.querySelectorAll('.geo-cafe-btn').forEach(btn => btn.style.display = 'flex');
 }
 
 function resetGeoState() {
     userCoords = null;
-    restoreAllCafeButtons();
     document.getElementById('nearbyItems').innerHTML = `<div class="empty-state">Нажмите "Получить местоположение"</div>`;
+    restoreCafeButtonsVisibility();
     document.querySelectorAll('.geo-cafe-btn .distance-tag').forEach(tag => tag.remove());
     document.querySelectorAll('.geo-cafe-btn').forEach(btn => delete btn.dataset.distance);
 }
@@ -200,34 +177,142 @@ function initGeoCafeButton(button) {
     if (isNaN(id)) return;
     
     let pressTimer;
-    let isLongPress = false;
+    let longPressTriggered = false;
 
     const startPress = (e) => {
         e.preventDefault();
-        isLongPress = false;
+        longPressTriggered = false;
         pressTimer = setTimeout(() => {
-            isLongPress = true;
-            if (!userCoords) {
-                alert('Сначала определите ваше местоположение.');
-                return;
-            }
-            if (geoCafeData[id]) {
-                const destination = geoCafeData[id].coords.join(',');
-                const origin = userCoords.join(',');
-                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
-            }
+            longPressTriggered = true;
+            if (!userCoords) return alert('Сначала определите ваше местоположение.');
+            const destination = geoCafeData[id].coords.join(',');
+            const origin = userCoords.join(',');
+            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
         }, 800);
     };
 
-    const cancelPress = (e) => {
+    const endPress = (e) => {
         e.preventDefault();
         clearTimeout(pressTimer);
-        if (!isLongPress) {
-            if (geoCafeData[id]) {
-                window.open(geoCafeData[id].link, '_blank');
-            }
+        if (!longPressTriggered) {
+            window.open(geoCafeData[id].link, '_blank');
         }
     };
     
-    // Удаляем старые обработчики, чтобы избежать дублирования
-    button.removeEventListener('mousedown', start
+    // Очистка старых обработчиков, чтобы избежать дублирования
+    button.removeEventListener('mousedown', startPress);
+    button.removeEventListener('mouseup', endPress);
+    button.removeEventListener('touchstart', startPress);
+    button.removeEventListener('touchend', endPress);
+
+    // Навешивание новых
+    button.addEventListener('mousedown', startPress);
+    button.addEventListener('mouseup', endPress);
+    button.addEventListener('touchstart', startPress, { passive: false });
+    button.addEventListener('touchend', endPress);
+}
+
+// -- Остальная логика приложения --
+
+const kidsLeisure = [
+    { name: 'Mini Siam', date: '01.01.2026', coords: { lat: 12.9554157, lng: 100.9088538 }, tips: 'Парк миниатюр.', type: 'sight' },
+    { name: 'Деревня слонов', date: '04.01.2026', coords: { lat: 12.91604299, lng: 100.93883441 }, tips: 'Шоу слонов (14:30–16:00).', type: 'sight' },
+    { name: 'Дельфинариум', date: '07.01.2026', coords: { lat: 12.95222191, lng: 100.93617557 }, tips: 'Шоу дельфинов в 15:00.', type: 'sight' },
+    { name: 'Сад Нонг Нуч', date: '11.01.2026', coords: { lat: 12.76575858, lng: 100.93505629 }, tips: 'Шоу слонов и сад.', type: 'sight' },
+    { name: 'Музей искусств 3D', date: '13.01.2026', coords: { lat: 12.94832322, lng: 100.88976288 }, tips: 'Интерактивные фотозоны.', type: 'sight' },
+    { name: 'Аюттайя', date: '16.01.2026', coords: { lat: 14.35741905, lng: 100.56757512 }, tips: 'Древняя столица.', type: 'sight' },
+    { name: 'Зоопарк Кхао Кхео', date: '19.01.2026', coords: { lat: 13.21500644, lng: 101.05700099 }, tips: 'Открытый зоопарк.', type: 'sight' },
+    { name: 'Плавучий рынок', date: '22.01.2026', coords: { lat: 12.86799376, lng: 100.90469404 }, tips: 'Торговля на лодках.', type: 'sight' }
+];
+
+function generateBeachDays() {
+    const used = kidsLeisure.map(x => x.date), days = [];
+    const start = new Date('2025-12-29'), end = new Date('2026-01-26');
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const date = d.toLocaleDateString('ru-RU');
+        if (!used.includes(date)) {
+            days.push({ type: 'sea', name: 'Пляжинг', date, coords: null, tips: 'Отдых на море.' });
+        }
+    }
+    return days;
+}
+
+const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b) => new Date(a.date.split('.').reverse().join('-')) - new Date(b.date.split('.').reverse().join('-')));
+
+function updateCountdown() {
+    const startTrip = new Date('2025-12-29');
+    const now = new Date();
+    const days = Math.ceil((startTrip - now) / 864e5);
+    document.getElementById('countdownText').textContent = days > 0 ? 'До поездки:' : 'Поездка!';
+    document.getElementById('days').textContent = days > 0 ? days : '✔';
+    document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
+}
+
+function renderActivities(list) {
+    const grid = document.getElementById('activitiesGrid');
+    if (!grid) return;
+    grid.innerHTML = list.map(a => {
+        let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
+        const prices = {
+            'Mini Siam': `<p class="price-tag">~230฿/130฿</p>`, 'Деревня слонов': `<p class="price-tag">~650฿/500฿</p>`,
+            'Дельфинариум': `<p class="price-tag">~630฿/450฿</p>`, 'Сад Нонг Нуч': `<p class="price-tag">~420฿/320฿</p>`,
+            'Музей искусств 3D': `<p class="price-tag">~235฿/180฿</p>`, 'Зоопарк Кхао Кхео': `<p class="price-tag">~350฿/120฿</p>`,
+        };
+        const priceLine = prices[a.name] || '';
+        const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
+        return `<div class="card"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : ''}</div>`;
+    }).join('');
+    bindDetailButtons();
+}
+
+function bindDetailButtons() {
+    document.querySelectorAll('.details').forEach(btn => {
+        btn.onclick = () => {
+            const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
+            if (act) showModal(act);
+        };
+    });
+}
+
+function showModal(place) {
+    let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
+    if (place.tips) content += `<p>💡 ${place.tips}</p>`;
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    const to = `${place.coords.lat},${place.coords.lng}`;
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+    if (userCoords) {
+        const userFrom = `${userCoords[0]},${userCoords[1]}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+        const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
+        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+    }
+    document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+const points = [ { name: 'MO Play Kidz', coords: {lat: 12.935051, lng: 100.882722}, icon: '👶' } ];
+
+function renderContacts(list) {
+    const grid = document.getElementById('contactsGrid');
+    if (!grid) return;
+    let items = list.slice();
+    if (userCoords) {
+        items.map(p => p.distance = parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng]))).sort((a,b) => a.distance - b.distance);
+    }
+    grid.innerHTML = items.map(p => {
+        const distTag = p.distance ? `<span class="distance-tag">≈${p.distance.toFixed(1)} км</span>` : '';
+        return `<button class="contact-btn" onclick='showContactModal(${JSON.stringify(p)})'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
+    }).join('');
+}
+
+function getIconForActivity(name) {
+    const icons = {
+        'Mini Siam': '🏛️', 'Деревня слонов': '🐘', 'Дельфинариум': '🐬', 'Сад Нонг Нуч': '🌺',
+        'Музей искусств 3D': '🎨', 'Аюттайя': '⛩️', 'Зоопарк Кхао Кхео': '🦒', 'Плавучий рынок': '🛶'
+    };
+    return icons[name] || '📍';
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
