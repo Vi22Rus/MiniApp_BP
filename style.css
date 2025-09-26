@@ -1,6 +1,6 @@
-/* Version: 1.0.7 */
+/* Version: 1.0.8 */
 /* Last updated: 2025-09-26 */
-/* Версия файла: style.css (256 строк) */
+/* Версия файла: style.css (277 строк) */
 :root {
   --bg: #fff;
   --text: #0b1220;
@@ -43,14 +43,13 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 .modal-content { background:#fff; border-radius:var(--radius); padding:var(--gap); width:90%; max-width:360px; position:relative; }
 .close-btn { position:absolute; top:8px; right:8px; background:#d81b60; color:#fff; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; }
 
-/* Советы */
 .advice-block ul { list-style:none; padding:0; }
 .advice-block li { display:flex; flex-wrap:wrap; align-items: flex-start; margin-bottom:12px; }
 .advice-block li .icon { margin-right:8px; line-height: 1.4; }
 .advice-block li strong { line-height: 1.4; }
 .advice-block li .description {
   flex-basis: 100%;
-  padding-left: 28px; /* Отступ для выравнивания с текстом */
+  padding-left: 28px;
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -66,13 +65,10 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 .med-kit { border-color:#8D6E63; background:#EFEBE9; }
 .med-kit h2 { color:#5D4037; }
 
-/* Контакты */
 .contacts-list { list-style:none; padding:0; }
 .contacts-list li { margin-bottom:12px; }
 .contacts-list a { color:var(--accent); text-decoration:none; }
-/* Моё местоположение */
 .locate-button { width:100%; padding:12px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; margin-bottom:var(--gap); font-size:1rem; }
-/* Блок "Рядом" */
 .nearby-block {
   border: 2px solid #4CAF50;
   border-radius: var(--radius);
@@ -125,14 +121,12 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   color: var(--muted);
   font-weight: 600;
 }
-/* Основной список мест */
 .contacts-col { display:flex; flex-direction:column; gap:12px; }
 .contact-btn { display:flex; align-items:center; gap:8px; padding:8px; border-radius:12px; background:var(--surface); border:none; cursor:pointer; transition:0.2s; }
 .contact-btn .icon { font-size:1.2rem; }
 .contact-btn .distance-tag { margin-left:auto; color:var(--muted); font-size:0.9rem; }
 .contact-btn:hover { background:var(--accent); color:#fff; }
 
-/* Блок Кафе */
 .cafe-block {
   border: 2px solid #D2B48C;
   background-color: #FAF3E0;
@@ -170,7 +164,6 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   background-color: #FFF5EE;
 }
 
-/* Стили для кнопок кафе в Гео */
 .geo-cafe-btn {
   width: 100%;
   padding: 10px;
@@ -198,7 +191,6 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
     font-weight: 600;
 }
 
-/* Стили для фильтров гео */
 .geo-filters {
     display: flex;
     gap: 8px;
@@ -219,4 +211,27 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 .geo-filter-btn.active {
     background-color: var(--accent);
     color: var(--bg);
+}
+
+.geo-block {
+    border: 2px solid;
+    border-radius: var(--radius);
+    padding: var(--gap);
+    margin-top: var(--gap);
+}
+.geo-block h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.geo-temples {
+    border-color: #FACC15; /* Желтый */
+    background-color: #FEFCE8;
+}
+.geo-playgrounds {
+    border-color: #A78BFA; /* Фиолетовый */
+    background-color: #F5F3FF;
+}
+.geo-parks {
+    border-color: #34D399; /* Зеленый */
+    background-color: #ECFDF5;
 }
