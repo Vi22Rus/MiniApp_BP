@@ -1,6 +1,6 @@
-/* Version: 1.0.2 */
+/* Version: 1.0.3 */
 /* Last updated: 2025-09-26 */
-/* Версия файла: style.css (214 строк) */
+/* Версия файла: style.css (215 строк) */
 :root {
   --bg: #fff;
   --text: #0b1220;
@@ -147,6 +147,9 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   border-radius: 8px;
   padding: var(--gap);
   margin-bottom: var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .cafe-sub-block:last-child {
   margin-bottom: 0;
@@ -165,12 +168,6 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 }
 
 /* Стили для кнопок кафе в Гео */
-.geo-cafe-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: var(--gap);
-}
 .geo-cafe-btn {
   width: 100%;
   padding: 10px;
@@ -180,6 +177,8 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   text-align: left;
   cursor: pointer;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
 }
 .geo-cafe-btn .rating {
   color: #8B0000; /* Темно-красный */
@@ -188,4 +187,10 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 }
 .geo-cafe-btn strong {
   font-weight: bold;
+}
+.geo-cafe-btn .distance-tag {
+    margin-left: auto;
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 600;
 }
