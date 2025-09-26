@@ -1,6 +1,6 @@
-// Version: 1.0.9
+// Version: 1.1.0
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (318 строк)
+// Версия скрипта: app.js (315 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua';
@@ -221,7 +221,7 @@ function initGeoCafeButton(button) {
         clearTimeout(pressTimer);
         pressTimer = null;
     };
-
+    
     button.removeEventListener('mousedown', handlePressStart);
     button.removeEventListener('mousemove', handlePressMove);
     button.removeEventListener('mouseup', handlePressEnd);
@@ -240,7 +240,6 @@ function initGeoCafeButton(button) {
     button.addEventListener('touchend', handlePressEnd);
     button.addEventListener('touchcancel', handlePressCancel);
 }
-
 
 // -- Остальная логика приложения --
 
@@ -284,9 +283,12 @@ function renderActivities(list) {
     grid.innerHTML = list.map(a => {
         let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
         const prices = {
-            'Mini Siam': `<p class="price-tag">~230฿/130฿</p>`, 'Деревня слонов': `<p class="price-tag">~650฿/500฿</p>`,
-            'Дельфинариум': `<p class="price-tag">~630฿/450฿</p>`, 'Сад Нонг Нуч': `<p class="price-tag">~420฿/320฿</p>`,
-            'Музей искусств 3D': `<p class="price-tag">~235฿/180฿</p>`, 'Зоопарк Кхао Кхео': `<p class="price-tag">~350฿/120฿</p>`,
+            'Mini Siam': `<p class="price-tag">Взрослый 230 ฿ / Детский 130 ฿</p>`,
+            'Деревня слонов': `<p class="price-tag">Взрослый 650 ฿ / Детский 500 ฿</p>`,
+            'Дельфинариум': `<p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>`,
+            'Сад Нонг Нуч': `<p class="price-tag">Взрослый 420 ฿ / Детский 320 ฿</p>`,
+            'Музей искусств 3D': `<p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>`,
+            'Зоопарк Кхао Кхео': `<p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>`,
         };
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
