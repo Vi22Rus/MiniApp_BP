@@ -1,10 +1,9 @@
-// Version: 1.2.1
+// Version: 1.2.2
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (360 строк)
+// Версия скрипта: app.js (350 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
-let activeMainFilter = 'cafe';
-let activeSubFilter = 'naklua';
+let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
 
 const allGeoData = [
     // Кафе (0-14)
@@ -110,22 +109,11 @@ function initGeoFeatures() {
         });
     });
 
-    document.querySelectorAll('.geo-main-filter-btn').forEach(btn => {
+    document.querySelectorAll('.geo-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.geo-main-filter-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.geo-filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            activeMainFilter = btn.dataset.mainFilter;
-            
-            document.getElementById('cafeFilters').classList.toggle('active', activeMainFilter === 'cafe');
-            if(userCoords) updateGeoView();
-        });
-    });
-
-    document.querySelectorAll('.geo-sub-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.geo-sub-filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeSubFilter = btn.dataset.subFilter;
+            activeGeoFilter = btn.dataset.filter;
             if (userCoords) updateGeoView();
         });
     });
@@ -136,7 +124,7 @@ function initGeoFeatures() {
 function updateGeoView() {
     updateAllDistances();
     sortAllGeoBlocks();
-    applyNearbyFilter();
+    applyGeoFilter();
 }
 
 function updateAllDistances() {
@@ -161,7 +149,7 @@ function sortAllGeoBlocks() {
     ['naklua', 'pratamnak', 'jomtien'].forEach(subblockName => {
         const container = document.querySelector(`.cafe-sub-block[data-subblock-name="${subblockName}"]`);
         if(container) {
-            const buttons = Array.from(container.querySelectorAll('.geo-item-btn[data-type="cafe"]'));
+            const buttons = Array.from(container.querySelectorAll('.geo-item-btn'));
             buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
             buttons.forEach(button => container.appendChild(button));
         }
@@ -169,24 +157,19 @@ function sortAllGeoBlocks() {
 
     const templesContainer = document.querySelector('.geo-temples .geo-items-container');
     if(templesContainer) {
-        const buttons = Array.from(templesContainer.querySelectorAll('.geo-item-btn[data-type="temple"]'));
+        const buttons = Array.from(templesContainer.querySelectorAll('.geo-item-btn'));
         buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
         buttons.forEach(button => templesContainer.appendChild(button));
     }
 }
 
-function applyNearbyFilter() {
+function applyGeoFilter() {
     restoreAllButtonsVisibility();
     const nearbyContainer = document.getElementById('nearbyItems');
     nearbyContainer.innerHTML = '';
-
-    let closestButton;
-    if (activeMainFilter === 'cafe') {
-        const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeSubFilter}"]`);
-        closestButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
-    } else { // temples
-        closestButton = document.querySelector('.geo-temples .geo-item-btn');
-    }
+    
+    const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeGeoFilter}"]`);
+    const closestButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
     
     if (closestButton) {
         const clone = closestButton.cloneNode(true);
@@ -194,7 +177,7 @@ function applyNearbyFilter() {
         nearbyContainer.appendChild(clone);
         closestButton.style.display = 'none';
     } else {
-        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений</div>`;
+        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений в этом районе</div>`;
     }
 }
 
