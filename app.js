@@ -1,6 +1,6 @@
-// Version: 1.2.2
+// Version: 1.2.3
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (350 строк)
+// Версия скрипта: app.js (364 строки)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
@@ -167,17 +167,31 @@ function applyGeoFilter() {
     restoreAllButtonsVisibility();
     const nearbyContainer = document.getElementById('nearbyItems');
     nearbyContainer.innerHTML = '';
-    
+
+    // Находим ближайшее кафе в зависимости от фильтра
     const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeGeoFilter}"]`);
-    const closestButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
-    
-    if (closestButton) {
-        const clone = closestButton.cloneNode(true);
+    const closestCafeButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
+
+    // Находим ближайший храм (он всегда первый в своем отсортированном контейнере)
+    const templesContainer = document.querySelector('.geo-temples .geo-items-container');
+    const closestTempleButton = templesContainer ? templesContainer.querySelector('.geo-item-btn') : null;
+
+    if (closestCafeButton) {
+        const clone = closestCafeButton.cloneNode(true);
         initGeoItemButton(clone);
         nearbyContainer.appendChild(clone);
-        closestButton.style.display = 'none';
-    } else {
-        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений в этом районе</div>`;
+        closestCafeButton.style.display = 'none';
+    }
+
+    if (closestTempleButton) {
+        const clone = closestTempleButton.cloneNode(true);
+        initGeoItemButton(clone);
+        nearbyContainer.appendChild(clone);
+        closestTempleButton.style.display = 'none';
+    }
+    
+    if (!closestCafeButton && !closestTempleButton) {
+        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений</div>`;
     }
 }
 
