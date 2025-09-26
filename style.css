@@ -1,6 +1,6 @@
-/* Version: 1.0.1 */
+/* Version: 1.0.2 */
 /* Last updated: 2025-09-26 */
-/* Версия файла: style.css (187 строк) */
+/* Версия файла: style.css (214 строк) */
 :root {
   --bg: #fff;
   --text: #0b1220;
@@ -162,4 +162,30 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 .cafe-sub-block.jomtien {
   border-color: #FFDAB9;
   background-color: #FFF5EE;
+}
+
+/* Стили для кнопок кафе в Гео */
+.geo-cafe-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--gap);
+}
+.geo-cafe-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.geo-cafe-btn .rating {
+  color: #8B0000; /* Темно-красный */
+  font-weight: bold;
+  margin-right: 8px;
+}
+.geo-cafe-btn strong {
+  font-weight: bold;
 }
