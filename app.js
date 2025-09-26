@@ -1,4 +1,4 @@
-// Version: 1.2.0
+// Version: 1.2.
 // Last updated: 2025-09-26
 // Версия скрипта: app.js (315 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
