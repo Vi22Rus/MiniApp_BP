@@ -1,6 +1,6 @@
-/* Version: 1.0.8 */
+/* Version: 1.0.9 */
 /* Last updated: 2025-09-26 */
-/* Версия файла: style.css (277 строк) */
+/* Версия файла: style.css (315 строк) */
 :root {
   --bg: #fff;
   --text: #0b1220;
@@ -73,7 +73,6 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   border: 2px solid #4CAF50;
   border-radius: var(--radius);
   padding: var(--gap);
-  margin-bottom: var(--gap);
   background: #E8F5E8;
   min-height: 80px;
   transition: all 0.3s ease;
@@ -164,7 +163,7 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   background-color: #FFF5EE;
 }
 
-.geo-cafe-btn {
+.geo-item-btn {
   width: 100%;
   padding: 10px;
   border: 1px solid #ccc;
@@ -176,28 +175,29 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   display: flex;
   align-items: center;
 }
-.geo-cafe-btn .rating {
+.geo-item-btn .rating {
   color: #8B0000;
   font-weight: bold;
   margin-right: 8px;
 }
-.geo-cafe-btn strong {
+.geo-item-btn strong {
   font-weight: bold;
 }
-.geo-cafe-btn .distance-tag {
+.geo-item-btn .distance-tag {
     margin-left: auto;
     font-size: 0.9rem;
     color: var(--muted);
     font-weight: 600;
 }
 
-.geo-filters {
+/* Фильтры Гео */
+.geo-main-filters {
     display: flex;
     gap: 8px;
     margin-top: var(--gap);
-    margin-bottom: var(--gap);
+    margin-bottom: 8px;
 }
-.geo-filter-btn {
+.geo-main-filter-btn, .geo-sub-filter-btn {
     flex: 1;
     padding: 10px;
     border-radius: var(--radius);
@@ -208,11 +208,20 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
     font-weight: 600;
     transition: background-color 0.2s, color 0.2s;
 }
-.geo-filter-btn.active {
+.geo-main-filter-btn.active, .geo-sub-filter-btn.active {
     background-color: var(--accent);
     color: var(--bg);
 }
+.geo-sub-filters {
+    display: none;
+    gap: 8px;
+    margin-bottom: var(--gap);
+}
+.geo-sub-filters.active {
+    display: flex;
+}
 
+/* Блоки Гео */
 .geo-block {
     border: 2px solid;
     border-radius: var(--radius);
@@ -222,6 +231,12 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 .geo-block h3 {
     margin: 0;
     font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+.geo-block .geo-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 .geo-temples {
     border-color: #FACC15;
