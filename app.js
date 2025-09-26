@@ -1,6 +1,6 @@
-// Version: 1.0.8
+// Version: 1.0.9
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (315 строк)
+// Версия скрипта: app.js (318 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua';
@@ -152,9 +152,9 @@ function applyGeoFilter() {
     const closestButton = targetSubblock.querySelector('.geo-cafe-btn');
     if (closestButton) {
         const clone = closestButton.cloneNode(true);
-        initGeoCafeButton(clone); // Важно переинициализировать события на клоне
+        initGeoCafeButton(clone);
         nearbyContainer.appendChild(clone);
-        closestButton.style.display = 'none'; // Скрываем оригинал
+        closestButton.style.display = 'none';
     } else {
         nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений в этом районе</div>`;
     }
@@ -175,42 +175,72 @@ function resetGeoState() {
 function initGeoCafeButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
-    
-    let pressTimer;
-    let longPressTriggered = false;
 
-    const startPress = (e) => {
-        e.preventDefault();
-        longPressTriggered = false;
+    let pressTimer = null;
+    let startX, startY;
+    let isScrolling = false;
+    const MOVE_THRESHOLD = 10;
+
+    const handlePressStart = (e) => {
+        isScrolling = false;
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
         pressTimer = setTimeout(() => {
-            longPressTriggered = true;
-            if (!userCoords) return alert('Сначала определите ваше местоположение.');
-            const destination = geoCafeData[id].coords.join(',');
-            const origin = userCoords.join(',');
-            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
+            if (!isScrolling) {
+                if (!userCoords) return alert('Сначала определите ваше местоположение.');
+                const destination = geoCafeData[id].coords.join(',');
+                const origin = userCoords.join(',');
+                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
+            }
+            pressTimer = null;
         }, 800);
     };
 
-    const endPress = (e) => {
-        e.preventDefault();
-        clearTimeout(pressTimer);
-        if (!longPressTriggered) {
-            window.open(geoCafeData[id].link, '_blank');
+    const handlePressMove = (e) => {
+        if (isScrolling || !pressTimer) return;
+        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        if (Math.abs(currentX - startX) > MOVE_THRESHOLD || Math.abs(currentY - startY) > MOVE_THRESHOLD) {
+            isScrolling = true;
+            clearTimeout(pressTimer);
+            pressTimer = null;
         }
     };
-    
-    // Очистка старых обработчиков, чтобы избежать дублирования
-    button.removeEventListener('mousedown', startPress);
-    button.removeEventListener('mouseup', endPress);
-    button.removeEventListener('touchstart', startPress);
-    button.removeEventListener('touchend', endPress);
 
-    // Навешивание новых
-    button.addEventListener('mousedown', startPress);
-    button.addEventListener('mouseup', endPress);
-    button.addEventListener('touchstart', startPress, { passive: false });
-    button.addEventListener('touchend', endPress);
+    const handlePressEnd = (e) => {
+        if (!isScrolling && pressTimer) {
+            e.preventDefault();
+            clearTimeout(pressTimer);
+            window.open(geoCafeData[id].link, '_blank');
+        }
+        pressTimer = null;
+    };
+
+    const handlePressCancel = () => {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    };
+
+    button.removeEventListener('mousedown', handlePressStart);
+    button.removeEventListener('mousemove', handlePressMove);
+    button.removeEventListener('mouseup', handlePressEnd);
+    button.removeEventListener('mouseleave', handlePressCancel);
+    button.addEventListener('mousedown', handlePressStart);
+    button.addEventListener('mousemove', handlePressMove);
+    button.addEventListener('mouseup', handlePressEnd);
+    button.addEventListener('mouseleave', handlePressCancel);
+
+    button.removeEventListener('touchstart', handlePressStart);
+    button.removeEventListener('touchmove', handlePressMove);
+    button.removeEventListener('touchend', handlePressEnd);
+    button.removeEventListener('touchcancel', handlePressCancel);
+    button.addEventListener('touchstart', handlePressStart, { passive: true });
+    button.addEventListener('touchmove', handlePressMove, { passive: true });
+    button.addEventListener('touchend', handlePressEnd);
+    button.addEventListener('touchcancel', handlePressCancel);
 }
+
 
 // -- Остальная логика приложения --
 
@@ -297,7 +327,8 @@ function renderContacts(list) {
     if (!grid) return;
     let items = list.slice();
     if (userCoords) {
-        items.map(p => p.distance = parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng]))).sort((a,b) => a.distance - b.distance);
+        items.forEach(p => p.distance = parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng])));
+        items.sort((a,b) => a.distance - b.distance);
     }
     grid.innerHTML = items.map(p => {
         const distTag = p.distance ? `<span class="distance-tag">≈${p.distance.toFixed(1)} км</span>` : '';
