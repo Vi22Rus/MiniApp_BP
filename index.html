@@ -4,7 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Планер Паттайя</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; }
+    .header { background-color: #fff; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .countdown-item { display: inline-flex; align-items: baseline; gap: 5px; }
+    .tabs { margin-top: 10px; }
+    .tab-button { background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 16px; }
+    .tab-button.active { border-bottom: 2px solid #333; }
+    .app { padding: 20px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .filters { margin-bottom: 15px; }
+    .filter-btn { margin-right: 10px; padding: 8px 12px; border: none; cursor: pointer; }
+    .filter-btn.active { background-color: #333; color: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 15px; }
+    .must-try ul, .for-ivan ul, .cold-drinks ul, .med-kit ul { list-style: none; padding: 0; }
+    .must-try li, .for-ivan li, .cold-drinks li, .med-kit li { margin-bottom: 8px; }
+    .contacts-list { list-style: none; padding: 0; }
+    .contacts-list li { margin-bottom: 8px; }
+    .locate-button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    .nearby-block { margin-top: 20px; }
+    .nearby-items { margin-top: 10px; }
+    .contacts-col { margin-top: 20px; }
+    .cafe-block { border: 2px solid #ccc; background-color: #f0f8ff; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    .cafe-block h3 { margin-top: 0; font-size: 18px; }
+    .cafe-items { display: flex; gap: 10px; margin-top: 10px; }
+    .cafe-item { flex: 1; padding: 10px; border: 1px solid #bbb; border-radius: 6px; text-align: center; font-weight: bold; }
+    .item-naklua { background-color: #ffe4e1; }
+    .item-pratamnak { background-color: #e6ffe6; }
+    .item-jomtien { background-color: #e6f7ff; }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -90,9 +119,17 @@
       </div>
     </section>
 
+    <section id="contacts" class="tab-content">
+      <ul class="contacts-list">
+        <li>🚑 <a href="tel:+661669">Скорая помощь: 1669</a></li>
+        <li>🏛️ <a href="tel:+6622434888">Посольство РФ: +66 2 243 4888</a></li>
+        <li>👮 <a href="tel:+66191">Полиция: 191</a></li>
+      </ul>
+    </section>
+
     <section id="nearby" class="tab-content">
       <button id="locateBtn" class="locate-button">📍 Получить местоположение</button>
-
+      
       <div class="nearby-block">
         <h3 class="nearby-header">📍 Рядом</h3>
         <div id="nearbyItems" class="nearby-items">
@@ -124,4 +161,4 @@
 </body>
 </html>
 
-<!-- index.html v1.5.1, 132 lines -->
+<!-- index.html v1.5.3, 154 lines -->
