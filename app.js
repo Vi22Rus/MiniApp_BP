@@ -1,6 +1,6 @@
-// Version: 1.0.1
+// Version: 1.0.2
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (219 строк)
+// Версия скрипта: app.js (252 строки)
 // Дом (Club Royal)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 
@@ -8,7 +8,7 @@ const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let nearbyItems = []; // Массив для хранения ближайших мест
 
-// Ссылки для кнопок кафе
+// Ссылки для кнопок кафе (короткое нажатие)
 const geoCafeLinks = [
     "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8",
     "https://maps.app.goo.gl/fCCogyeGKWqJca8g7",
@@ -25,6 +25,25 @@ const geoCafeLinks = [
     "https://maps.app.goo.gl/LGssrnWfy3KEZJ9u6",
     "https://maps.app.goo.gl/zPpiXtiNQts6f1Tb6",
     "https://maps.app.goo.gl/rFeQbBftxVTd2M6j9"
+];
+
+// Координаты для кнопок кафе (длительное нажатие)
+const geoCafeCoords = [
+    [12.965314728870327, 100.88574547083675],
+    [12.964959752753911, 100.88655104216504],
+    [12.965151141707688, 100.88674436342762],
+    [12.964288806741925, 100.88816176884599],
+    [12.96424632513826, 100.88873268926864],
+    [12.964275050492303, 100.88867431363093],
+    [12.967898770765563, 100.89741326647155],
+    [12.973265034689499, 100.90657393095435],
+    [12.968006641294641, 100.89704079447756],
+    [12.96748945294801, 100.88317093728782],
+    [12.892621251136807, 100.87323076484746],
+    [12.909346981806133, 100.85799998332298],
+    [12.909615777640497, 100.86413037030111],
+    [12.909461552901218, 100.86416750079316],
+    [12.91753238629045, 100.86705154538753]
 ];
 
 // Функция расчёта расстояния (Haversine)
@@ -75,11 +94,46 @@ document.addEventListener('DOMContentLoaded', () => {
 function initGeoCafeButtons() {
     const buttons = document.querySelectorAll('.geo-cafe-btn');
     buttons.forEach((button, index) => {
-        if (geoCafeLinks[index]) {
-            button.addEventListener('click', () => {
-                window.open(geoCafeLinks[index], '_blank');
-            });
-        }
+        let pressTimer;
+        let isLongPress = false;
+
+        const startPress = (e) => {
+            e.preventDefault();
+            isLongPress = false;
+            pressTimer = window.setTimeout(() => {
+                isLongPress = true;
+                if (!userCoords) {
+                    alert('Сначала определите ваше местоположение, нажав на кнопку "Получить местоположение".');
+                    return;
+                }
+                if (geoCafeCoords[index]) {
+                    const destination = geoCafeCoords[index].join(',');
+                    const origin = userCoords.join(',');
+                    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+                    window.open(url, '_blank');
+                }
+            }, 800); // 800ms для долгого нажатия
+        };
+
+        const cancelPress = (e) => {
+            clearTimeout(pressTimer);
+            if (!isLongPress) {
+                // Это обычный клик
+                if (geoCafeLinks[index]) {
+                    window.open(geoCafeLinks[index], '_blank');
+                }
+            }
+        };
+
+        // Обработчики для мыши
+        button.addEventListener('mousedown', startPress);
+        button.addEventListener('mouseup', cancelPress);
+        button.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+
+        // Обработчики для сенсорных экранов
+        button.addEventListener('touchstart', startPress);
+        button.addEventListener('touchend', cancelPress);
+        button.addEventListener('touchcancel', () => clearTimeout(pressTimer));
     });
 }
 
