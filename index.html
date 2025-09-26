@@ -16,9 +16,9 @@
     </div>
     <nav class="tabs">
       <button data-tab="calendar" class="tab-button active">📅 Календарь</button>
-      <button data-tab="tips"      class="tab-button">💡 Советы</button>
+      <button data-tab="tips" class="tab-button">💡 Советы</button>
       <button data-tab="contacts" class="tab-button">📞 Контакты</button>
-      <button data-tab="nearby"   class="tab-button">📍 Моё местоположение</button>
+      <button data-tab="nearby" class="tab-button">📍 Гео</button>
     </nav>
   </header>
 
@@ -90,17 +90,9 @@
       </div>
     </section>
 
-    <section id="contacts" class="tab-content">
-      <ul class="contacts-list">
-        <li>🚑 <a href="tel:+661669">Скорая помощь: 1669</a></li>
-        <li>🏛️ <a href="tel:+6622434888">Посольство РФ: +66 2 243 4888</a></li>
-        <li>👮 <a href="tel:+66191">Полиция: 191</a></li>
-      </ul>
-    </section>
-
     <section id="nearby" class="tab-content">
       <button id="locateBtn" class="locate-button">📍 Получить местоположение</button>
-      
+
       <div class="nearby-block">
         <h3 class="nearby-header">📍 Рядом</h3>
         <div id="nearbyItems" class="nearby-items">
@@ -109,6 +101,15 @@
       </div>
 
       <div id="contactsGrid" class="contacts-col"></div>
+
+      <div class="cafe-block">
+        <h3>КАФЕ</h3>
+        <div class="cafe-items">
+          <div class="cafe-item item-naklua">Наклуа</div>
+          <div class="cafe-item item-pratamnak">Пратамнак</div>
+          <div class="cafe-item item-jomtien">Джомтьен</div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -122,3 +123,5 @@
   <script src="app.js"></script>
 </body>
 </html>
+
+<!-- index.html v1.5.1, 132 lines -->
