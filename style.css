@@ -224,14 +224,14 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
     font-size: 1.1rem;
 }
 .geo-temples {
-    border-color: #FACC15; /* Желтый */
+    border-color: #FACC15;
     background-color: #FEFCE8;
 }
 .geo-playgrounds {
-    border-color: #A78BFA; /* Фиолетовый */
+    border-color: #A78BFA;
     background-color: #F5F3FF;
 }
 .geo-parks {
-    border-color: #34D399; /* Зеленый */
+    border-color: #34D399;
     background-color: #ECFDF5;
 }
