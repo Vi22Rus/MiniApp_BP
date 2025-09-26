@@ -1,6 +1,6 @@
-/* Version: 1.0.6 */
+/* Version: 1.0.7 */
 /* Last updated: 2025-09-26 */
-/* Версия файла: style.css (241 строка) */
+/* Версия файла: style.css (256 строк) */
 :root {
   --bg: #fff;
   --text: #0b1220;
@@ -24,57 +24,48 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
 .tab-button.active { color:var(--text); border-color:var(--accent); }
 .tab-content { display:none; }
 .tab-content.active { display:block; }
-
-/* Оригинальные стили фильтров календаря */
 .filters { display:flex; gap:4px; margin-bottom:var(--gap); }
 .filter-btn { flex:1; padding:8px; background:var(--surface); border:none; border-radius:var(--radius); cursor:pointer; color:var(--muted); }
 .filter-btn.active { background:var(--accent); color:#fff; }
-
 .grid { display:grid; gap:var(--gap); }
 @media(min-width:400px){ .grid { grid-template-columns:1fr 1fr; } }
 .card { background:var(--surface); border-radius:var(--radius); padding:var(--gap); }
-
-/* Цветовая идентификация карточек */
-.card.activity-sea { background-color: #E3F2FD; } /* Голубой для пляжа */
-.card.activity-sight { background-color: #FFF3E0; } /* Персиковый для экскурсий */
-
+.card.activity-sea { background-color: #E3F2FD; }
+.card.activity-sight { background-color: #FFF3E0; }
 .card h3 { margin-bottom:4px; font-size:1.1rem; }
 .card p { margin:4px 0; font-size:0.9rem; }
 .details { margin-top:8px; padding:6px 12px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; }
 .price-tag { color:#d81b60; font-weight:600; }
-.price-tag .price-label {
-    color: var(--muted);
-    font-weight: 500;
-}
+.price-label { color: #d81b60; }
 .distance-tag { font-size:0.85rem; color:var(--muted); }
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
 .modal.active { display:flex; }
 .modal-content { background:#fff; border-radius:var(--radius); padding:var(--gap); width:90%; max-width:360px; position:relative; }
 .close-btn { position:absolute; top:8px; right:8px; background:#d81b60; color:#fff; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; }
+
 /* Советы */
+.advice-block ul { list-style:none; padding:0; }
+.advice-block li { display:flex; flex-wrap:wrap; align-items: flex-start; margin-bottom:12px; }
+.advice-block li .icon { margin-right:8px; line-height: 1.4; }
+.advice-block li strong { line-height: 1.4; }
+.advice-block li .description {
+  flex-basis: 100%;
+  padding-left: 28px; /* Отступ для выравнивания с текстом */
+  color: var(--muted);
+  font-size: 0.9rem;
+}
 .must-try, .for-ivan, .cold-drinks, .med-kit {
   border:2px solid; border-radius:var(--radius); padding:var(--gap); margin-bottom:var(--gap);
 }
 .must-try { border-color:#FF7043; background:#FFF3E0; }
 .must-try h2 { color:#BF360C; }
-.must-try ul { list-style:none; padding-left:0; }
-.must-try li { display:flex; align-items:flex-start; margin-bottom:8px; }
-.must-try li .icon { margin-right:8px; }
 .for-ivan { border-color:#42A5F5; background:#E3F2FD; }
 .for-ivan h2 { color:#0D47A1; }
-.for-ivan ul { list-style:none; padding-left:0; }
-.for-ivan li { display:flex; align-items:flex-start; margin-bottom:8px; }
-.for-ivan li .icon { margin-right:8px; }
 .cold-drinks { border-color:#00796B; background:#E0F2F1; }
 .cold-drinks h2 { color:#004D40; }
-.cold-drinks ul { list-style:none; padding-left:0; }
-.cold-drinks li { display:flex; align-items:flex-start; margin-bottom:8px; }
-.cold-drinks li .icon { margin-right:8px; }
 .med-kit { border-color:#8D6E63; background:#EFEBE9; }
 .med-kit h2 { color:#5D4037; }
-.med-kit ul { list-style:none; padding-left:0; }
-.med-kit li { display:flex; align-items:flex-start; margin-bottom:8px; }
-.med-kit li .icon { margin-right:8px; }
+
 /* Контакты */
 .contacts-list { list-style:none; padding:0; }
 .contacts-list li { margin-bottom:12px; }
@@ -193,7 +184,7 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
   align-items: center;
 }
 .geo-cafe-btn .rating {
-  color: #8B0000; /* Темно-красный */
+  color: #8B0000;
   font-weight: bold;
   margin-right: 8px;
 }
