@@ -1,12 +1,13 @@
-// Version: 1.0.3
+// Version: 1.0.5
 // Last updated: 2025-09-26
-// Версия скрипта: app.js (278 строк)
+// Версия скрипта: app.js (334 строки)
 // Дом (Club Royal)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 
 // Геолокация
 let userCoords = null;
 let nearbyItems = []; // Массив для хранения ближайших мест
+let activeGeoFilter = 'naklua'; // Фильтр по умолчанию
 
 // Ссылки для кнопок кафе (короткое нажатие)
 const geoCafeLinks = [
@@ -62,17 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // геолокация
     document.getElementById('locateBtn').addEventListener('click', () => {
         if (!navigator.geolocation) {
-            alert('Геолокация не поддерживается вашим браузером');
+            alert('Геолокация не поддерживается вашим браузером.');
+            resetGeoState();
             return;
         }
         navigator.geolocation.getCurrentPosition(pos => {
             userCoords = [pos.coords.latitude, pos.coords.longitude];
-            updateNearbyItems();
-            renderActivities(activities);
-            renderContacts(points);
-            renderNearbyBlock();
-            updateGeoCafeDistances(); // Обновляем дистанцию до кафе
-        }, () => alert('Не удалось получить местоположение'));
+            updateGeoView();
+        }, () => {
+            alert('Не удалось получить местоположение.');
+            resetGeoState();
+        });
     });
 
     updateCountdown();
@@ -81,20 +82,102 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initFilters();
     initGeoCafeButtons(); // Инициализация кнопок кафе
+    initGeoFilters(); // Инициализация новых фильтров
     renderActivities(activities);
     renderContacts(points);
     renderNearbyBlock();
-
+    
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
     });
 });
 
-// Инициализация кнопок кафе во вкладке Гео
-function initGeoCafeButtons() {
-    const buttons = document.querySelectorAll('.geo-cafe-btn');
-    buttons.forEach((button, index) => {
+// -- Новая логика для Гео-фильтров --
+
+function initGeoFilters() {
+    document.querySelectorAll('.geo-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.geo-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeGeoFilter = btn.dataset.filter;
+            updateGeoView();
+        });
+    });
+}
+
+function updateGeoView() {
+    if (!userCoords) return;
+    updateGeoCafeDistances();
+    sortCafeSubblocks();
+    applyGeoFilter();
+}
+
+function sortCafeSubblocks() {
+    ['naklua', 'pratamnak', 'jomtien'].forEach(subblockName => {
+        const container = document.querySelector(`.cafe-sub-block.${subblockName}`);
+        const buttons = Array.from(container.querySelectorAll('.geo-cafe-btn'));
+        
+        buttons.sort((a, b) => {
+            const distA = parseFloat(a.querySelector('.distance-tag')?.textContent.replace(/[^0-9.]/g, '') || 9999);
+            const distB = parseFloat(b.querySelector('.distance-tag')?.textContent.replace(/[^0-9.]/g, '') || 9999);
+            return distA - distB;
+        });
+
+        buttons.forEach(button => container.appendChild(button));
+    });
+}
+
+function applyGeoFilter() {
+    restoreAllCafeButtonsToSubblocks(); // Сначала возвращаем всё на места
+    const nearbyContainer = document.getElementById('nearbyItems');
+    if (!userCoords) {
+        nearbyContainer.innerHTML = `<div class="empty-state">Нажмите "Получить местоположение" чтобы увидеть ближайшие места</div>`;
+        return;
+    }
+
+    const targetSubblock = document.querySelector(`.cafe-sub-block.${activeGeoFilter}`);
+    if (!targetSubblock) return;
+
+    const closestButton = targetSubblock.querySelector('.geo-cafe-btn'); // После сортировки он будет первым
+    
+    if (closestButton) {
+        const clone = closestButton.cloneNode(true);
+        clone.classList.add('nearby-item'); // Добавляем класс для стилизации в блоке "Рядом"
+        clone.classList.remove('geo-cafe-btn');
+        initGeoCafeButtons([clone]); // Перенавешиваем события на клон
+        nearbyContainer.innerHTML = '';
+        nearbyContainer.appendChild(clone);
+        closestButton.style.display = 'none'; // Скрываем оригинал
+    } else {
+        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений в районе ${activeGeoFilter}</div>`;
+    }
+}
+
+function restoreAllCafeButtonsToSubblocks() {
+    // Показываем все скрытые кнопки
+    document.querySelectorAll('.geo-cafe-btn').forEach(btn => btn.style.display = '');
+    // Очищаем блок "Рядом"
+    const nearbyContainer = document.getElementById('nearbyItems');
+    nearbyContainer.innerHTML = `<div class="empty-state">Нажмите "Получить местоположение" чтобы увидеть ближайшие места</div>`;
+}
+
+function resetGeoState() {
+    userCoords = null;
+    restoreAllCafeButtonsToSubblocks();
+    // Убираем все теги с дистанцией
+    document.querySelectorAll('.geo-cafe-btn .distance-tag').forEach(tag => tag.remove());
+}
+
+
+// -- Существующая логика (с изменениями) --
+
+function initGeoCafeButtons(buttonsToInit = document.querySelectorAll('.geo-cafe-btn')) {
+    const allButtons = Array.from(document.querySelectorAll('.geo-cafe-btn'));
+    buttonsToInit.forEach(button => {
+        const index = allButtons.findIndex(btn => btn.innerText === button.innerText);
+        if (index === -1) return;
+        
         let pressTimer;
         let isLongPress = false;
 
@@ -113,136 +196,100 @@ function initGeoCafeButtons() {
                     const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
                     window.open(url, '_blank');
                 }
-            }, 800); // 800ms для долгого нажатия
+            }, 800);
         };
 
         const cancelPress = () => {
             clearTimeout(pressTimer);
             if (!isLongPress) {
-                // Это обычный клик
                 if (geoCafeLinks[index]) {
                     window.open(geoCafeLinks[index], '_blank');
                 }
             }
         };
-
-        // Обработчики для мыши
+        
         button.addEventListener('mousedown', startPress);
         button.addEventListener('mouseup', cancelPress);
         button.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-
-        // Обработчики для сенсорных экранов
-        button.addEventListener('touchstart', startPress);
+        button.addEventListener('touchstart', startPress, { passive: true });
         button.addEventListener('touchend', cancelPress);
         button.addEventListener('touchcancel', () => clearTimeout(pressTimer));
     });
 }
 
-// Обновление дистанции на кнопках кафе
 function updateGeoCafeDistances() {
     if (!userCoords) return;
     const buttons = document.querySelectorAll('.geo-cafe-btn');
-    buttons.forEach((button, index) => {
-        if (geoCafeCoords[index]) {
-            const distance = getDistance(userCoords, geoCafeCoords[index]);
-            let distSpan = button.querySelector('.distance-tag');
-            if (!distSpan) {
-                distSpan = document.createElement('span');
-                distSpan.className = 'distance-tag';
-                button.appendChild(distSpan);
-            }
-            distSpan.textContent = ` ≈ ${distance} км`;
+    const allButtonsList = Array.from(buttons);
+
+    buttons.forEach(button => {
+        const index = allButtonsList.findIndex(btn => btn.innerText === button.innerText);
+        if (index === -1 || !geoCafeCoords[index]) return;
+        
+        const distance = getDistance(userCoords, geoCafeCoords[index]);
+        let distSpan = button.querySelector('.distance-tag');
+        if (!distSpan) {
+            distSpan = document.createElement('span');
+            distSpan.className = 'distance-tag';
+            button.appendChild(distSpan);
         }
+        distSpan.textContent = ` ≈ ${distance} км`;
     });
 }
 
-
-// Обновление списка ближайших мест
 function updateNearbyItems() {
-    if (!userCoords) return;
-    
-    // Объединяем все места из разных источников
+    if (!userCoords) {
+        nearbyItems = [];
+        return;
+    }
     const allPlaces = [...points];
-
-    // Добавляем координаты для мест из календаря
-    activities.forEach(activity => {
-        if (activity.coords && activity.type === 'sight') {
-            allPlaces.push({
-                name: activity.name,
-                coords: activity.coords,
-                icon: getIconForActivity(activity.name),
-                source: 'calendar'
-            });
-        }
-    });
-
-    // Вычисляем расстояния и сортируем
     const placesWithDistance = allPlaces.map(place => ({
         ...place,
         distance: parseFloat(getDistance(userCoords, [place.coords.lat, place.coords.lng]))
     })).sort((a, b) => a.distance - b.distance);
-    
-    // Берем 5 ближайших мест
     nearbyItems = placesWithDistance.slice(0, 5);
 }
 
-// Получение иконки для активности
 function getIconForActivity(name) {
     const icons = {
-        'Mini Siam': '🏛️',
-        'Деревня слонов': '🐘',
-        'Дельфинариум': '🐬',
-        'Сад Нонг Нуч': '🌺',
-        'Музей искусств 3D': '🎨',
-        'Аюттайя': '⛩️',
-        'Зоопарк Кхао Кхео': '🦒',
-        'Плавучий рынок': '🛶'
+        'Mini Siam': '🏛️', 'Деревня слонов': '🐘', 'Дельфинариум': '🐬', 'Сад Нонг Нуч': '🌺',
+        'Музей искусств 3D': '🎨', 'Аюттайя': '⛩️', 'Зоопарк Кхао Кхео': '🦒', 'Плавучий рынок': '🛶'
     };
     return icons[name] || '📍';
 }
 
-// Рендер блока "Рядом"
 function renderNearbyBlock() {
     const container = document.getElementById('nearbyItems');
-    if (nearbyItems.length === 0) {
+    if (nearbyItems.length === 0 && userCoords) {
+        applyGeoFilter();
+    } else if (nearbyItems.length === 0) {
         container.innerHTML = `<div class="empty-state">Нажмите "Получить местоположение" чтобы увидеть ближайшие места</div>`;
-        return;
+    } else {
+        container.innerHTML = nearbyItems.map(item => `
+            <div class="nearby-item">
+                <span class="icon">${item.icon}</span>
+                <span class="name">${item.name}</span>
+                <span class="distance">${item.distance} км</span>
+            </div>
+        `).join('');
     }
-    
-    container.innerHTML = nearbyItems.map(item => `
-        <div class="nearby-item">
-            <span class="icon">${item.icon}</span>
-            <span class="name">${item.name}</span>
-            <span class="distance">${item.distance} км</span>
-        </div>
-    `).join('');
 }
 
-
-// Модальное окно
 function showModal(place) {
     let content = `<h3>${place.icon ? place.icon + ' ' : ''}${place.name}</h3>`;
-    
-    if (place.tips) {
-        content += `<p>💡 ${place.tips}</p>`;
-    }
-    
+    if (place.tips) content += `<p>💡 ${place.tips}</p>`;
     const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
     const to = `${place.coords.lat},${place.coords.lng}`;
-    
     content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-
     if (userCoords) {
         const userFrom = `${userCoords[0]},${userCoords[1]}`;
         content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от текущего местоположения</a></p>`;
         content += `<p>📏 Расстояние: ${place.distance} км</p>`;
     }
-    
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
 
-// Данные для вкладки Календарь
 const kidsLeisure = [
     { name: 'Mini Siam', date: '01.01.2026', coords: { lat: 12.9554157, lng: 100.9088538 }, tips: 'Парк миниатюр под открытым небом, возьмите головной убор.', type: 'sight' },
     { name: 'Деревня слонов', date: '04.01.2026', coords: { lat: 12.91604299, lng: 100.93883441 }, tips: 'Кормление слонов и катание на них. Шоу слонов (14:30–16:00).', type: 'sight' },
@@ -271,7 +318,6 @@ const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b) => {
     return new Date(da) - new Date(db);
 });
 
-// Счётчик
 const startTrip = new Date('2025-12-29'), endTrip = new Date('2026-01-26');
 function updateCountdown() {
     const now = new Date();
@@ -282,8 +328,6 @@ function updateCountdown() {
     document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
 }
 
-
-// Привязка кнопок "Подробнее"
 function bindDetailButtons() {
     document.querySelectorAll('.details').forEach(btn => {
         btn.onclick = () => {
@@ -293,14 +337,77 @@ function bindDetailButtons() {
     });
 }
 
-// Рендер вкладки Календарь
 function renderActivities(list) {
     const grid = document.getElementById('activitiesGrid');
     grid.innerHTML = list.map(a => {
         let icon = a.type === 'sea' ? '🏖️ ' : '';
-        if (a.type === 'sight') {
-            icon = getIconForActivity(a.name) + ' ';
-        }
-        
+        if (a.type === 'sight') icon = getIconForActivity(a.name) + ' ';
         const prices = {
-            'Mini Siam
+            'Mini Siam': `<p class="price-tag">Взрослый 230 ฿ / Детский 130 ฿</p>`, 'Деревня слонов': `<p class="price-tag">Взрослый 650 ฿ / Детский 500 ฿</p>`,
+            'Дельфинариум': `<p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>`, 'Сад Нонг Нуч': `<p class="price-tag">Взрослый 420 ฿ / Детский 320 ฿</p>`,
+            'Музей искусств 3D': `<p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>`, 'Зоопарк Кхао Кхео': `<p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>`,
+        };
+        const priceLine = prices[a.name] || '';
+        const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км от вас</p>` : '';
+        return `<div class="card"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : ''}</div>`;
+    }).join('');
+    bindDetailButtons();
+}
+
+function showContactModal(place) {
+    let content = `<h3>${place.icon} ${place.name}</h3>`;
+    const to = `${place.coords.lat},${place.coords.lng}`;
+    if (userCoords) {
+        content += `<p class="distance-tag">≈${getDistance(userCoords, [place.coords.lat, place.coords.lng])} км от вас</p>`;
+        const userFrom = `${userCoords[0]},${userCoords[1]}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от текущего местоположения</a></p>`;
+    }
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+    document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+const points = [ { name: 'MO Play Kidz', coords: {lat: 12.935051, lng: 100.882722}, icon: '👶' } ];
+
+function renderContacts(list) {
+    let items = list.slice();
+    if (userCoords) {
+        items = items.map(p => ({ ...p, distance: parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng])) }));
+        items.sort((a,b) => a.distance - b.distance);
+    }
+    const grid = document.getElementById('contactsGrid');
+    grid.innerHTML = items.map(p => {
+        const distTag = p.distance !== undefined ? `<span class="distance-tag">≈${p.distance.toFixed(1)} км</span>` : '';
+        return `<button class="contact-btn" onclick='showContactModal(${JSON.stringify(p)})'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
+    }).join('');
+}
+
+function initTabs() {
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+        });
+    });
+}
+
+function initFilters() {
+    document.querySelectorAll('.filter-btn').forEach(f => {
+        f.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+            f.classList.add('active');
+            const filtered = f.dataset.filter === 'all' ? activities : activities.filter(a => a.type === f.dataset.filter);
+            renderActivities(filtered);
+            localStorage.setItem('filter', f.dataset.filter);
+        });
+    });
+    const saved = localStorage.getItem('filter') || 'all';
+    document.querySelector(`.filter-btn[data-filter="${saved}"]`)?.click();
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}

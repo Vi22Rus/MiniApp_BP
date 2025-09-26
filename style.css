@@ -1,6 +1,6 @@
-/* Version: 1.0.3 */
+/* Version: 1.0.4 */
 /* Last updated: 2025-09-26 */
-/* Версия файла: style.css (215 строк) */
+/* Версия файла: style.css (231 строка) */
 :root {
   --bg: #fff;
   --text: #0b1220;
@@ -193,4 +193,27 @@ body { font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); bac
     font-size: 0.9rem;
     color: var(--muted);
     font-weight: 600;
+}
+
+/* Стили для фильтров гео */
+.geo-filters {
+    display: flex;
+    gap: 8px;
+    margin-top: var(--gap);
+    margin-bottom: var(--gap);
+}
+.geo-filter-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--accent);
+    background-color: var(--bg);
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s, color 0.2s;
+}
+.geo-filter-btn.active {
+    background-color: var(--accent);
+    color: var(--bg);
 }
