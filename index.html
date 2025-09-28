@@ -1,16 +1,13 @@
-<!-- Version: 2.1.0 | Lines: 202 -->
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Pattaya 2025/26</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
     <script src="app.js" defer></script>
 </head>
-
 <body>
     <div class="app">
         <header class="header">
@@ -26,7 +23,6 @@
             <button class="tab-button active" data-tab="calendar">Календарь</button>
             <button class="tab-button" data-tab="tips">Советы</button>
             <button class="tab-button" data-tab="contacts">Контакты</button>
-            <button class="tab-button" data-tab="nearby">Рядом</button>
         </nav>
 
         <main>
@@ -37,11 +33,12 @@
                     <button class="filter-btn" data-filter="sight">Места</button>
                 </div>
                 <div id="activitiesGrid" class="grid">
-                    <!-- JS -->
+                    <!-- Карточки генерируются JS -->
                 </div>
             </section>
 
             <section id="tips" class="tab-content">
+                <!-- Контент для советов изначальной версии -->
                 <h2>🍽️ Обязательно попробовать!</h2>
                 <ul>
                     <li>🍛 <b>Массаман карри</b> – нежное карри с мягким вкусом орехов и специй.</li>
@@ -64,7 +61,7 @@
                     <li>🥭 <b>Као нио ма муанг</b> – клейкий рис с манго.</li>
                 </ul>
                 <h2>❄️ Холодные напитки Таиланда</h2>
-                 <ul>
+                <ul>
                     <li>🧋 <b>Ча йен</b> – холодный чай с молоком и пряностями.</li>
                     <li>☕ <b>Кафе йен</b> – холодный кофе со сгущённым молоком.</li>
                     <li>🥥 <b>Свежая кокосовая вода</b> – прямо из зеленого кокоса.</li>
@@ -74,7 +71,7 @@
                     <li>💙 <b>Синий чай (butterfly pea)</b> – со льдом и лимоном.</li>
                     <li>🥭 <b>Манговый смузи</b> – густой напиток из спелого манго и льда.</li>
                 </ul>
-                <h2>💊 Аптечка</h2>
+                 <h2>💊 Аптечка</h2>
                 <ul>
                     <li>🌡️ <b>Парацетамол</b> – болеутоляющее и жаропонижающее.</li>
                     <li>🩹 <b>Ибупрофен</b> – противовоспалительное.</li>
@@ -85,20 +82,9 @@
             </section>
 
             <section id="contacts" class="tab-content">
-                 <div id="contactsGrid" class="contacts-col">
-                    <!-- JS -->
-                </div>
-            </section>
-
-            <section id="nearby" class="tab-content">
                 <button id="locateBtn" class="locate-button">Найти меня</button>
-                <div class="filters geo-filters">
-                    <button class="geo-filter-btn active" data-filter="naklua">Наклуа</button>
-                    <button class="geo-filter-btn" data-filter="pratamnak">Пратамнак</button>
-                    <button class="geo-filter-btn" data-filter="jomtien">Джомтьен</button>
-                </div>
-                 <div id="nearbyItems" class="nearby-block">
-                    <!-- JS -->
+                <div id="contactsGrid" class="contacts-col">
+                    <!-- Контакты генерируются JS -->
                 </div>
             </section>
         </main>
