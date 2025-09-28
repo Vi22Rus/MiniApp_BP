@@ -1,6 +1,6 @@
-// Version: 1.2.8 | Lines: 500 
+// Version: 1.2.9 | Lines: 600
 // Last updated: 2025-09-29
-// Версия скрипта: app.js (500 строк) с Google Sheets + ДЕТСКИЕ ПЛОЩАДКИ
+// Версия скрипта: app.js (600 строк) с Google Sheets + ДЕТСКИЕ ПЛОЩАДКИ + ПАРКИ
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
@@ -36,7 +36,7 @@ const allGeoData = [
     { type: 'temple', link: "https://maps.app.goo.gl/LXmseuFjDPQtyewQ6", coords: [12.885197, 100.879626] },
     { type: 'temple', link: "https://maps.app.goo.gl/LWeDMe2wMJsvQr5N8", coords: [12.791474, 100.928825] },
     { type: 'temple', link: "https://maps.app.goo.gl/LpMDiXaHFnE7Aa8w7", coords: [12.765905, 100.956783] },
-    // НОВЫЕ: Детские игровые центры (25-31)
+    // Детские игровые центры (25-31)
     { 
         type: 'playground', 
         link: "https://maps.app.goo.gl/Terminal21HarborLand", 
@@ -85,6 +85,63 @@ const allGeoData = [
         coords: [12.867890, 100.904567],
         name: "Ramayana Kids Zone", 
         tips: "Детская зона в крупнейшем аквапарке Таиланда. Для детей до 106см БЕСПЛАТНО! Мини-горки, брызгалки, детский городок. Спасжилеты выдают бесплатно."
+    },
+    // Парки рядом с морем (32-39)
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/ChaloemPhrakiatPark", 
+        coords: [12.914219, 100.868615],
+        name: "Chaloem Phrakiat Park",
+        tips: "Тихий городской оазис на холме Пратамнак в 500м от пляжа. Пруд с лотосами, беседки, прогулочные дорожки. Красивые виды на залив. Бесплатный вход. Популярен для утренних пробежек у местных жителей."
+    },
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/PattayaParkBeachResort", 
+        coords: [12.932456, 100.881234],
+        name: "Pattaya Park Beach Resort",
+        tips: "Благоустроенная курортная территория с садами прямо на берегу центрального пляжа. Пальмы, зоны отдыха, водные аттракционы. Можно гулять даже не проживая в отеле. Рестораны и кафе на территории."
+    },
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/BeachRoadPromenade", 
+        coords: [12.927890, 100.877123],
+        name: "Beach Road Promenade",
+        tips: "4-километровая прогулочная зона вдоль центрального пляжа. Пальмы, скамейки, велодорожки, спортплощадки. Особенно красиво на закате. Множество кафе и уличной еды. Активная атмосфера днем и вечером."
+    },
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/JomtienBeachPark", 
+        coords: [12.892345, 100.873567],
+        name: "Jomtien Beach Park",
+        tips: "Спокойная альтернатива центральной Паттайе. Широкие зеленые зоны между дорогой и пляжем, детские площадки, зоны для пикников. Семейная атмосфера, меньше толп туристов. Идеально для отдыха с детьми."
+    },
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/BuddhaHillPark", 
+        coords: [12.914567, 100.868234],
+        name: "Buddha Hill Park",
+        tips: "Парковая зона вокруг статуи Большого Будды на высоте 164м над морем. Панорамные виды на залив Паттайи, тропическая растительность. 10-15 минут пешком до пляжа. Лучшие виды на восход солнца. Спокойная атмосфера."
+    },
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/WatKhaoPhraBatGarden", 
+        coords: [12.913456, 100.867890],
+        name: "Wat Khao Phra Bat Garden",
+        tips: "Храмовый комплекс с ухоженными садами на Пратамнаке. Традиционная тайская архитектура среди зелени, зоны для медитации. 8-10 минут до пляжа пешком. Тихое место для спокойных прогулок и фотосессий."
+    },
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/DongtanBeachGreen", 
+        coords: [12.887654, 100.874321],
+        name: "Dongtan Beach Green Zone",
+        tips: "Менее известная зеленая зона в южном Джомтьене с соснами и пальмами прямо у воды. Тихое место без толп туристов. Хорошо для спокойных прогулок по берегу и пикников в тени деревьев."
+    },
+    { 
+        type: 'park', 
+        link: "https://maps.app.goo.gl/KohLarnIslandParks", 
+        coords: [12.915123, 100.780456],
+        name: "Koh Larn Island Parks",
+        tips: "Небольшие парковые зоны на Коралловом острове рядом с пляжами. 45 минут на пароме от Паттайи. Тропическая растительность, смотровые площадки с видом на море. Кристально чистая вода, белые пляжи. Идеально для дневной поездки."
     }
 ];
 
@@ -110,7 +167,7 @@ function initApp() {
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
-    initDailyPlanModal(); // ДОБАВЛЕННЫЙ вызов
+    initDailyPlanModal();
     
     updateCountdown();
     setInterval(updateCountdown, 3600000);
@@ -216,12 +273,18 @@ function sortAllGeoBlocks() {
         buttons.forEach(button => templesContainer.appendChild(button));
     }
 
-    // ДОБАВЛЕНО: Сортировка детских площадок
     const playgroundsContainer = document.querySelector('.geo-playgrounds .geo-items-container');
     if(playgroundsContainer) {
         const buttons = Array.from(playgroundsContainer.querySelectorAll('.geo-item-btn'));
         buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
         buttons.forEach(button => playgroundsContainer.appendChild(button));
+    }
+
+    const parksContainer = document.querySelector('.geo-parks .geo-items-container');
+    if(parksContainer) {
+        const buttons = Array.from(parksContainer.querySelectorAll('.geo-item-btn'));
+        buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
+        buttons.forEach(button => parksContainer.appendChild(button));
     }
 }
 
@@ -230,17 +293,17 @@ function applyGeoFilter() {
     const nearbyContainer = document.getElementById('nearbyItems');
     nearbyContainer.innerHTML = '';
 
-    // Находим ближайшее кафе в зависимости от фильтра
     const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeGeoFilter}"]`);
     const closestCafeButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
 
-    // Находим ближайший храм (он всегда первый в своем отсортированном контейнере)
     const templesContainer = document.querySelector('.geo-temples .geo-items-container');
     const closestTempleButton = templesContainer ? templesContainer.querySelector('.geo-item-btn') : null;
 
-    // ДОБАВЛЕНО: Ближайшая детская площадка
     const playgroundsContainer = document.querySelector('.geo-playgrounds .geo-items-container');
     const closestPlaygroundButton = playgroundsContainer ? playgroundsContainer.querySelector('.geo-item-btn') : null;
+
+    const parksContainer = document.querySelector('.geo-parks .geo-items-container');
+    const closestParkButton = parksContainer ? parksContainer.querySelector('.geo-item-btn') : null;
 
     if (closestCafeButton) {
         const clone = closestCafeButton.cloneNode(true);
@@ -256,16 +319,21 @@ function applyGeoFilter() {
         closestTempleButton.style.display = 'none';
     }
 
-    // ДОБАВЛЕНО: Показ ближайшей детской площадки
     if (closestPlaygroundButton) {
         const clone = closestPlaygroundButton.cloneNode(true);
         initGeoItemButton(clone);
         nearbyContainer.appendChild(clone);
         closestPlaygroundButton.style.display = 'none';
     }
+
+    if (closestParkButton) {
+        const clone = closestParkButton.cloneNode(true);
+        initGeoItemButton(clone);
+        nearbyContainer.appendChild(clone);
+        closestParkButton.style.display = 'none';
+    }
     
-    // ОБНОВЛЕНО: Условие для пустого состояния
-    if (!closestCafeButton && !closestTempleButton && !closestPlaygroundButton) {
+    if (!closestCafeButton && !closestTempleButton && !closestPlaygroundButton && !closestParkButton) {
         nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений</div>`;
     }
 }
@@ -323,9 +391,10 @@ function initGeoItemButton(button) {
             e.preventDefault();
             clearTimeout(pressTimer);
             
-            // ДОБАВЛЕНО: Показ модального окна для детских площадок
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
                 showPlaygroundModal(allGeoData[id]);
+            } else if (allGeoData[id] && allGeoData[id].type === 'park') {
+                showParkModal(allGeoData[id]);
             } else {
                 window.open(allGeoData[id].link, '_blank');
             }
@@ -354,7 +423,6 @@ function initGeoItemButton(button) {
     button.addEventListener('touchcancel', handlePressCancel);
 }
 
-// НОВАЯ ФУНКЦИЯ: Модальное окно для детских площадок
 function showPlaygroundModal(playground) {
     let content = `<h3>🎠 ${playground.name}</h3>`;
     if (playground.tips) content += `<p>💡 ${playground.tips}</p>`;
@@ -376,7 +444,26 @@ function showPlaygroundModal(playground) {
     document.getElementById('modalOverlay').classList.add('active');
 }
 
-// -- Остальная логика приложения --
+function showParkModal(park) {
+    let content = `<h3>🌳 ${park.name}</h3>`;
+    if (park.tips) content += `<p>💡 ${park.tips}</p>`;
+    
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    const to = `${park.coords[0]},${park.coords[1]}`;
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+    
+    if (userCoords) {
+        const userFrom = `${userCoords[0]},${userCoords[1]}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+        const distance = getDistance(userCoords, park.coords);
+        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+    }
+    
+    content += `<p><a href="${park.link}" target="_blank">🌐 Открыть в Google Maps</a></p>`;
+    
+    document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalOverlay').classList.add('active');
+}
 
 const kidsLeisure = [
     { name: 'Mini Siam', date: '01.01.2026', coords: { lat: 12.9554157, lng: 100.9088538 }, tips: 'Парк миниатюр.', type: 'sight' },
@@ -403,28 +490,24 @@ function generateBeachDays() {
 
 const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b) => new Date(a.date.split('.').reverse().join('-')) - new Date(b.date.split('.').reverse().join('-')));
 
-// ИСПРАВЛЕННАЯ функция updateCountdown с новой логикой
 function updateCountdown() {
-    const startTrip = new Date('2025-12-29');  // Начало поездки
-    const endTrip = new Date('2026-01-26');    // Конец поездки (отъезд)
+    const startTrip = new Date('2025-12-29');  
+    const endTrip = new Date('2026-01-26');    
     const now = new Date();
     
     if (now < startTrip) {
-        // До поездки
         const days = Math.ceil((startTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До поездки:';
         document.getElementById('days').textContent = days;
         document.querySelector('.countdown-label').textContent = 'дней';
         
-    } else if (now >= startTrip && now < endTrip) {  // ИЗМЕНЕНО: < вместо <=
-        // Во время поездки - показываем дни до отъезда
+    } else if (now >= startTrip && now < endTrip) { 
         const daysToGo = Math.ceil((endTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До отъезда:';
         document.getElementById('days').textContent = daysToGo;
         document.querySelector('.countdown-label').textContent = 'дней';
         
-    } else {  // now >= endTrip (с 26.01.2026)
-        // В последний день и после поездки
+    } else { 
         document.getElementById('countdownText').textContent = 'Поездка завершена!';
         document.getElementById('days').textContent = '✔';
         document.querySelector('.countdown-label').textContent = '';
@@ -448,7 +531,6 @@ function renderActivities(list) {
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
         
-        // ИСПРАВЛЕНА: убран onclick, добавлен класс daily-plan-btn
         const buttonHtml = a.type === 'sea' ? 
             `<button class="details daily-plan-btn" data-name="${a.name}" data-date="${a.date}">Планы на день</button>` :
             (a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : '');
@@ -461,7 +543,6 @@ function renderActivities(list) {
 function bindDetailButtons() {
     document.querySelectorAll('.details').forEach(btn => {
         btn.onclick = () => {
-            // ИСПРАВЛЕНА: добавлена проверка на класс daily-plan-btn
             if (btn.classList.contains('daily-plan-btn')) {
                 openDailyPlanModal(btn.dataset.name, btn.dataset.date);
             } else {
@@ -516,7 +597,6 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
 }
 
-// ФУНКЦИИ ДЛЯ ЕЖЕДНЕВНИКА
 function initDailyPlanModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal) {
@@ -526,7 +606,6 @@ function initDailyPlanModal() {
     }
 }
 
-// ИСПРАВЛЕННАЯ функция openDailyPlanModal - сначала показать попап, потом загрузить данные
 function openDailyPlanModal(activityName, date) {
     const modal = document.getElementById('dailyPlanModal');
     const grid = document.getElementById('dailyPlanGrid');
@@ -535,7 +614,6 @@ function openDailyPlanModal(activityName, date) {
     
     document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
     
-    // Сначала создаем пустые слоты
     let timeSlots = '';
     const timeSlotData = [];
     
@@ -559,11 +637,9 @@ function openDailyPlanModal(activityName, date) {
         `;
     }
     
-    // Сначала показываем попап с пустыми полями
     grid.innerHTML = timeSlots;
     modal.classList.add('active');
     
-    // Затем асинхронно загружаем данные для каждого поля
     timeSlotData.forEach(slot => {
         getStorageItem(slot.key, (savedPlan) => {
             const input = document.querySelector(`input[data-time="${slot.startTime}"][data-date="${slot.date}"]`);
@@ -573,34 +649,29 @@ function openDailyPlanModal(activityName, date) {
         });
     });
     
-    // Добавляем обработчики событий
     document.querySelectorAll('.plan-input').forEach(input => {
         let touchStartTime = 0;
         let touchStartY = 0;
         
-        // ИСПРАВЛЕНО: Автосохранение при потере фокуса И при изменении
         input.addEventListener('blur', () => {
             autoSavePlan(input);
         });
         
-        // ДОБАВЛЕНО: Автосохранение при вводе (с задержкой)
         let saveTimeout;
         input.addEventListener('input', () => {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
                 autoSavePlan(input);
-            }, 1000); // Сохранение через 1 секунду после остановки ввода
+            }, 1000);
         });
         
-        // ДОБАВЛЕНО: Автосохранение при Enter
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 autoSavePlan(input);
-                input.blur(); // Потеря фокуса
+                input.blur();
             }
         });
         
-        // Защита от случайных тапов (как было)
         input.addEventListener('touchstart', e => {
             touchStartTime = Date.now();
             touchStartY = e.touches[0].clientY;
@@ -633,7 +704,6 @@ function closeDailyPlanModal() {
     }
 }
 
-// УЛУЧШЕННАЯ функция автосохранения с отладкой
 function autoSavePlan(input) {
     const date = input.dataset.date;
     const time = input.dataset.time;
@@ -644,7 +714,6 @@ function autoSavePlan(input) {
     
     if (value) {
         setStorageItem(key, value, () => {
-            // Визуальная обратная связь - мигание зеленым фоном
             input.style.backgroundColor = '#dcfce7';
             setTimeout(() => {
                 input.style.backgroundColor = '';
@@ -658,7 +727,6 @@ function autoSavePlan(input) {
     }
 }
 
-// GOOGLE SHEETS STORAGE FUNCTIONS - ЗАМЕНЯЮТ Cloud Storage
 function setStorageItem(key, value, callback = null) {
     const data = {
         action: 'set',
@@ -684,7 +752,6 @@ function setStorageItem(key, value, callback = null) {
     })
     .catch(error => {
         console.error('Google Sheets error:', error);
-        // Fallback на localStorage при ошибке
         localStorage.setItem(key, value);
         console.log('📱 Saved to localStorage (Sheets fallback)');
         if (callback) callback();
@@ -715,7 +782,6 @@ function getStorageItem(key, callback) {
     })
     .catch(error => {
         console.error('Google Sheets error:', error);
-        // Fallback на localStorage при ошибке
         const fallbackValue = localStorage.getItem(key) || '';
         console.log('📱 Loaded from localStorage (Sheets fallback)');
         callback(fallbackValue);
@@ -746,14 +812,12 @@ function removeStorageItem(key, callback = null) {
     })
     .catch(error => {
         console.error('Google Sheets error:', error);
-        // Fallback на localStorage при ошибке
         localStorage.removeItem(key);
         console.log('📱 Deleted from localStorage (Sheets fallback)');
         if (callback) callback();
     });
 }
 
-// ДОБАВЛЕНО: Показ модального окна для контактов  
 function showContactModal(contact) {
     let content = `<h3>${contact.icon} ${contact.name}</h3>`;
     
