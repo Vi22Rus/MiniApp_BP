@@ -1,4 +1,4 @@
-/* Version: 2.1.0 | Lines: 498 */
+/* Version: 2.1.0 | Lines: 512 */
 document.addEventListener('DOMContentLoaded', () => {
     try {
         initApp();
@@ -18,13 +18,36 @@ const allGeoData = [
     { type: 'temple', link: "https://maps.app.goo.gl/VzHiKzb1UDQwrJ7SA", coords: { lat: 12.925998, lng: 100.876540 }, subblock: 'pratamnak' }
 ];
 
-const activities = [
-    { name: "Пляжинг 🌊", type: "sea", date: "29.12.25" },
-    { name: "Пляжинг 🌊", type: "sea", date: "30.12.25" },
-    { name: "Mini Siam", type: "sight", date: "31.12.25", description: "Парк миниатюр.", price: "700 THB", coords: { lat: 12.952028, lng: 100.908180 } },
-    { name: "Деревня слонов", type: "sight", date: "01.01.26", description: "Шоу и катание на слонах.", price: "650 THB", coords: { lat: 12.8916, lng: 100.9097 } },
-    { name: "Пляжинг 🌊", type: "sea", date: "02.01.26" },
+const kidsLeisure = [
+    { name: "Mini Siam", date: "01.01.2026", coords: { lat: 12.9554157, lng: 100.9088538 }, tips: "...", type: "sight" },
+    { name: "Деревня слонов", date: "04.01.2026", coords: { lat: 12.91604299, lng: 100.93883441 }, tips: "Шоу в 14:30 и 16:00.", type: "sight" },
+    { name: "Дельфинариум", date: "07.01.2026", coords: { lat: 12.95222191, lng: 100.93617557 }, tips: "Шоу в 15:00.", type: "sight" },
+    { name: "Сад Нонг Нуч", date: "11.01.2026", coords: { lat: 12.76575858, lng: 100.93505629 }, tips: "...", type: "sight" },
+    { name: "Музей искусств 3D", date: "13.01.2026", coords: { lat: 12.94832322, lng: 100.88976288 }, tips: "...", type: "sight" },
+    { name: "Аюттайя", date: "16.01.2026", coords: { lat: 14.35741905, lng: 100.56757512 }, tips: "...", type: "sight" },
+    { name: "Зоопарк Кхао Кхео", date: "19.01.2026", coords: { lat: 13.21500644, lng: 101.05700099 }, tips: "...", type: "sight" },
+    { name: "Плавучий рынок", date: "22.01.2026", coords: { lat: 12.86799376, lng: 100.90469404 }, tips: "...", type: "sight" },
 ];
+
+function generateBeachDays() {
+    const usedDates = kidsLeisure.map(x => x.date);
+    const days = [];
+    const start = new Date("2025-12-29");
+    const end = new Date("2026-01-26");
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const date = d.toLocaleDateString('ru-RU');
+        if (!usedDates.includes(date)) {
+            days.push({ type: "sea", name: "Пляжинг 🌊", date, coords: null, tips: "Отдых" });
+        }
+    }
+    return days;
+}
+
+const activities = [...generateBeachDays(), ...kidsLeisure].sort((a, b) => {
+    const dateA = new Date(a.date.split('.').reverse().join('-'));
+    const dateB = new Date(b.date.split('.').reverse().join('-'));
+    return dateA - dateB;
+});
 
 const contacts = [
     { name: "Туристическая полиция", phone: "1155" },
@@ -34,7 +57,6 @@ const contacts = [
 
 let currentPlannerDate = null;
 
-// --- Основная функция инициализации ---
 function initApp() {
     initTabs();
     initCalendarFilters();
@@ -43,16 +65,13 @@ function initApp() {
     setInterval(updateCountdown, 3600000);
     renderActivities(activities);
     renderContacts(contacts);
-
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'modalOverlay') closeModal();
     });
-
     initPlanner();
 }
 
-// --- Инициализация вкладок ---
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -63,7 +82,6 @@ function initTabs() {
     });
 }
 
-// --- Логика календаря ---
 function initCalendarFilters() {
     document.querySelectorAll('.filter-btn').forEach(f => {
         f.addEventListener('click', () => {
@@ -79,7 +97,6 @@ function initCalendarFilters() {
 function renderActivities(list) {
     const grid = document.getElementById('activitiesGrid');
     if (!grid) return;
-
     grid.innerHTML = list.map(a => {
         const cardClass = `card`;
         let buttonHtml = '';
@@ -90,18 +107,16 @@ function renderActivities(list) {
         }
         return `
             <div class="${cardClass}">
-                <h3>${a.name}</h3>
+                <h3>${getIconForActivity(a.name)}${a.name}</h3>
                 <p>${a.date}</p>
                 ${buttonHtml}
             </div>
         `;
     }).join('');
-
     bindDetailButtons();
     bindPlannerButtons();
 }
 
-// --- Детали активностей ---
 function bindDetailButtons() {
     document.querySelectorAll('.details-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -113,7 +128,7 @@ function bindDetailButtons() {
 
 function showModal(act) {
     const modalBody = document.getElementById('modalBody');
-    modalBody.innerHTML = `<h2>${act.name}</h2><p>${act.description || ''}</p><p>Цена: ${act.price || 'Бесплатно'}</p>`;
+    modalBody.innerHTML = `<h2>${act.name}</h2><p>${act.tips || ''}</p>`;
     document.getElementById('modalOverlay').classList.add('active');
 }
 
@@ -121,7 +136,6 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
 }
 
-// --- ЛОГИКА ДЛЯ ПЛАНЕРА ---
 function initPlanner() {
     const plannerOverlay = document.getElementById('plannerModalOverlay');
     const closeBtn = document.getElementById('closePlannerModal');
@@ -197,7 +211,6 @@ function saveDayPlan(date) {
     }
 }
 
-// --- Контакты и геолокация ---
 function renderContacts(contactsList) {
     const listEl = document.getElementById('contacts-list');
     if (!listEl) return;
@@ -249,14 +262,11 @@ function getDistance(coords1, coords2) {
     const dLon = toRad(coords2.lng - coords1.lng);
     const lat1 = toRad(coords1.lat);
     const lat2 = toRad(coords2.lat);
-
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
-// --- Утилиты ---
 function updateCountdown() {
     const targetDate = new Date('2025-12-29T00:00:00');
     const now = new Date();
@@ -277,4 +287,18 @@ function updateCountdown() {
     daysEl.textContent = days;
     textEl.textContent = 'До поездки';
     labelEl.textContent = 'дней';
+}
+
+function getIconForActivity(name) {
+    const icons = {
+        'Mini Siam': '🏛️',
+        'Деревня слонов': '🐘',
+        'Дельфинариум': '🐬',
+        'Сад Нонг Нуч': '🌺',
+        'Музей искусств 3D': '🎨',
+        'Аюттайя': '⛩️',
+        'Зоопарк Кхао Кхео': '🦒',
+        'Плавучий рынок': '🛶'
+    };
+    return icons[name] || '';
 }
