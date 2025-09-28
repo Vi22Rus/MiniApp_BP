@@ -1,6 +1,6 @@
-// Version: 1.2.5 | Lines: 464
+// Version: 1.2.5 | Lines: 450
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (464 строки)
+// Версия скрипта: app.js (450 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
@@ -444,11 +444,24 @@ function openDailyPlanModal(activityName, date) {
         document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
         grid.innerHTML = timeSlots;
         
-        // Добавляем обработчики с защитой от случайных тапов
+        // ИЗМЕНЕНО: добавляем автосохранение при потере фокуса
         document.querySelectorAll('.plan-input').forEach(input => {
             let touchStartTime = 0;
             let touchStartY = 0;
             
+            // ДОБАВЛЕНО: Автосохранение при потере фокуса
+            input.addEventListener('blur', () => {
+                autoSavePlan(input);
+            });
+            
+            // ДОБАВЛЕНО: Автосохранение при Enter
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    input.blur(); // Потеря фокуса -> автосохранение
+                }
+            });
+            
+            // Защита от случайных тапов (как было)
             input.addEventListener('touchstart', e => {
                 touchStartTime = Date.now();
                 touchStartY = e.touches[0].clientY;
@@ -484,53 +497,30 @@ function closeDailyPlanModal() {
     }
 }
 
-function saveDailyPlan() {
-    const inputs = document.querySelectorAll('.plan-input');
-    let savedCount = 0;
-    let processedCount = 0;
-    const totalInputs = inputs.length;
+// ИЗМЕНЕНА: функция автосохранения вместо ручного сохранения
+function autoSavePlan(input) {
+    const date = input.dataset.date;
+    const time = input.dataset.time;
+    const value = input.value.trim();
+    const key = `${date}_${time}`;
     
-    inputs.forEach(input => {
-        const date = input.dataset.date;
-        const time = input.dataset.time;
-        const value = input.value.trim();
-        const key = `${date}_${time}`;
-        
-        if (value) {
-            // ИЗМЕНЕНО: используем setStorageItem вместо localStorage
-            setStorageItem(key, value, () => {
-                savedCount++;
-                processedCount++;
-                if (processedCount === totalInputs) {
-                    showSaveResult(savedCount);
-                }
-            });
-        } else {
-            // ИЗМЕНЕНО: используем removeStorageItem вместо localStorage
-            removeStorageItem(key, () => {
-                processedCount++;
-                if (processedCount === totalInputs) {
-                    showSaveResult(savedCount);
-                }
-            });
-        }
-    });
+    if (value) {
+        setStorageItem(key, value, () => {
+            // Визуальная обратная связь - мигание зеленым фоном
+            input.style.backgroundColor = '#dcfce7';
+            setTimeout(() => {
+                input.style.backgroundColor = '';
+            }, 300);
+            console.log(`✅ Автосохранено: ${time} - ${value}`);
+        });
+    } else {
+        removeStorageItem(key, () => {
+            console.log(`🗑️ Удален пустой план: ${time}`);
+        });
+    }
 }
 
-function showSaveResult(savedCount) {
-    // Показываем уведомление о сохранении
-    const saveBtn = document.querySelector('.save-plan-btn');
-    const originalText = saveBtn.textContent;
-    saveBtn.textContent = `✅ Сохранено (${savedCount})`;
-    saveBtn.style.backgroundColor = '#22c55e';
-    
-    setTimeout(() => {
-        saveBtn.textContent = originalText;
-        saveBtn.style.backgroundColor = '';
-    }, 2000);
-}
-
-// ДОБАВЛЕННЫЕ функции для Cloud Storage
+// ФУНКЦИИ ДЛЯ Cloud Storage
 function setStorageItem(key, value, callback = null) {
     if (window.Telegram?.WebApp?.CloudStorage) {
         window.Telegram.WebApp.CloudStorage.setItem(key, value, (error, success) => {
