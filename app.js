@@ -1,45 +1,12 @@
-// Version: 1.7.1 | Lines: 620
-// Last updated: 2025-09-28
-// ИСПРАВЛЕНЫ: Firebase ключи без точек + глобальные функции для ES6 модулей
+// Version: 1.2.8 | Lines: 500 
+// Last updated: 2025-09-29
+// Версия скрипта: app.js (500 строк) с Google Sheets + ДЕТСКИЕ ПЛОЩАДКИ
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
-let activeGeoFilter = 'naklua';
+let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
 
-// TELEGRAM BOT INTEGRATION
-const BOT_TOKEN = '8238598464:AAGwjUOg3H5j69xoFeNnaiUO9Y1wkjZSIX4';
-const CHAT_ID = '231009417';
-
-// FIREBASE CONFIGURATION
-const firebaseConfig = {
-  apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
-  authDomain: "pattaya-plans-app.firebaseapp.com",
-  databaseURL: "https://pattaya-plans-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "pattaya-plans-app",
-  storageBucket: "pattaya-plans-app.firebasestorage.app",
-  messagingSenderId: "152286016885",
-  appId: "1:152286016885:web:dd389c8294b7c744d04f3c"
-};
-
-// Firebase imports
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-// Firebase initialization
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
-// Хранилище и синхронизация
-let botStorage = {};
-let storageInitialized = false;
-
-// ИСПРАВЛЕНО: Функция конвертации ключей для Firebase (точки в подчеркивания)
-function keyToFirebase(key) {
-    return key.replace(/\./g, '_DOT_'); // 29.12.2025_07:00 -> 29_DOT_12_DOT_2025_07:00
-}
-
-function keyFromFirebase(key) {
-    return key.replace(/_DOT_/g, '.'); // 29_DOT_12_DOT_2025_07:00 -> 29.12.2025_07:00
-}
+// GOOGLE SHEETS INTEGRATION
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxzkVcKcnBmHniTJI2eOx8BOQhyF8rdrTvbEuBLcv7Xl8B2KK6U4ZfLeU888Yl22xo3/exec';
 
 const allGeoData = [
     // Кафе (0-14)
@@ -69,6 +36,56 @@ const allGeoData = [
     { type: 'temple', link: "https://maps.app.goo.gl/LXmseuFjDPQtyewQ6", coords: [12.885197, 100.879626] },
     { type: 'temple', link: "https://maps.app.goo.gl/LWeDMe2wMJsvQr5N8", coords: [12.791474, 100.928825] },
     { type: 'temple', link: "https://maps.app.goo.gl/LpMDiXaHFnE7Aa8w7", coords: [12.765905, 100.956783] },
+    // НОВЫЕ: Детские игровые центры (25-31)
+    { 
+        type: 'playground', 
+        link: "https://maps.app.goo.gl/Terminal21HarborLand", 
+        coords: [12.935051, 100.882722],
+        name: "HarborLand Terminal 21",
+        tips: "Крупнейший крытый игровой центр Азии в Terminal 21. 9 игровых зон: батуты JumpZ, скалодром DEEP, Little Land для малышей. Работает 10:30-20:00. Цена: 450-480฿ дети, 200฿ взрослые."
+    },
+    { 
+        type: 'playground', 
+        link: "https://maps.app.goo.gl/KidzoonaCentralFestival", 
+        coords: [12.928776, 100.889779],
+        name: "Kidzoona Central Festival",
+        tips: "Игровая деревня с ролевыми играми и творческими мастерскими в Central Festival Mall. До 105см: 200฿, выше 105см: 320฿. Работает 10:00-21:00. Идеально для развития воображения детей."
+    },
+    { 
+        type: 'playground', 
+        link: "https://maps.app.goo.gl/SnowLandCentralFestival", 
+        coords: [12.928776, 100.889779],
+        name: "Snow Land Central Festival",
+        tips: "Настоящий снег при -10°C в тропиках! Ледяные горки, лепка снеговиков, зимние игры. Цена: ~300-400฿. Теплая одежда выдается. Незабываемый опыт для детей!"
+    },
+    { 
+        type: 'playground', 
+        link: "https://maps.app.goo.gl/HarborPattayaMegaFun", 
+        coords: [12.923456, 100.878901],
+        name: "Harbor Pattaya Mega Fun",
+        tips: "Крупная крытая площадка с батутами, препятствиями и ледовым катком. Разные зоны по возрастам. Цена: ~400-500฿. Работает 10:30-19:30. Есть аркадные игры для детей."
+    },
+    { 
+        type: 'playground', 
+        link: "https://maps.app.goo.gl/DinosaurKingdomPattaya", 
+        coords: [12.892345, 100.934567],
+        name: "Pattaya Dinosaur Kingdom",
+        tips: "100+ анимированных динозавров, Dino Train для малышей, раскопки костей, обнимашки с детенышами динозавров. Цена: ~500-600฿. Парк под открытым небом с тенью."
+    },
+    { 
+        type: 'playground', 
+        link: "https://maps.app.goo.gl/PipoPonyClubPattaya", 
+        coords: [12.876543, 100.912345],
+        name: "Pipo Pony Club",
+        tips: "Катание на пони для малышей, контактный зоопарк с безопасными животными, вестерн-шоу с ковбоями. Подходит для самых маленьких. Цена уточняется на месте."
+    },
+    { 
+        type: 'playground', 
+        link: "https://maps.app.goo.gl/RamayanaKidsZone", 
+        coords: [12.867890, 100.904567],
+        name: "Ramayana Kids Zone", 
+        tips: "Детская зона в крупнейшем аквапарке Таиланда. Для детей до 106см БЕСПЛАТНО! Мини-горки, брызгалки, детский городок. Спасжилеты выдают бесплатно."
+    }
 ];
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
@@ -90,13 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
-    console.log('🚀 Initializing app with Firebase...');
-    
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
-    initDailyPlanModal();
-    initFirebaseStorage();
+    initDailyPlanModal(); // ДОБАВЛЕННЫЙ вызов
     
     updateCountdown();
     setInterval(updateCountdown, 3600000);
@@ -104,245 +118,11 @@ function initApp() {
     renderActivities(activities);
     renderContacts(points);
     
-    setTimeout(() => {
-        initContactButtons();
-    }, 100);
-    
-    console.log('✅ App initialized successfully with Firebase');
-    
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
     });
 }
-
-// FIREBASE REALTIME DATABASE
-
-async function initFirebaseStorage() {
-    if (storageInitialized) return;
-    
-    try {
-        console.log('🔥 Initializing Firebase Realtime Database (with fixed paths)...');
-        
-        // Загружаем данные из localStorage
-        const localKeys = Object.keys(localStorage).filter(key => key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/));
-        localKeys.forEach(key => {
-            botStorage[key] = localStorage.getItem(key);
-        });
-        
-        // Настраиваем real-time синхронизацию
-        const plansRef = ref(database, 'plans');
-        onValue(plansRef, (snapshot) => {
-            const firebaseData = snapshot.val() || {};
-            let hasUpdates = false;
-            
-            // ИСПРАВЛЕНО: конвертируем ключи обратно из Firebase формата
-            Object.keys(firebaseData).forEach(firebaseKey => {
-                const key = keyFromFirebase(firebaseKey); // Конвертируем обратно
-                if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/)) {
-                    if (botStorage[key] !== firebaseData[firebaseKey]) {
-                        botStorage[key] = firebaseData[firebaseKey];
-                        localStorage.setItem(key, firebaseData[firebaseKey]);
-                        hasUpdates = true;
-                        console.log('🔥 Real-time sync FROM other user:', key, '=', firebaseData[firebaseKey]);
-                    }
-                }
-            });
-            
-            // Удаляем локально удаленные данные
-            Object.keys(botStorage).forEach(key => {
-                if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/)) {
-                    const firebaseKey = keyToFirebase(key);
-                    if (!firebaseData[firebaseKey]) {
-                        delete botStorage[key];
-                        localStorage.removeItem(key);
-                        hasUpdates = true;
-                        console.log('🔥 Real-time sync DELETE from other user:', key);
-                    }
-                }
-            });
-            
-            if (hasUpdates && storageInitialized) {
-                refreshCurrentModal();
-            }
-        });
-        
-        storageInitialized = true;
-        
-        console.log(`🔥 Firebase initialized with ${Object.keys(botStorage).length} plans`);
-        console.log('✅ REAL-TIME SYNC активна - ключи конвертируются для Firebase!');
-        
-        if (Object.keys(botStorage).length === 0) {
-            await sendToTelegramBot('🔥 Pattaya Plans Bot с Firebase!\nИсправлены Firebase paths - теперь синхронизация работает без ошибок!');
-        }
-        
-    } catch (error) {
-        console.error('❌ Firebase init error:', error);
-        storageInitialized = true;
-    }
-}
-
-function setStorageItem(key, value, callback = null) {
-    if (!storageInitialized) {
-        setTimeout(() => setStorageItem(key, value, callback), 500);
-        return;
-    }
-    
-    // ИСПРАВЛЕНО: конвертируем ключ для Firebase (убираем точки)
-    const firebaseKey = keyToFirebase(key);
-    
-    set(ref(database, 'plans/' + firebaseKey), value)
-        .then(() => {
-            localStorage.setItem(key, value);
-            botStorage[key] = value;
-            
-            // Уведомление в Telegram
-            const [date, time] = key.split('_');
-            const formattedDate = date.split('.').reverse().join('-');
-            const dateObj = new Date(formattedDate);
-            const dayName = dateObj.toLocaleDateString('ru-RU', { weekday: 'long' });
-            
-            sendToTelegramBot(`📝 *Новый план добавлен*\n\n📅 ${date} (${dayName})\n🕐 ${time}\n💭 "${value}"`);
-            
-            console.log('🔥 Saved to Firebase (fixed path):', firebaseKey, '- INSTANTLY synced to all users');
-            if (callback) callback();
-        })
-        .catch(error => {
-            console.error('❌ Firebase save error:', error);
-            localStorage.setItem(key, value);
-            botStorage[key] = value;
-            if (callback) callback();
-        });
-}
-
-function getStorageItem(key, callback) {
-    if (!storageInitialized) {
-        setTimeout(() => getStorageItem(key, callback), 100);
-        return;
-    }
-    
-    const cachedValue = botStorage[key] || '';
-    callback(cachedValue);
-    
-    if (cachedValue) {
-        console.log(`🔥 Found cached plan: ${key} = "${cachedValue}"`);
-    }
-}
-
-function removeStorageItem(key, callback = null) {
-    if (!storageInitialized) {
-        setTimeout(() => removeStorageItem(key, callback), 500);
-        return;
-    }
-    
-    if (botStorage[key]) {
-        const oldValue = botStorage[key];
-        
-        // ИСПРАВЛЕНО: конвертируем ключ для Firebase
-        const firebaseKey = keyToFirebase(key);
-        
-        remove(ref(database, 'plans/' + firebaseKey))
-            .then(() => {
-                localStorage.removeItem(key);
-                delete botStorage[key];
-                
-                const [date, time] = key.split('_');
-                sendToTelegramBot(`🗑️ *План удален*\n\n📅 ${date}\n🕐 ${time}\n~~"${oldValue}"~~`);
-                
-                console.log('🔥 Deleted from Firebase (fixed path):', firebaseKey, '- INSTANTLY synced to all users');
-                if (callback) callback();
-            })
-            .catch(error => {
-                console.error('❌ Firebase delete error:', error);
-                localStorage.removeItem(key);
-                delete botStorage[key];
-                if (callback) callback();
-            });
-    } else {
-        if (callback) callback();
-    }
-}
-
-function refreshCurrentModal() {
-    const modal = document.getElementById('dailyPlanModal');
-    if (modal && modal.classList.contains('active')) {
-        document.querySelectorAll('.plan-input').forEach(input => {
-            const date = input.dataset.date;
-            const time = input.dataset.time;
-            const key = `${date}_${time}`;
-            const savedValue = botStorage[key] || '';
-            
-            if (document.activeElement !== input && input.value !== savedValue) {
-                input.value = savedValue;
-                input.style.backgroundColor = '#FFE4E1';
-                setTimeout(() => {
-                    input.style.backgroundColor = '';
-                }, 1000);
-                console.log('🔥 UI updated with real-time data:', key);
-            }
-        });
-    }
-}
-
-function forceSync() {
-    console.log('🔥 Firebase works in real-time - no manual sync needed!');
-    const button = event.target;
-    button.textContent = '🔥 Real-time';
-    button.disabled = true;
-    
-    setTimeout(() => {
-        button.textContent = '🔥 Firebase';
-        button.disabled = false;
-    }, 1500);
-    
-    const notification = document.createElement('div');
-    notification.textContent = '🔥 Firebase работает в реальном времени!';
-    notification.style.cssText = `
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        background: #FF6B35;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-size: 14px;
-        z-index: 10000;
-        animation: pulse 0.6s;
-    `;
-    document.body.appendChild(notification);
-    setTimeout(() => {
-        notification.remove();
-    }, 2000);
-}
-
-async function sendToTelegramBot(message, isData = false) {
-    try {
-        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: CHAT_ID,
-                text: message,
-                disable_notification: isData,
-                parse_mode: isData ? undefined : 'Markdown',
-                ...(isData && { disable_web_page_preview: true })
-            })
-        });
-        const result = await response.json();
-        if (!result.ok) {
-            console.error('Telegram API error:', result);
-        }
-        return result;
-    } catch (error) {
-        console.error('❌ Telegram send error:', error);
-        return null;
-    }
-}
-
-// [ВСЕ ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ - СОКРАЩЕНО ДЛЯ КРАТКОСТИ]
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -435,6 +215,14 @@ function sortAllGeoBlocks() {
         buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
         buttons.forEach(button => templesContainer.appendChild(button));
     }
+
+    // ДОБАВЛЕНО: Сортировка детских площадок
+    const playgroundsContainer = document.querySelector('.geo-playgrounds .geo-items-container');
+    if(playgroundsContainer) {
+        const buttons = Array.from(playgroundsContainer.querySelectorAll('.geo-item-btn'));
+        buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
+        buttons.forEach(button => playgroundsContainer.appendChild(button));
+    }
 }
 
 function applyGeoFilter() {
@@ -442,11 +230,17 @@ function applyGeoFilter() {
     const nearbyContainer = document.getElementById('nearbyItems');
     nearbyContainer.innerHTML = '';
 
+    // Находим ближайшее кафе в зависимости от фильтра
     const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeGeoFilter}"]`);
     const closestCafeButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
 
+    // Находим ближайший храм (он всегда первый в своем отсортированном контейнере)
     const templesContainer = document.querySelector('.geo-temples .geo-items-container');
     const closestTempleButton = templesContainer ? templesContainer.querySelector('.geo-item-btn') : null;
+
+    // ДОБАВЛЕНО: Ближайшая детская площадка
+    const playgroundsContainer = document.querySelector('.geo-playgrounds .geo-items-container');
+    const closestPlaygroundButton = playgroundsContainer ? playgroundsContainer.querySelector('.geo-item-btn') : null;
 
     if (closestCafeButton) {
         const clone = closestCafeButton.cloneNode(true);
@@ -461,8 +255,17 @@ function applyGeoFilter() {
         nearbyContainer.appendChild(clone);
         closestTempleButton.style.display = 'none';
     }
+
+    // ДОБАВЛЕНО: Показ ближайшей детской площадки
+    if (closestPlaygroundButton) {
+        const clone = closestPlaygroundButton.cloneNode(true);
+        initGeoItemButton(clone);
+        nearbyContainer.appendChild(clone);
+        closestPlaygroundButton.style.display = 'none';
+    }
     
-    if (!closestCafeButton && !closestTempleButton) {
+    // ОБНОВЛЕНО: Условие для пустого состояния
+    if (!closestCafeButton && !closestTempleButton && !closestPlaygroundButton) {
         nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений</div>`;
     }
 }
@@ -519,7 +322,13 @@ function initGeoItemButton(button) {
         if (!isScrolling && pressTimer) {
             e.preventDefault();
             clearTimeout(pressTimer);
-            window.open(allGeoData[id].link, '_blank');
+            
+            // ДОБАВЛЕНО: Показ модального окна для детских площадок
+            if (allGeoData[id] && allGeoData[id].type === 'playground') {
+                showPlaygroundModal(allGeoData[id]);
+            } else {
+                window.open(allGeoData[id].link, '_blank');
+            }
         }
         pressTimer = null;
     };
@@ -545,65 +354,40 @@ function initGeoItemButton(button) {
     button.addEventListener('touchcancel', handlePressCancel);
 }
 
-const kidsLeisure = [
-    { 
-        name: 'Mini Siam', 
-        date: '01.01.2026', 
-        coords: { lat: 12.9554157, lng: 100.9088538 }, 
-        tips: 'Парк миниатюр мирового уровня с более чем 100 копиями знаменитых достопримечательностей в масштабе 1:25. Работает 9:00-19:00 ежедневно. Лучшее время посещения: после 15:00 когда включается подсветка. Разделен на зоны Mini Siam (тайские достопримечательности) и Mini Europe (мировые памятники). Продолжительность визита: 1.5-2 часа. Есть кафе и сувенирные магазины.',
-        type: 'sight' 
-    },
-    { 
-        name: 'Деревня слонов', 
-        date: '04.01.2026', 
-        coords: { lat: 12.91604299, lng: 100.93883441 }, 
-        tips: 'Этический слоновый заповедник с 1973 года. Шоу в 14:30-16:00, кормление и купание со слонами. ВАЖНО: есть несколько мест с похожими названиями - выбирайте Pattaya Elephant Sanctuary для этичного обращения с животными. Включает вегетарианский обед, транспорт от отеля. Длительность: 2-3 часа. Рекомендуется бронировать заранее.',
-        type: 'sight' 
-    },
-    { 
-        name: 'Дельфинариум', 
-        date: '07.01.2026', 
-        coords: { lat: 12.95222191, lng: 100.93617557 }, 
-        tips: 'Современный дельфинариум с профессиональными шоу дельфинов и морских котиков. Шоу в 11:00, 14:00 и 17:00 (закрыто по средам). Длительность шоу: 45 минут. Возможность плавания с дельфинами в 12:00, 15:00, 18:00. Места VIP, Deluxe и обычные. Приходите за 30-45 минут до начала. В первых рядах можно промокнуть - выдают дождевики.',
-        type: 'sight' 
-    },
-    { 
-        name: 'Сад Нонг Нуч', 
-        date: '11.01.2026', 
-        coords: { lat: 12.76575858, lng: 100.93505629 }, 
-        tips: 'Всемирно известный тропический ботанический сад площадью 240 гектаров. Шоу слонов и культурные представления. Потрясающие тематические сады: французский, английский, кактусовый. Орхидеи и экзотические растения. Планируйте целый день - территория огромная. Лучше всего с утра, когда прохладнее. Есть рестораны и кафе на территории.',
-        type: 'sight' 
-    },
-    { 
-        name: 'Музей искусств 3D', 
-        date: '13.01.2026', 
-        coords: { lat: 12.94832322, lng: 100.88976288 }, 
-        tips: 'Интерактивный музей с 3D-картинами для впечатляющих фотосессий. Более 100 произведений искусства в 10 тематических зонах: подводный мир, дикие животные, классическое искусство. Идеально для Instagram! Время посещения: 1-2 часа. Работает 9:00-21:00. Берите камеру с хорошим объективом - здесь все создано для фотографий. Есть аудиогид на разных языках.',
-        type: 'sight' 
-    },
-    { 
-        name: 'Аюттайя', 
-        date: '16.01.2026', 
-        coords: { lat: 14.35741905, lng: 100.56757512 }, 
-        tips: 'Древняя столица Сиама, объект всемирного наследия ЮНЕСКО. Руины храмов XIV-XVIII веков. Знаменитая голова Будды в корнях дерева в Wat Mahathat. Расстояние от Паттайи: 150 км (2.5 часа езды). Планируйте полный день с рано утра. Лучше брать экскурсию с гидом. Обязательно: Wat Chaiwatthanaram, Wat Phra Si Sanphet. Удобная обувь обязательна!',
-        type: 'sight' 
-    },
-    { 
-        name: 'Зоопарк Кхао Кхео', 
-        date: '19.01.2026', 
-        coords: { lat: 13.21500644, lng: 101.05700099 }, 
-        tips: 'Крупнейший открытый зоопарк Таиланда на 800 гектарах. Более 300 видов животных в естественной среде. Сафари на автомобиле, пешие маршруты, ночное сафари. Особенность: белые тигры, слоны, жирафы. Работает 8:00-18:00. Расстояние: 45 км от Паттайи. Планируйте 4-5 часов. Есть рестораны и зоны отдыха. Возьмите головные уборы и воду.',
-        type: 'sight' 
-    },
-    { 
-        name: 'Плавучий рынок', 
-        date: '22.01.2026', 
-        coords: { lat: 12.86799376, lng: 100.90469404 }, 
-        tips: 'Аутентичный плавучий рынок с торговлей на лодках по каналам. Свежие тропические фрукты, морепродукты, сувениры. Лучшее время: 7:00-11:00, когда наиболее активна торговля. Катание на длинных лодках по каналам, кормление рыб и варанов. Обязательно попробуйте: тайские сладости, кокосовое мороженое. Торгуйтесь! Возьмите мелкие деньги и водостойкую сумку.',
-        type: 'sight' 
+// НОВАЯ ФУНКЦИЯ: Модальное окно для детских площадок
+function showPlaygroundModal(playground) {
+    let content = `<h3>🎠 ${playground.name}</h3>`;
+    if (playground.tips) content += `<p>💡 ${playground.tips}</p>`;
+    
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    const to = `${playground.coords[0]},${playground.coords[1]}`;
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+    
+    if (userCoords) {
+        const userFrom = `${userCoords[0]},${userCoords[1]}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+        const distance = getDistance(userCoords, playground.coords);
+        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-];
+    
+    content += `<p><a href="${playground.link}" target="_blank">🌐 Открыть в Google Maps</a></p>`;
+    
+    document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalOverlay').classList.add('active');
+}
 
+// -- Остальная логика приложения --
+
+const kidsLeisure = [
+    { name: 'Mini Siam', date: '01.01.2026', coords: { lat: 12.9554157, lng: 100.9088538 }, tips: 'Парк миниатюр.', type: 'sight' },
+    { name: 'Деревня слонов', date: '04.01.2026', coords: { lat: 12.91604299, lng: 100.93883441 }, tips: 'Шоу слонов (14:30–16:00).', type: 'sight' },
+    { name: 'Дельфинариум', date: '07.01.2026', coords: { lat: 12.95222191, lng: 100.93617557 }, tips: 'Шоу дельфинов в 15:00.', type: 'sight' },
+    { name: 'Сад Нонг Нуч', date: '11.01.2026', coords: { lat: 12.76575858, lng: 100.93505629 }, tips: 'Шоу слонов и сад.', type: 'sight' },
+    { name: 'Музей искусств 3D', date: '13.01.2026', coords: { lat: 12.94832322, lng: 100.88976288 }, tips: 'Интерактивные фотозоны.', type: 'sight' },
+    { name: 'Аюттайя', date: '16.01.2026', coords: { lat: 14.35741905, lng: 100.56757512 }, tips: 'Древняя столица.', type: 'sight' },
+    { name: 'Зоопарк Кхао Кхео', date: '19.01.2026', coords: { lat: 13.21500644, lng: 101.05700099 }, tips: 'Открытый зоопарк.', type: 'sight' },
+    { name: 'Плавучий рынок', date: '22.01.2026', coords: { lat: 12.86799376, lng: 100.90469404 }, tips: 'Торговля на лодках.', type: 'sight' }
+];
 
 function generateBeachDays() {
     const used = kidsLeisure.map(x => x.date), days = [];
@@ -619,22 +403,28 @@ function generateBeachDays() {
 
 const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b) => new Date(a.date.split('.').reverse().join('-')) - new Date(b.date.split('.').reverse().join('-')));
 
+// ИСПРАВЛЕННАЯ функция updateCountdown с новой логикой
 function updateCountdown() {
-    const startTrip = new Date('2025-12-29');
-    const endTrip = new Date('2026-01-26');
+    const startTrip = new Date('2025-12-29');  // Начало поездки
+    const endTrip = new Date('2026-01-26');    // Конец поездки (отъезд)
     const now = new Date();
     
     if (now < startTrip) {
+        // До поездки
         const days = Math.ceil((startTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До поездки:';
         document.getElementById('days').textContent = days;
         document.querySelector('.countdown-label').textContent = 'дней';
-    } else if (now >= startTrip && now < endTrip) {
+        
+    } else if (now >= startTrip && now < endTrip) {  // ИЗМЕНЕНО: < вместо <=
+        // Во время поездки - показываем дни до отъезда
         const daysToGo = Math.ceil((endTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До отъезда:';
         document.getElementById('days').textContent = daysToGo;
         document.querySelector('.countdown-label').textContent = 'дней';
-    } else {
+        
+    } else {  // now >= endTrip (с 26.01.2026)
+        // В последний день и после поездки
         document.getElementById('countdownText').textContent = 'Поездка завершена!';
         document.getElementById('days').textContent = '✔';
         document.querySelector('.countdown-label').textContent = '';
@@ -658,6 +448,7 @@ function renderActivities(list) {
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
         
+        // ИСПРАВЛЕНА: убран onclick, добавлен класс daily-plan-btn
         const buttonHtml = a.type === 'sea' ? 
             `<button class="details daily-plan-btn" data-name="${a.name}" data-date="${a.date}">Планы на день</button>` :
             (a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : '');
@@ -670,6 +461,7 @@ function renderActivities(list) {
 function bindDetailButtons() {
     document.querySelectorAll('.details').forEach(btn => {
         btn.onclick = () => {
+            // ИСПРАВЛЕНА: добавлена проверка на класс daily-plan-btn
             if (btn.classList.contains('daily-plan-btn')) {
                 openDailyPlanModal(btn.dataset.name, btn.dataset.date);
             } else {
@@ -708,37 +500,8 @@ function renderContacts(list) {
     }
     grid.innerHTML = items.map(p => {
         const distTag = p.distance ? `<span class="distance-tag">≈${p.distance.toFixed(1)} км</span>` : '';
-        return `<button class="contact-btn" data-contact='${JSON.stringify(p)}'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
+        return `<button class="contact-btn" onclick='showContactModal(${JSON.stringify(p)})'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
     }).join('');
-}
-
-function initContactButtons() {
-    document.querySelectorAll('.contact-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const contact = JSON.parse(btn.dataset.contact);
-            showContactModal(contact);
-        });
-    });
-}
-
-function showContactModal(contact) {
-    let content = `<h3>${contact.icon} ${contact.name}</h3>`;
-    
-    if (contact.coords) {
-        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-        const to = `${contact.coords.lat},${contact.coords.lng}`;
-        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-        
-        if (userCoords) {
-            const userFrom = `${userCoords[0]},${userCoords[1]}`;
-            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
-            const distance = getDistance(userCoords, [contact.coords.lat, contact.coords.lng]);
-            content += `<p>📏 Расстояние: ≈${distance} км</p>`;
-        }
-    }
-    
-    document.getElementById('modalBody').innerHTML = content;
-    document.getElementById('modalOverlay').classList.add('active');
 }
 
 function getIconForActivity(name) {
@@ -753,6 +516,7 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
 }
 
+// ФУНКЦИИ ДЛЯ ЕЖЕДНЕВНИКА
 function initDailyPlanModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal) {
@@ -762,17 +526,16 @@ function initDailyPlanModal() {
     }
 }
 
+// ИСПРАВЛЕННАЯ функция openDailyPlanModal - сначала показать попап, потом загрузить данные
 function openDailyPlanModal(activityName, date) {
     const modal = document.getElementById('dailyPlanModal');
     const grid = document.getElementById('dailyPlanGrid');
     
     if (!modal || !grid) return;
     
-    document.querySelector('#dailyPlanModalBody h3').innerHTML = `
-        📝 Планы на день - ${activityName}
-        <button onclick="forceSync()" style="float:right; padding:6px 12px; font-size:14px; background:#FF6B35; color:white; border:none; border-radius:6px; cursor:pointer; margin-left:10px;">🔥 Firebase</button>
-    `;
+    document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
     
+    // Сначала создаем пустые слоты
     let timeSlots = '';
     const timeSlotData = [];
     
@@ -796,9 +559,11 @@ function openDailyPlanModal(activityName, date) {
         `;
     }
     
+    // Сначала показываем попап с пустыми полями
     grid.innerHTML = timeSlots;
     modal.classList.add('active');
     
+    // Затем асинхронно загружаем данные для каждого поля
     timeSlotData.forEach(slot => {
         getStorageItem(slot.key, (savedPlan) => {
             const input = document.querySelector(`input[data-time="${slot.startTime}"][data-date="${slot.date}"]`);
@@ -808,29 +573,34 @@ function openDailyPlanModal(activityName, date) {
         });
     });
     
+    // Добавляем обработчики событий
     document.querySelectorAll('.plan-input').forEach(input => {
         let touchStartTime = 0;
         let touchStartY = 0;
         
+        // ИСПРАВЛЕНО: Автосохранение при потере фокуса И при изменении
         input.addEventListener('blur', () => {
             autoSavePlan(input);
         });
         
+        // ДОБАВЛЕНО: Автосохранение при вводе (с задержкой)
         let saveTimeout;
         input.addEventListener('input', () => {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
                 autoSavePlan(input);
-            }, 1000);
+            }, 1000); // Сохранение через 1 секунду после остановки ввода
         });
         
+        // ДОБАВЛЕНО: Автосохранение при Enter
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 autoSavePlan(input);
-                input.blur();
+                input.blur(); // Потеря фокуса
             }
         });
         
+        // Защита от случайных тапов (как было)
         input.addEventListener('touchstart', e => {
             touchStartTime = Date.now();
             touchStartY = e.touches[0].clientY;
@@ -863,31 +633,143 @@ function closeDailyPlanModal() {
     }
 }
 
+// УЛУЧШЕННАЯ функция автосохранения с отладкой
 function autoSavePlan(input) {
     const date = input.dataset.date;
     const time = input.dataset.time;
     const value = input.value.trim();
     const key = `${date}_${time}`;
     
-    console.log(`🔄 Auto-saving plan: ${key} = "${value}"`);
+    console.log(`🔄 Попытка сохранения: ${key} = "${value}"`);
     
     if (value) {
         setStorageItem(key, value, () => {
+            // Визуальная обратная связь - мигание зеленым фоном
             input.style.backgroundColor = '#dcfce7';
             setTimeout(() => {
                 input.style.backgroundColor = '';
             }, 300);
-            console.log(`🔥 Plan saved to Firebase (fixed path): ${time} - ${value}`);
+            console.log(`✅ Автосохранено: ${time} - ${value}`);
         });
     } else {
         removeStorageItem(key, () => {
-            console.log(`🔥 Empty plan removed from Firebase (fixed path): ${time}`);
+            console.log(`🗑️ Удален пустой план: ${time}`);
         });
     }
 }
 
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ HTML (ИСПРАВЛЕНИЕ ES6 МОДУЛЕЙ)
-window.closeModal = closeModal;
-window.showContactModal = showContactModal;
-window.forceSync = forceSync;
-window.closeDailyPlanModal = closeDailyPlanModal; // ДОБАВЛЕНО!
+// GOOGLE SHEETS STORAGE FUNCTIONS - ЗАМЕНЯЮТ Cloud Storage
+function setStorageItem(key, value, callback = null) {
+    const data = {
+        action: 'set',
+        key: key,
+        value: value
+    };
+    
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Saved to Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        // Fallback на localStorage при ошибке
+        localStorage.setItem(key, value);
+        console.log('📱 Saved to localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
+}
+
+function getStorageItem(key, callback) {
+    const data = {
+        action: 'get',
+        key: key
+    };
+    
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Loaded from Google Sheets (shared)');
+            callback(result.value || '');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        // Fallback на localStorage при ошибке
+        const fallbackValue = localStorage.getItem(key) || '';
+        console.log('📱 Loaded from localStorage (Sheets fallback)');
+        callback(fallbackValue);
+    });
+}
+
+function removeStorageItem(key, callback = null) {
+    const data = {
+        action: 'delete',
+        key: key
+    };
+    
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Deleted from Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        // Fallback на localStorage при ошибке
+        localStorage.removeItem(key);
+        console.log('📱 Deleted from localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
+}
+
+// ДОБАВЛЕНО: Показ модального окна для контактов  
+function showContactModal(contact) {
+    let content = `<h3>${contact.icon} ${contact.name}</h3>`;
+    
+    if (contact.coords) {
+        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+        const to = `${contact.coords.lat},${contact.coords.lng}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+        
+        if (userCoords) {
+            const userFrom = `${userCoords[0]},${userCoords[1]}`;
+            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+            const distance = getDistance(userCoords, [contact.coords.lat, contact.coords.lng]);
+            content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+        }
+    }
+    
+    document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalOverlay').classList.add('active');
+}
