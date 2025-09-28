@@ -1,6 +1,6 @@
-// Version: 1.2.5 | Lines: 450
+// Version: 1.2.6 | Lines: 460
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (450 строк)
+// Версия скрипта: app.js (460 строк)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
@@ -424,88 +424,103 @@ function initDailyPlanModal() {
     }
 }
 
+// ИСПРАВЛЕННАЯ функция openDailyPlanModal - сначала показать попап, потом загрузить данные
 function openDailyPlanModal(activityName, date) {
     const modal = document.getElementById('dailyPlanModal');
     const grid = document.getElementById('dailyPlanGrid');
     
     if (!modal || !grid) return;
     
-    // Генерируем временные слоты с 07:00 до 21:00
+    document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
+    
+    // Сначала создаем пустые слоты
     let timeSlots = '';
-    const promises = [];
+    const timeSlotData = [];
     
     for (let hour = 7; hour <= 20; hour++) {
         const startTime = `${hour.toString().padStart(2, '0')}:00`;
         const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
         const key = `${date}_${startTime}`;
         
-        // ИЗМЕНЕНО: используем getStorageItem вместо localStorage
-        promises.push(new Promise(resolve => {
-            getStorageItem(key, (savedPlan) => {
-                timeSlots += `
-                    <div class="daily-plan-row">
-                        <div class="time-slot">${startTime} - ${endTime}</div>
-                        <input type="text" 
-                               class="plan-input" 
-                               data-time="${startTime}" 
-                               data-date="${date}"
-                               value="${savedPlan}"
-                               placeholder="..............................">
-                    </div>
-                `;
-                resolve();
-            });
-        }));
+        timeSlotData.push({ startTime, endTime, key, date });
+        
+        timeSlots += `
+            <div class="daily-plan-row">
+                <div class="time-slot">${startTime} - ${endTime}</div>
+                <input type="text" 
+                       class="plan-input" 
+                       data-time="${startTime}" 
+                       data-date="${date}"
+                       value=""
+                       placeholder="..............................">
+            </div>
+        `;
     }
     
-    // Дождаться загрузки всех данных
-    Promise.all(promises).then(() => {
-        document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
-        grid.innerHTML = timeSlots;
+    // Сначала показываем попап с пустыми полями
+    grid.innerHTML = timeSlots;
+    modal.classList.add('active');
+    
+    // Затем асинхронно загружаем данные для каждого поля
+    timeSlotData.forEach(slot => {
+        getStorageItem(slot.key, (savedPlan) => {
+            const input = document.querySelector(`input[data-time="${slot.startTime}"][data-date="${slot.date}"]`);
+            if (input && savedPlan) {
+                input.value = savedPlan;
+            }
+        });
+    });
+    
+    // Добавляем обработчики событий
+    document.querySelectorAll('.plan-input').forEach(input => {
+        let touchStartTime = 0;
+        let touchStartY = 0;
         
-        // ИЗМЕНЕНО: добавляем автосохранение при потере фокуса
-        document.querySelectorAll('.plan-input').forEach(input => {
-            let touchStartTime = 0;
-            let touchStartY = 0;
-            
-            // ДОБАВЛЕНО: Автосохранение при потере фокуса
-            input.addEventListener('blur', () => {
-                autoSavePlan(input);
-            });
-            
-            // ДОБАВЛЕНО: Автосохранение при Enter
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    input.blur(); // Потеря фокуса -> автосохранение
-                }
-            });
-            
-            // Защита от случайных тапов (как было)
-            input.addEventListener('touchstart', e => {
-                touchStartTime = Date.now();
-                touchStartY = e.touches[0].clientY;
-            });
-            
-            input.addEventListener('touchend', e => {
-                const touchEndTime = Date.now();
-                const timeDiff = touchEndTime - touchStartTime;
-                
-                if (timeDiff > 150) {
-                    setTimeout(() => input.focus(), 50);
-                }
-            });
-            
-            input.addEventListener('touchmove', e => {
-                const currentY = e.touches[0].clientY;
-                const moveDiff = Math.abs(currentY - touchStartY);
-                
-                if (moveDiff > 10) {
-                    touchStartTime = 0;
-                }
-            });
+        // ИСПРАВЛЕНО: Автосохранение при потере фокуса И при изменении
+        input.addEventListener('blur', () => {
+            autoSavePlan(input);
         });
         
-        modal.classList.add('active');
+        // ДОБАВЛЕНО: Автосохранение при вводе (с задержкой)
+        let saveTimeout;
+        input.addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                autoSavePlan(input);
+            }, 1000); // Сохранение через 1 секунду после остановки ввода
+        });
+        
+        // ДОБАВЛЕНО: Автосохранение при Enter
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                autoSavePlan(input);
+                input.blur(); // Потеря фокуса
+            }
+        });
+        
+        // Защита от случайных тапов (как было)
+        input.addEventListener('touchstart', e => {
+            touchStartTime = Date.now();
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        input.addEventListener('touchend', e => {
+            const touchEndTime = Date.now();
+            const timeDiff = touchEndTime - touchStartTime;
+            
+            if (timeDiff > 150) {
+                setTimeout(() => input.focus(), 50);
+            }
+        });
+        
+        input.addEventListener('touchmove', e => {
+            const currentY = e.touches[0].clientY;
+            const moveDiff = Math.abs(currentY - touchStartY);
+            
+            if (moveDiff > 10) {
+                touchStartTime = 0;
+            }
+        });
     });
 }
 
@@ -516,12 +531,14 @@ function closeDailyPlanModal() {
     }
 }
 
-// ИЗМЕНЕНА: функция автосохранения вместо ручного сохранения
+// УЛУЧШЕННАЯ функция автосохранения с отладкой
 function autoSavePlan(input) {
     const date = input.dataset.date;
     const time = input.dataset.time;
     const value = input.value.trim();
     const key = `${date}_${time}`;
+    
+    console.log(`🔄 Попытка сохранения: ${key} = "${value}"`);
     
     if (value) {
         setStorageItem(key, value, () => {
