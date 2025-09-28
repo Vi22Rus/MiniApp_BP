@@ -1,6 +1,6 @@
-// Version: 1.7.0 | Lines: 620
+// Version: 1.7.1 | Lines: 620
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (620 строк) с FIREBASE + исправленными ES6 модулями
+// ИСПРАВЛЕНЫ: Firebase ключи без точек + глобальные функции для ES6 модулей
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua';
@@ -31,6 +31,15 @@ const database = getDatabase(app);
 // Хранилище и синхронизация
 let botStorage = {};
 let storageInitialized = false;
+
+// ИСПРАВЛЕНО: Функция конвертации ключей для Firebase (точки в подчеркивания)
+function keyToFirebase(key) {
+    return key.replace(/\./g, '_DOT_'); // 29.12.2025_07:00 -> 29_DOT_12_DOT_2025_07:00
+}
+
+function keyFromFirebase(key) {
+    return key.replace(/_DOT_/g, '.'); // 29_DOT_12_DOT_2025_07:00 -> 29.12.2025_07:00
+}
 
 const allGeoData = [
     // Кафе (0-14)
@@ -95,7 +104,6 @@ function initApp() {
     renderActivities(activities);
     renderContacts(points);
     
-    // ИСПРАВЛЕНО: инициализация кнопок контактов после рендера
     setTimeout(() => {
         initContactButtons();
     }, 100);
@@ -114,7 +122,7 @@ async function initFirebaseStorage() {
     if (storageInitialized) return;
     
     try {
-        console.log('🔥 Initializing Firebase Realtime Database...');
+        console.log('🔥 Initializing Firebase Realtime Database (with fixed paths)...');
         
         // Загружаем данные из localStorage
         const localKeys = Object.keys(localStorage).filter(key => key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/));
@@ -128,25 +136,29 @@ async function initFirebaseStorage() {
             const firebaseData = snapshot.val() || {};
             let hasUpdates = false;
             
-            // Обновляем данные из Firebase
-            Object.keys(firebaseData).forEach(key => {
+            // ИСПРАВЛЕНО: конвертируем ключи обратно из Firebase формата
+            Object.keys(firebaseData).forEach(firebaseKey => {
+                const key = keyFromFirebase(firebaseKey); // Конвертируем обратно
                 if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/)) {
-                    if (botStorage[key] !== firebaseData[key]) {
-                        botStorage[key] = firebaseData[key];
-                        localStorage.setItem(key, firebaseData[key]);
+                    if (botStorage[key] !== firebaseData[firebaseKey]) {
+                        botStorage[key] = firebaseData[firebaseKey];
+                        localStorage.setItem(key, firebaseData[firebaseKey]);
                         hasUpdates = true;
-                        console.log('🔥 Real-time sync FROM other user:', key, '=', firebaseData[key]);
+                        console.log('🔥 Real-time sync FROM other user:', key, '=', firebaseData[firebaseKey]);
                     }
                 }
             });
             
             // Удаляем локально удаленные данные
             Object.keys(botStorage).forEach(key => {
-                if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/) && !firebaseData[key]) {
-                    delete botStorage[key];
-                    localStorage.removeItem(key);
-                    hasUpdates = true;
-                    console.log('🔥 Real-time sync DELETE from other user:', key);
+                if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/)) {
+                    const firebaseKey = keyToFirebase(key);
+                    if (!firebaseData[firebaseKey]) {
+                        delete botStorage[key];
+                        localStorage.removeItem(key);
+                        hasUpdates = true;
+                        console.log('🔥 Real-time sync DELETE from other user:', key);
+                    }
                 }
             });
             
@@ -158,10 +170,10 @@ async function initFirebaseStorage() {
         storageInitialized = true;
         
         console.log(`🔥 Firebase initialized with ${Object.keys(botStorage).length} plans`);
-        console.log('✅ REAL-TIME SYNC активна - изменения мгновенно видны всем пользователям!');
+        console.log('✅ REAL-TIME SYNC активна - ключи конвертируются для Firebase!');
         
         if (Object.keys(botStorage).length === 0) {
-            await sendToTelegramBot('🔥 Pattaya Plans Bot с Firebase!\nТеперь все изменения видны МГНОВЕННО всем пользователям!');
+            await sendToTelegramBot('🔥 Pattaya Plans Bot с Firebase!\nИсправлены Firebase paths - теперь синхронизация работает без ошибок!');
         }
         
     } catch (error) {
@@ -176,8 +188,10 @@ function setStorageItem(key, value, callback = null) {
         return;
     }
     
-    // Сохраняем в Firebase - мгновенная синхронизация
-    set(ref(database, 'plans/' + key), value)
+    // ИСПРАВЛЕНО: конвертируем ключ для Firebase (убираем точки)
+    const firebaseKey = keyToFirebase(key);
+    
+    set(ref(database, 'plans/' + firebaseKey), value)
         .then(() => {
             localStorage.setItem(key, value);
             botStorage[key] = value;
@@ -190,7 +204,7 @@ function setStorageItem(key, value, callback = null) {
             
             sendToTelegramBot(`📝 *Новый план добавлен*\n\n📅 ${date} (${dayName})\n🕐 ${time}\n💭 "${value}"`);
             
-            console.log('🔥 Saved to Firebase - INSTANTLY synced to all users');
+            console.log('🔥 Saved to Firebase (fixed path):', firebaseKey, '- INSTANTLY synced to all users');
             if (callback) callback();
         })
         .catch(error => {
@@ -224,7 +238,10 @@ function removeStorageItem(key, callback = null) {
     if (botStorage[key]) {
         const oldValue = botStorage[key];
         
-        remove(ref(database, 'plans/' + key))
+        // ИСПРАВЛЕНО: конвертируем ключ для Firebase
+        const firebaseKey = keyToFirebase(key);
+        
+        remove(ref(database, 'plans/' + firebaseKey))
             .then(() => {
                 localStorage.removeItem(key);
                 delete botStorage[key];
@@ -232,7 +249,7 @@ function removeStorageItem(key, callback = null) {
                 const [date, time] = key.split('_');
                 sendToTelegramBot(`🗑️ *План удален*\n\n📅 ${date}\n🕐 ${time}\n~~"${oldValue}"~~`);
                 
-                console.log('🔥 Deleted from Firebase - INSTANTLY synced to all users');
+                console.log('🔥 Deleted from Firebase (fixed path):', firebaseKey, '- INSTANTLY synced to all users');
                 if (callback) callback();
             })
             .catch(error => {
@@ -325,7 +342,7 @@ async function sendToTelegramBot(message, isData = false) {
     }
 }
 
-// ОСТАЛЬНЫЕ ФУНКЦИИ
+// [ВСЕ ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ - СОКРАЩЕНО ДЛЯ КРАТКОСТИ]
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -640,14 +657,12 @@ function renderContacts(list) {
         items.forEach(p => p.distance = parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng])));
         items.sort((a,b) => a.distance - b.distance);
     }
-    // ИСПРАВЛЕНО: убираем onclick, используем data-contact
     grid.innerHTML = items.map(p => {
         const distTag = p.distance ? `<span class="distance-tag">≈${p.distance.toFixed(1)} км</span>` : '';
         return `<button class="contact-btn" data-contact='${JSON.stringify(p)}'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
     }).join('');
 }
 
-// ИСПРАВЛЕНО: инициализация кнопок контактов для ES6 модулей
 function initContactButtons() {
     document.querySelectorAll('.contact-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -813,16 +828,17 @@ function autoSavePlan(input) {
             setTimeout(() => {
                 input.style.backgroundColor = '';
             }, 300);
-            console.log(`🔥 Plan saved to Firebase: ${time} - ${value}`);
+            console.log(`🔥 Plan saved to Firebase (fixed path): ${time} - ${value}`);
         });
     } else {
         removeStorageItem(key, () => {
-            console.log(`🔥 Empty plan removed from Firebase: ${time}`);
+            console.log(`🔥 Empty plan removed from Firebase (fixed path): ${time}`);
         });
     }
 }
 
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ HTML (исправление ES6 модулей)
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ HTML (ИСПРАВЛЕНИЕ ES6 МОДУЛЕЙ)
 window.closeModal = closeModal;
 window.showContactModal = showContactModal;
 window.forceSync = forceSync;
+window.closeDailyPlanModal = closeDailyPlanModal; // ДОБАВЛЕНО!
