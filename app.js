@@ -1,9 +1,12 @@
-// Version: 1.2.6 | Lines: 460
+// Version: 1.2.7 | Lines: 470
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (460 строк)
+// Версия скрипта: app.js (470 строк) с Google Sheets
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
+
+// GOOGLE SHEETS INTEGRATION
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxzkVcKcnBmHniTJI2eOx8BOQhyF8rdrTvbEuBLcv7Xl8B2KK6U4ZfLeU888Yl22xo3/exec';
 
 const allGeoData = [
     // Кафе (0-14)
@@ -556,64 +559,97 @@ function autoSavePlan(input) {
     }
 }
 
-// ФУНКЦИИ ДЛЯ Cloud Storage
+// GOOGLE SHEETS STORAGE FUNCTIONS - ЗАМЕНЯЮТ Cloud Storage
 function setStorageItem(key, value, callback = null) {
-    if (window.Telegram?.WebApp?.CloudStorage) {
-        window.Telegram.WebApp.CloudStorage.setItem(key, value, (error, success) => {
-            if (error || !success) {
-                // Fallback на localStorage при ошибке
-                localStorage.setItem(key, value);
-                console.log('Saved to localStorage (Cloud fallback)');
-            } else {
-                console.log('Saved to Telegram Cloud');
-            }
-            if (callback) callback();
-        });
-    } else {
-        // Fallback на localStorage если нет Telegram API
-        localStorage.setItem(key, value);
-        console.log('Saved to localStorage (no Telegram)');
+    const data = {
+        action: 'set',
+        key: key,
+        value: value
+    };
+    
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Saved to Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
         if (callback) callback();
-    }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        // Fallback на localStorage при ошибке
+        localStorage.setItem(key, value);
+        console.log('📱 Saved to localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
 }
 
 function getStorageItem(key, callback) {
-    if (window.Telegram?.WebApp?.CloudStorage) {
-        window.Telegram.WebApp.CloudStorage.getItem(key, (error, value) => {
-            if (error || value === null) {
-                // Fallback на localStorage при ошибке
-                const fallbackValue = localStorage.getItem(key) || '';
-                console.log('Loaded from localStorage (Cloud fallback)');
-                callback(fallbackValue);
-            } else {
-                console.log('Loaded from Telegram Cloud');
-                callback(value);
-            }
-        });
-    } else {
-        // Fallback на localStorage если нет Telegram API
-        const value = localStorage.getItem(key) || '';
-        console.log('Loaded from localStorage (no Telegram)');
-        callback(value);
-    }
+    const data = {
+        action: 'get',
+        key: key
+    };
+    
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Loaded from Google Sheets (shared)');
+            callback(result.value || '');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        // Fallback на localStorage при ошибке
+        const fallbackValue = localStorage.getItem(key) || '';
+        console.log('📱 Loaded from localStorage (Sheets fallback)');
+        callback(fallbackValue);
+    });
 }
 
 function removeStorageItem(key, callback = null) {
-    if (window.Telegram?.WebApp?.CloudStorage) {
-        window.Telegram.WebApp.CloudStorage.removeItem(key, (error, success) => {
-            if (error || !success) {
-                // Fallback на localStorage при ошибке
-                localStorage.removeItem(key);
-                console.log('Removed from localStorage (Cloud fallback)');
-            } else {
-                console.log('Removed from Telegram Cloud');
-            }
-            if (callback) callback();
-        });
-    } else {
-        // Fallback на localStorage если нет Telegram API
-        localStorage.removeItem(key);
-        console.log('Removed from localStorage (no Telegram)');
+    const data = {
+        action: 'delete',
+        key: key
+    };
+    
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Deleted from Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
         if (callback) callback();
-    }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        // Fallback на localStorage при ошибке
+        localStorage.removeItem(key);
+        console.log('📱 Deleted from localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
 }
