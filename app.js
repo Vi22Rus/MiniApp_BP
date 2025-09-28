@@ -1,6 +1,6 @@
-// Version: 1.2.4 | Lines: 424
+// Version: 1.2.5 | Lines: 464
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (424 строки)
+// Версия скрипта: app.js (464 строки)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
@@ -395,7 +395,7 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
 }
 
-// ДОБАВЛЕННЫЕ функции для ежедневника
+// ФУНКЦИИ ДЛЯ ЕЖЕДНЕВНИКА
 function initDailyPlanModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal) {
@@ -413,60 +413,68 @@ function openDailyPlanModal(activityName, date) {
     
     // Генерируем временные слоты с 07:00 до 21:00
     let timeSlots = '';
+    const promises = [];
+    
     for (let hour = 7; hour <= 20; hour++) {
         const startTime = `${hour.toString().padStart(2, '0')}:00`;
         const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
         const key = `${date}_${startTime}`;
-        const savedPlan = localStorage.getItem(key) || '';
         
-        timeSlots += `
-            <div class="daily-plan-row">
-                <div class="time-slot">${startTime} - ${endTime}</div>
-                <input type="text" 
-                       class="plan-input" 
-                       data-time="${startTime}" 
-                       data-date="${date}"
-                       value="${savedPlan}"
-                       placeholder="..............................">
-            </div>
-        `;
+        // ИЗМЕНЕНО: используем getStorageItem вместо localStorage
+        promises.push(new Promise(resolve => {
+            getStorageItem(key, (savedPlan) => {
+                timeSlots += `
+                    <div class="daily-plan-row">
+                        <div class="time-slot">${startTime} - ${endTime}</div>
+                        <input type="text" 
+                               class="plan-input" 
+                               data-time="${startTime}" 
+                               data-date="${date}"
+                               value="${savedPlan}"
+                               placeholder="..............................">
+                    </div>
+                `;
+                resolve();
+            });
+        }));
     }
     
-    document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
-    grid.innerHTML = timeSlots;
-    
-    // Добавляем обработчики с защитой от случайных тапов
-    document.querySelectorAll('.plan-input').forEach(input => {
-        let touchStartTime = 0;
-        let touchStartY = 0;
+    // Дождаться загрузки всех данных
+    Promise.all(promises).then(() => {
+        document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
+        grid.innerHTML = timeSlots;
         
-        input.addEventListener('touchstart', e => {
-            touchStartTime = Date.now();
-            touchStartY = e.touches[0].clientY;
-        });
-        
-        input.addEventListener('touchend', e => {
-            const touchEndTime = Date.now();
-            const timeDiff = touchEndTime - touchStartTime;
+        // Добавляем обработчики с защитой от случайных тапов
+        document.querySelectorAll('.plan-input').forEach(input => {
+            let touchStartTime = 0;
+            let touchStartY = 0;
             
-            // Фокусируемся только при намеренном тапе (больше 150ms)
-            if (timeDiff > 150) {
-                setTimeout(() => input.focus(), 50);
-            }
+            input.addEventListener('touchstart', e => {
+                touchStartTime = Date.now();
+                touchStartY = e.touches[0].clientY;
+            });
+            
+            input.addEventListener('touchend', e => {
+                const touchEndTime = Date.now();
+                const timeDiff = touchEndTime - touchStartTime;
+                
+                if (timeDiff > 150) {
+                    setTimeout(() => input.focus(), 50);
+                }
+            });
+            
+            input.addEventListener('touchmove', e => {
+                const currentY = e.touches[0].clientY;
+                const moveDiff = Math.abs(currentY - touchStartY);
+                
+                if (moveDiff > 10) {
+                    touchStartTime = 0;
+                }
+            });
         });
         
-        input.addEventListener('touchmove', e => {
-            const currentY = e.touches[0].clientY;
-            const moveDiff = Math.abs(currentY - touchStartY);
-            
-            // Если есть значительное движение, не фокусируемся
-            if (moveDiff > 10) {
-                touchStartTime = 0;
-            }
-        });
+        modal.classList.add('active');
     });
-    
-    modal.classList.add('active');
 }
 
 function closeDailyPlanModal() {
@@ -479,6 +487,8 @@ function closeDailyPlanModal() {
 function saveDailyPlan() {
     const inputs = document.querySelectorAll('.plan-input');
     let savedCount = 0;
+    let processedCount = 0;
+    const totalInputs = inputs.length;
     
     inputs.forEach(input => {
         const date = input.dataset.date;
@@ -487,13 +497,27 @@ function saveDailyPlan() {
         const key = `${date}_${time}`;
         
         if (value) {
-            localStorage.setItem(key, value);
-            savedCount++;
+            // ИЗМЕНЕНО: используем setStorageItem вместо localStorage
+            setStorageItem(key, value, () => {
+                savedCount++;
+                processedCount++;
+                if (processedCount === totalInputs) {
+                    showSaveResult(savedCount);
+                }
+            });
         } else {
-            localStorage.removeItem(key);
+            // ИЗМЕНЕНО: используем removeStorageItem вместо localStorage
+            removeStorageItem(key, () => {
+                processedCount++;
+                if (processedCount === totalInputs) {
+                    showSaveResult(savedCount);
+                }
+            });
         }
     });
-    
+}
+
+function showSaveResult(savedCount) {
     // Показываем уведомление о сохранении
     const saveBtn = document.querySelector('.save-plan-btn');
     const originalText = saveBtn.textContent;
@@ -504,4 +528,66 @@ function saveDailyPlan() {
         saveBtn.textContent = originalText;
         saveBtn.style.backgroundColor = '';
     }, 2000);
+}
+
+// ДОБАВЛЕННЫЕ функции для Cloud Storage
+function setStorageItem(key, value, callback = null) {
+    if (window.Telegram?.WebApp?.CloudStorage) {
+        window.Telegram.WebApp.CloudStorage.setItem(key, value, (error, success) => {
+            if (error || !success) {
+                // Fallback на localStorage при ошибке
+                localStorage.setItem(key, value);
+                console.log('Saved to localStorage (Cloud fallback)');
+            } else {
+                console.log('Saved to Telegram Cloud');
+            }
+            if (callback) callback();
+        });
+    } else {
+        // Fallback на localStorage если нет Telegram API
+        localStorage.setItem(key, value);
+        console.log('Saved to localStorage (no Telegram)');
+        if (callback) callback();
+    }
+}
+
+function getStorageItem(key, callback) {
+    if (window.Telegram?.WebApp?.CloudStorage) {
+        window.Telegram.WebApp.CloudStorage.getItem(key, (error, value) => {
+            if (error || value === null) {
+                // Fallback на localStorage при ошибке
+                const fallbackValue = localStorage.getItem(key) || '';
+                console.log('Loaded from localStorage (Cloud fallback)');
+                callback(fallbackValue);
+            } else {
+                console.log('Loaded from Telegram Cloud');
+                callback(value);
+            }
+        });
+    } else {
+        // Fallback на localStorage если нет Telegram API
+        const value = localStorage.getItem(key) || '';
+        console.log('Loaded from localStorage (no Telegram)');
+        callback(value);
+    }
+}
+
+function removeStorageItem(key, callback = null) {
+    if (window.Telegram?.WebApp?.CloudStorage) {
+        window.Telegram.WebApp.CloudStorage.removeItem(key, (error, success) => {
+            if (error || !success) {
+                // Fallback на localStorage при ошибке
+                localStorage.removeItem(key);
+                console.log('Removed from localStorage (Cloud fallback)');
+            } else {
+                console.log('Removed from Telegram Cloud');
+            }
+            if (callback) callback();
+        });
+    } else {
+        // Fallback на localStorage если нет Telegram API
+        localStorage.removeItem(key);
+        console.log('Removed from localStorage (no Telegram)');
+        if (callback) callback();
+    }
 }
