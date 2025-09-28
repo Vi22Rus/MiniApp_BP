@@ -1,13 +1,13 @@
-// Version: 1.3.1 | Lines: 570
+// Version: 1.4.0 | Lines: 580
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (570 строк) с ПОЛНОСТЬЮ ИСПРАВЛЕННЫМ Telegram Bot
+// Версия скрипта: app.js (580 строк) с ГИБРИДНЫМ ХРАНИЛИЩЕМ
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua';
 
 // TELEGRAM BOT INTEGRATION - ВСТАВЬТЕ ВАШИ ДАННЫЕ
-const BOT_TOKEN = '8238598464:AAGwjUOg3H5j69xoFeNnaiUO9Y1wkjZSIX4';        // Например: '7234567890:AAE_abc123def456ghi789jkl012mno345pqr'
-const CHAT_ID = '231009417';             // Например: '123456789'
+const BOT_TOKEN = '8238598464:AAGwjUOg3H5j69xoFeNnaiUO9Y1wkjZSIX4';
+const CHAT_ID = '231009417';
 
 // Хранилище и синхронизация
 let botStorage = {};
@@ -69,7 +69,7 @@ function initApp() {
     initCalendarFilters();
     initGeoFeatures();
     initDailyPlanModal();
-    initBotStorage(); // ИНИЦИАЛИЗАЦИЯ TELEGRAM BOT
+    initBotStorage(); // ИНИЦИАЛИЗАЦИЯ ГИБРИДНОГО ХРАНИЛИЩА
     
     updateCountdown();
     setInterval(updateCountdown, 3600000);
@@ -83,102 +83,53 @@ function initApp() {
     });
 }
 
-// TELEGRAM BOT STORAGE FUNCTIONS - ОКОНЧАТЕЛЬНО ИСПРАВЛЕННЫЕ!!!
+// ГИБРИДНОЕ ХРАНИЛИЩЕ: localStorage (постоянно) + Telegram (синхронизация)
 
-// ИСПРАВЛЕННАЯ инициализация с отладкой
+// Инициализация гибридного хранилища
 async function initBotStorage() {
     if (storageInitialized) return;
     
     try {
-        console.log('🤖 Initializing Telegram Bot storage...');
+        console.log('🤖 Initializing Hybrid storage (localStorage + Telegram sync)...');
         
-        // Загружаем данные из истории
-        const dataLoaded = await loadDataFromBot();
+        // Загружаем ВСЕ данные из localStorage
+        const allKeys = Object.keys(localStorage).filter(key => key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/));
+        
+        allKeys.forEach(key => {
+            botStorage[key] = localStorage.getItem(key);
+        });
         
         storageInitialized = true;
         
-        console.log(`📱 Bot storage initialized: ${dataLoaded ? 'SUCCESS' : 'NO DATA'}`);
-        console.log(`📊 Total plans loaded: ${Object.keys(botStorage).length}`);
+        console.log(`📱 Storage initialized with ${Object.keys(botStorage).length} plans from localStorage`);
+        console.log('📋 Loaded plans:', Object.keys(botStorage));
         
-        // Показываем что загружено
-        if (Object.keys(botStorage).length > 0) {
-            console.log('📋 Loaded plans:', Object.keys(botStorage));
-        }
-        
-        // Приветственное сообщение только при первом запуске
         if (Object.keys(botStorage).length === 0) {
-            await sendToTelegramBot('🏖️ Pattaya Plans Bot запущен!\nЗдесь будут сохраняться все ваши планы на поездку.');
+            await sendToTelegramBot('🏖️ Pattaya Plans Bot запущен!\nИспользуется гибридное хранилище: localStorage + Telegram sync');
         }
         
-        // Запускаем периодическую синхронизацию
+        // Запускаем синхронизацию изменений
         startPeriodicSync();
         
     } catch (error) {
-        console.error('❌ Bot storage init error:', error);
+        console.error('❌ Storage init error:', error);
         storageInitialized = true;
     }
 }
 
-// ОКОНЧАТЕЛЬНО ИСПРАВЛЕННАЯ загрузка данных - НЕ ТЕРЯЕТ ИСТОРИЮ
-async function loadDataFromBot() {
-    try {
-        console.log('🔄 Loading data from bot...');
-        
-        // ИСПРАВЛЕНО: загружаем ВСЕ сообщения за последние дни
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100`);
-        const result = await response.json();
-        
-        if (result.ok && result.result) {
-            console.log(`📨 Found ${result.result.length} messages in bot history`);
-            
-            let mostRecentData = null;
-            let mostRecentTimestamp = 0;
-            let maxUpdateId = 0;
-            
-            // Ищем ПОСЛЕДНЕЕ сообщение с DATA:
-            result.result.forEach(update => {
-                maxUpdateId = Math.max(maxUpdateId, update.update_id);
-                
-                if (update.message && update.message.text && update.message.text.startsWith('DATA:')) {
-                    const messageTime = update.message.date;
-                    console.log(`📝 Found DATA message from ${new Date(messageTime * 1000).toLocaleString()}`);
-                    
-                    if (messageTime > mostRecentTimestamp) {
-                        mostRecentTimestamp = messageTime;
-                        try {
-                            const dataText = update.message.text.replace('DATA:', '');
-                            mostRecentData = JSON.parse(dataText);
-                            console.log(`✅ Parsed ${Object.keys(mostRecentData).length} plans from latest DATA`);
-                        } catch (e) {
-                            console.error('❌ Error parsing DATA message:', e);
-                        }
-                    }
-                }
-            });
-            
-            // Обновляем lastUpdateId для будущих синхронизаций
-            lastUpdateId = maxUpdateId;
-            
-            // Восстанавливаем данные
-            if (mostRecentData) {
-                botStorage = { ...mostRecentData };
-                console.log('🎯 RESTORED DATA:', Object.keys(botStorage));
-                return true;
-            } else {
-                console.log('❌ No DATA messages found in history');
-                return false;
-            }
-        } else {
-            console.error('❌ Failed to get updates:', result);
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Load from bot error:', error);
-        return false;
-    }
+// Трансляция изменений через Telegram
+function broadcastChange(action, key, value = null) {
+    const changeMessage = `SYNC:${JSON.stringify({
+        action: action,
+        key: key,
+        value: value,
+        timestamp: Date.now(),
+        user: 'user_' + Math.random().toString(36).substr(2, 5) // Уникальный ID пользователя
+    })}`;
+    sendToTelegramBot(changeMessage, true);
 }
 
-// Загрузка только новых обновлений (для периодической синхронизации)
+// Отслеживание SYNC сообщений от других пользователей
 async function loadNewUpdatesFromBot() {
     try {
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&limit=100`);
@@ -190,16 +141,29 @@ async function loadNewUpdatesFromBot() {
             result.result.forEach(update => {
                 lastUpdateId = Math.max(lastUpdateId, update.update_id);
                 
-                if (update.message && update.message.text && update.message.text.startsWith('DATA:')) {
+                // Отслеживаем SYNC сообщения (изменения от других пользователей)
+                if (update.message && update.message.text && update.message.text.startsWith('SYNC:')) {
                     try {
-                        const dataText = update.message.text.replace('DATA:', '');
-                        const parsedData = JSON.parse(dataText);
+                        const syncText = update.message.text.replace('SYNC:', '');
+                        const syncData = JSON.parse(syncText);
                         
-                        botStorage = { ...parsedData };
-                        dataUpdated = true;
-                        console.log('🔄 Data synced from bot:', Object.keys(botStorage).length, 'plans');
+                        if (syncData.action === 'set') {
+                            if (localStorage.getItem(syncData.key) !== syncData.value) {
+                                localStorage.setItem(syncData.key, syncData.value);
+                                botStorage[syncData.key] = syncData.value;
+                                dataUpdated = true;
+                                console.log('🔄 Synced SET from other user:', syncData.key, '=', syncData.value);
+                            }
+                        } else if (syncData.action === 'delete') {
+                            if (localStorage.getItem(syncData.key)) {
+                                localStorage.removeItem(syncData.key);
+                                delete botStorage[syncData.key];
+                                dataUpdated = true;
+                                console.log('🔄 Synced DELETE from other user:', syncData.key);
+                            }
+                        }
                     } catch (e) {
-                        console.error('Error parsing sync data:', e);
+                        console.error('Error parsing SYNC data:', e);
                     }
                 }
             });
@@ -213,7 +177,7 @@ async function loadNewUpdatesFromBot() {
     }
 }
 
-// Запуск периодической синхронизации
+// Запуск синхронизации
 function startPeriodicSync() {
     if (syncInterval) {
         clearInterval(syncInterval);
@@ -223,10 +187,10 @@ function startPeriodicSync() {
         if (storageInitialized) {
             await loadNewUpdatesFromBot();
         }
-    }, 5000);
+    }, 3000); // Каждые 3 секунды
 }
 
-// Обновление текущего открытого попапа
+// Обновление попапа при синхронизации
 function refreshCurrentModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal && modal.classList.contains('active')) {
@@ -242,6 +206,7 @@ function refreshCurrentModal() {
                 setTimeout(() => {
                     input.style.backgroundColor = '';
                 }, 1000);
+                console.log('🔄 UI refreshed with synced data:', key);
             }
         });
     }
@@ -254,14 +219,14 @@ async function forceSync() {
     button.textContent = '⏳';
     button.disabled = true;
     
-    await loadDataFromBot();
+    await loadNewUpdatesFromBot();
     refreshCurrentModal();
     
     button.textContent = '🔄 Обновить';
     button.disabled = false;
     
     const notification = document.createElement('div');
-    notification.textContent = '✅ Данные обновлены';
+    notification.textContent = '✅ Данные синхронизированы';
     notification.style.cssText = `
         position: fixed;
         top: 80px;
@@ -306,35 +271,30 @@ async function sendToTelegramBot(message, isData = false) {
     }
 }
 
-async function saveToBotStorage() {
-    if (Object.keys(botStorage).length > 0) {
-        const dataMessage = 'DATA:' + JSON.stringify(botStorage);
-        await sendToTelegramBot(dataMessage, true);
-    }
-}
+// ГИБРИДНЫЕ ФУНКЦИИ ХРАНЕНИЯ
 
-// Функции хранения
 function setStorageItem(key, value, callback = null) {
     if (!storageInitialized) {
         setTimeout(() => setStorageItem(key, value, callback), 500);
         return;
     }
     
+    // Сохраняем локально ВСЕГДА (основное хранилище)
+    localStorage.setItem(key, value);
     botStorage[key] = value;
     
+    // Уведомление в Telegram
     const [date, time] = key.split('_');
     const formattedDate = date.split('.').reverse().join('-');
     const dateObj = new Date(formattedDate);
     const dayName = dateObj.toLocaleDateString('ru-RU', { weekday: 'long' });
     
-    sendToTelegramBot(`📝 *Новый план добавлен*\n\n📅 ${date} (${dayName})\n🕐 ${time}\n💭 "${value}"`, false);
+    sendToTelegramBot(`📝 *Новый план добавлен*\n\n📅 ${date} (${dayName})\n🕐 ${time}\n💭 "${value}"`);
     
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => {
-        saveToBotStorage();
-    }, 1000);
+    // Синхронизация: отправляем изменение всем пользователям
+    broadcastChange('set', key, value);
     
-    console.log('✅ Saved to Telegram Bot (shared)');
+    console.log('✅ Saved to localStorage + broadcasted to other users');
     if (callback) callback();
 }
 
@@ -344,11 +304,12 @@ function getStorageItem(key, callback) {
         return;
     }
     
-    // ИСПРАВЛЕНО: сразу возвращаем данные из памяти (они уже загружены при инициализации)
-    const value = botStorage[key] || '';
+    // Читаем из localStorage (надежное хранилище)
+    const value = localStorage.getItem(key) || '';
+    botStorage[key] = value; // Синхронизируем с памятью
     
     if (value) {
-        console.log(`✅ Found cached plan: ${key} = "${value}"`);
+        console.log(`✅ Found local plan: ${key} = "${value}"`);
     }
     
     callback(value);
@@ -360,19 +321,20 @@ function removeStorageItem(key, callback = null) {
         return;
     }
     
-    if (botStorage[key]) {
-        const oldValue = botStorage[key];
+    if (localStorage.getItem(key)) {
+        const oldValue = localStorage.getItem(key);
+        
+        // Удаляем из обоих хранилищ
+        localStorage.removeItem(key);
         delete botStorage[key];
         
         const [date, time] = key.split('_');
         sendToTelegramBot(`🗑️ *План удален*\n\n📅 ${date}\n🕐 ${time}\n~~"${oldValue}"~~`);
         
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(() => {
-            saveToBotStorage();
-        }, 1000);
+        // Синхронизация: сообщаем об удалении всем пользователям
+        broadcastChange('delete', key);
         
-        console.log('✅ Deleted from Telegram Bot (shared)');
+        console.log('✅ Deleted from localStorage + broadcasted to other users');
     }
     
     if (callback) callback();
@@ -382,9 +344,6 @@ function removeStorageItem(key, callback = null) {
 window.addEventListener('beforeunload', () => {
     if (syncInterval) {
         clearInterval(syncInterval);
-    }
-    if (saveTimeout) {
-        clearTimeout(saveTimeout);
     }
 });
 
