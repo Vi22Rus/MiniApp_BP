@@ -1,12 +1,17 @@
-// Version: 1.2.7 | Lines: 470
+// Version: 1.2.8 | Lines: 480
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (470 строк) с Google Sheets
+// Версия скрипта: app.js (480 строк) с Telegram Bot
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
-let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
+let activeGeoFilter = 'naklua';
 
-// GOOGLE SHEETS INTEGRATION
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyFlDfkUR66Z5V8mXW9fMmfqRJjARw91ES_inGaJt3lRgA-XGJBZ2mwenvAzSDteVVV/exec';
+// TELEGRAM BOT INTEGRATION - ВСТАВЬТЕ ВАШИ ДАННЫЕ
+const BOT_TOKEN = '8238598464:AAGwjUOg3H5j69xoFeNnaiUO9Y1wkjZSIX4';        // Например: '7234567890:AAE_abc123def456ghi789jkl012mno345pqr'
+const CHAT_ID = '231009417';             // Например: '123456789'
+
+// Простое хранилище в памяти (обновляется при каждом запуске)
+let botStorage = {};
+let storageInitialized = false;
 
 const allGeoData = [
     // Кафе (0-14)
@@ -60,7 +65,8 @@ function initApp() {
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
-    initDailyPlanModal(); // ДОБАВЛЕННЫЙ вызов
+    initDailyPlanModal();
+    initBotStorage(); // ИНИЦИАЛИЗАЦИЯ TELEGRAM BOT
     
     updateCountdown();
     setInterval(updateCountdown, 3600000);
@@ -73,6 +79,139 @@ function initApp() {
         if (e.target.id === 'modalOverlay') closeModal();
     });
 }
+
+// TELEGRAM BOT STORAGE FUNCTIONS
+async function initBotStorage() {
+    if (storageInitialized) return;
+    
+    try {
+        console.log('🤖 Initializing Telegram Bot storage...');
+        // Получаем последние 100 сообщений из чата с ботом
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100`);
+        const result = await response.json();
+        
+        if (result.ok && result.result) {
+            // Парсим сообщения и восстанавливаем данные
+            result.result.forEach(update => {
+                if (update.message && update.message.text && update.message.text.startsWith('DATA:')) {
+                    try {
+                        const dataText = update.message.text.replace('DATA:', '');
+                        const parsedData = JSON.parse(dataText);
+                        Object.assign(botStorage, parsedData);
+                    } catch (e) {
+                        // Игнорируем неправильные сообщения
+                    }
+                }
+            });
+        }
+        storageInitialized = true;
+        console.log('✅ Bot storage initialized:', Object.keys(botStorage).length, 'plans loaded');
+        
+        // Отправляем приветственное сообщение при первом запуске
+        if (Object.keys(botStorage).length === 0) {
+            await sendToTelegramBot('🏖️ Pattaya Plans Bot запущен!\nЗдесь будут сохраняться все ваши планы на поездку.');
+        }
+        
+    } catch (error) {
+        console.error('❌ Bot storage init error:', error);
+        storageInitialized = true; // Продолжаем работу даже при ошибке
+    }
+}
+
+async function sendToTelegramBot(message, isData = false) {
+    try {
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: message,
+                disable_notification: isData, // Тихие уведомления для данных
+                ...(isData && { disable_web_page_preview: true })
+            })
+        });
+        const result = await response.json();
+        if (!result.ok) {
+            console.error('Telegram API error:', result);
+        }
+        return result;
+    } catch (error) {
+        console.error('❌ Telegram send error:', error);
+        return null;
+    }
+}
+
+async function saveToBotStorage() {
+    if (Object.keys(botStorage).length > 0) {
+        const dataMessage = 'DATA:' + JSON.stringify(botStorage);
+        await sendToTelegramBot(dataMessage, true);
+    }
+}
+
+function setStorageItem(key, value, callback = null) {
+    // Ждем инициализации хранилища
+    if (!storageInitialized) {
+        setTimeout(() => setStorageItem(key, value, callback), 500);
+        return;
+    }
+    
+    botStorage[key] = value;
+    
+    // Отправляем красивое уведомление в Telegram
+    const [date, time] = key.split('_');
+    const formattedDate = date.split('.').reverse().join('-');
+    const dateObj = new Date(formattedDate);
+    const dayName = dateObj.toLocaleDateString('ru-RU', { weekday: 'long' });
+    
+    sendToTelegramBot(`📝 *Новый план добавлен*\n\n📅 ${date} (${dayName})\n🕐 ${time}\n💭 "${value}"`, false);
+    
+    // Сохраняем все данные
+    saveToBotStorage();
+    
+    console.log('✅ Saved to Telegram Bot (shared)');
+    if (callback) callback();
+}
+
+function getStorageItem(key, callback) {
+    // Ждем инициализации хранилища
+    if (!storageInitialized) {
+        setTimeout(() => getStorageItem(key, callback), 500);
+        return;
+    }
+    
+    const value = botStorage[key] || '';
+    console.log('✅ Loaded from Telegram Bot (shared)');
+    callback(value);
+}
+
+function removeStorageItem(key, callback = null) {
+    // Ждем инициализации хранилища
+    if (!storageInitialized) {
+        setTimeout(() => removeStorageItem(key, callback), 500);
+        return;
+    }
+    
+    if (botStorage[key]) {
+        const oldValue = botStorage[key];
+        delete botStorage[key];
+        
+        // Отправляем уведомление об удалении
+        const [date, time] = key.split('_');
+        sendToTelegramBot(`🗑️ *План удален*\n\n📅 ${date}\n🕐 ${time}\n~~"${oldValue}"~~`);
+        
+        // Сохраняем данные
+        saveToBotStorage();
+        
+        console.log('✅ Deleted from Telegram Bot (shared)');
+    }
+    
+    if (callback) callback();
+}
+
+// [ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ - все остальные функции остаются такими же]
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -172,11 +311,9 @@ function applyGeoFilter() {
     const nearbyContainer = document.getElementById('nearbyItems');
     nearbyContainer.innerHTML = '';
 
-    // Находим ближайшее кафе в зависимости от фильтра
     const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeGeoFilter}"]`);
     const closestCafeButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
 
-    // Находим ближайший храм (он всегда первый в своем отсортированном контейнере)
     const templesContainer = document.querySelector('.geo-temples .geo-items-container');
     const closestTempleButton = templesContainer ? templesContainer.querySelector('.geo-item-btn') : null;
 
@@ -277,8 +414,6 @@ function initGeoItemButton(button) {
     button.addEventListener('touchcancel', handlePressCancel);
 }
 
-// -- Остальная логика приложения --
-
 const kidsLeisure = [
     { name: 'Mini Siam', date: '01.01.2026', coords: { lat: 12.9554157, lng: 100.9088538 }, tips: 'Парк миниатюр.', type: 'sight' },
     { name: 'Деревня слонов', date: '04.01.2026', coords: { lat: 12.91604299, lng: 100.93883441 }, tips: 'Шоу слонов (14:30–16:00).', type: 'sight' },
@@ -304,28 +439,22 @@ function generateBeachDays() {
 
 const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b) => new Date(a.date.split('.').reverse().join('-')) - new Date(b.date.split('.').reverse().join('-')));
 
-// ИСПРАВЛЕННАЯ функция updateCountdown с новой логикой
 function updateCountdown() {
-    const startTrip = new Date('2025-12-29');  // Начало поездки
-    const endTrip = new Date('2026-01-26');    // Конец поездки (отъезд)
+    const startTrip = new Date('2025-12-29');
+    const endTrip = new Date('2026-01-26');
     const now = new Date();
     
     if (now < startTrip) {
-        // До поездки
         const days = Math.ceil((startTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До поездки:';
         document.getElementById('days').textContent = days;
         document.querySelector('.countdown-label').textContent = 'дней';
-        
-    } else if (now >= startTrip && now < endTrip) {  // ИЗМЕНЕНО: < вместо <=
-        // Во время поездки - показываем дни до отъезда
+    } else if (now >= startTrip && now < endTrip) {
         const daysToGo = Math.ceil((endTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До отъезда:';
         document.getElementById('days').textContent = daysToGo;
         document.querySelector('.countdown-label').textContent = 'дней';
-        
-    } else {  // now >= endTrip (с 26.01.2026)
-        // В последний день и после поездки
+    } else {
         document.getElementById('countdownText').textContent = 'Поездка завершена!';
         document.getElementById('days').textContent = '✔';
         document.querySelector('.countdown-label').textContent = '';
@@ -349,7 +478,6 @@ function renderActivities(list) {
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
         
-        // ИСПРАВЛЕНА: убран onclick, добавлен класс daily-plan-btn
         const buttonHtml = a.type === 'sea' ? 
             `<button class="details daily-plan-btn" data-name="${a.name}" data-date="${a.date}">Планы на день</button>` :
             (a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : '');
@@ -362,7 +490,6 @@ function renderActivities(list) {
 function bindDetailButtons() {
     document.querySelectorAll('.details').forEach(btn => {
         btn.onclick = () => {
-            // ИСПРАВЛЕНА: добавлена проверка на класс daily-plan-btn
             if (btn.classList.contains('daily-plan-btn')) {
                 openDailyPlanModal(btn.dataset.name, btn.dataset.date);
             } else {
@@ -417,7 +544,6 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
 }
 
-// ФУНКЦИИ ДЛЯ ЕЖЕДНЕВНИКА
 function initDailyPlanModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal) {
@@ -427,7 +553,6 @@ function initDailyPlanModal() {
     }
 }
 
-// ИСПРАВЛЕННАЯ функция openDailyPlanModal - сначала показать попап, потом загрузить данные
 function openDailyPlanModal(activityName, date) {
     const modal = document.getElementById('dailyPlanModal');
     const grid = document.getElementById('dailyPlanGrid');
@@ -436,7 +561,6 @@ function openDailyPlanModal(activityName, date) {
     
     document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
     
-    // Сначала создаем пустые слоты
     let timeSlots = '';
     const timeSlotData = [];
     
@@ -460,11 +584,9 @@ function openDailyPlanModal(activityName, date) {
         `;
     }
     
-    // Сначала показываем попап с пустыми полями
     grid.innerHTML = timeSlots;
     modal.classList.add('active');
     
-    // Затем асинхронно загружаем данные для каждого поля
     timeSlotData.forEach(slot => {
         getStorageItem(slot.key, (savedPlan) => {
             const input = document.querySelector(`input[data-time="${slot.startTime}"][data-date="${slot.date}"]`);
@@ -474,34 +596,29 @@ function openDailyPlanModal(activityName, date) {
         });
     });
     
-    // Добавляем обработчики событий
     document.querySelectorAll('.plan-input').forEach(input => {
         let touchStartTime = 0;
         let touchStartY = 0;
         
-        // ИСПРАВЛЕНО: Автосохранение при потере фокуса И при изменении
         input.addEventListener('blur', () => {
             autoSavePlan(input);
         });
         
-        // ДОБАВЛЕНО: Автосохранение при вводе (с задержкой)
         let saveTimeout;
         input.addEventListener('input', () => {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
                 autoSavePlan(input);
-            }, 1000); // Сохранение через 1 секунду после остановки ввода
+            }, 1000);
         });
         
-        // ДОБАВЛЕНО: Автосохранение при Enter
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 autoSavePlan(input);
-                input.blur(); // Потеря фокуса
+                input.blur();
             }
         });
         
-        // Защита от случайных тапов (как было)
         input.addEventListener('touchstart', e => {
             touchStartTime = Date.now();
             touchStartY = e.touches[0].clientY;
@@ -534,139 +651,25 @@ function closeDailyPlanModal() {
     }
 }
 
-// УЛУЧШЕННАЯ функция автосохранения с отладкой
 function autoSavePlan(input) {
     const date = input.dataset.date;
     const time = input.dataset.time;
     const value = input.value.trim();
     const key = `${date}_${time}`;
     
-    console.log(`🔄 Попытка сохранения: ${key} = "${value}"`);
+    console.log(`🔄 Auto-saving plan: ${key} = "${value}"`);
     
     if (value) {
         setStorageItem(key, value, () => {
-            // Визуальная обратная связь - мигание зеленым фоном
             input.style.backgroundColor = '#dcfce7';
             setTimeout(() => {
                 input.style.backgroundColor = '';
             }, 300);
-            console.log(`✅ Автосохранено: ${time} - ${value}`);
+            console.log(`✅ Plan saved: ${time} - ${value}`);
         });
     } else {
         removeStorageItem(key, () => {
-            console.log(`🗑️ Удален пустой план: ${time}`);
+            console.log(`🗑️ Empty plan removed: ${time}`);
         });
     }
-}
-
-// GOOGLE SHEETS STORAGE FUNCTIONS - ЗАМЕНЯЮТ Cloud Storage
-function setStorageItem(key, value, callback = null) {
-    const data = {
-        action: 'set',
-        key: key,
-        value: value
-    };
-    
-    fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Saved to Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        // Fallback на localStorage при ошибке
-        localStorage.setItem(key, value);
-        console.log('📱 Saved to localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
-}
-
-function setStorageItem(key, value, callback = null) {
-    console.log('🔥 START: Saving to Google Sheets:', { key, value });
-    
-    const data = {
-        action: 'set',
-        key: key,
-        value: value
-    };
-    
-    console.log('🔥 DATA:', JSON.stringify(data));
-    console.log('🔥 URL:', GOOGLE_SHEETS_URL);
-    
-    fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        console.log('🔥 Response status:', response.status);
-        console.log('🔥 Response ok:', response.ok);
-        return response.text(); // Сначала как текст
-    })
-    .then(text => {
-        console.log('🔥 Raw response:', text);
-        const result = JSON.parse(text);
-        console.log('🔥 Parsed result:', result);
-        
-        if (result.success) {
-            console.log('✅ Saved to Google Sheets (shared)');
-        } else {
-            throw new Error(`Google Sheets error: ${result.error || 'Unknown'}`);
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('❌ Google Sheets FAILED:', error);
-        console.log('❌ Falling back to localStorage');
-        
-        // Fallback на localStorage при ошибке
-        localStorage.setItem(key, value);
-        console.log('📱 Saved to localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
-}
-
-
-function removeStorageItem(key, callback = null) {
-    const data = {
-        action: 'delete',
-        key: key
-    };
-    
-    fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Deleted from Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        // Fallback на localStorage при ошибке
-        localStorage.removeItem(key);
-        console.log('📱 Deleted from localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
 }
