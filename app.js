@@ -92,6 +92,11 @@ function renderActivities(list) {
         const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
         const prices = {
             'Mini Siam': `<p class="price-tag">Взр. 230 ฿ / Дет. 130 ฿</p>`,
+            'Деревня слонов': `<p class="price-tag">Взр. 650 ฿ / Дет. 500 ฿</p>`,
+            'Дельфинариум': `<p class="price-tag">Взр. 630 ฿ / Дет. 450 ฿</p>`,
+            'Сад Нонг Нуч': `<p class="price-tag">Взр. 420 ฿ / Дет. 320 ฿</p>`,
+            'Музей искусств 3D': `<p class="price-tag">Взр. 235 ฿ / Дет. 180 ฿</p>`,
+            'Зоопарк Кхао Кхео': `<p class="price-tag">Взр. 350 ฿ / Дет. 120 ฿</p>`,
         };
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">~${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
