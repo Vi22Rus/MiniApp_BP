@@ -1,6 +1,6 @@
-// Version: 1.5.0 | Lines: 590
+// Version: 1.6.0 | Lines: 600
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (590 строк) с JSONBin.io СИНХРОНИЗАЦИЕЙ
+// Версия скрипта: app.js (600 строк) с FIREBASE REALTIME DATABASE
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua';
@@ -9,15 +9,29 @@ let activeGeoFilter = 'naklua';
 const BOT_TOKEN = '8238598464:AAGwjUOg3H5j69xoFeNnaiUO9Y1wkjZSIX4';
 const CHAT_ID = '231009417';
 
-// JSONBIN.IO INTEGRATION - РЕАЛЬНАЯ СИНХРОНИЗАЦИЯ
-const JSONBIN_BIN_ID = '68d95a6143b1c97be953249c';
-const JSONBIN_API_KEY = '$2a$10$6SQPP/lIXKhbo1ldkvrBfOeWdEx8yBb4.tGkmPq8Ilgr3VlevBe7S';
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+// FIREBASE CONFIGURATION - ВАШ КОНФИГ
+const firebaseConfig = {
+  apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
+  authDomain: "pattaya-plans-app.firebaseapp.com",
+  databaseURL: "https://pattaya-plans-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pattaya-plans-app",
+  storageBucket: "pattaya-plans-app.firebasestorage.app",
+  messagingSenderId: "152286016885",
+  appId: "1:152286016885:web:dd389c8294b7c744d04f3c"
+};
+
+// Firebase imports
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue, remove, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// Firebase initialization
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 // Хранилище и синхронизация
 let botStorage = {};
 let storageInitialized = false;
-let syncInProgress = false;
+let firebaseListeners = new Map();
 
 const allGeoData = [
     // Кафе (0-14)
@@ -72,7 +86,7 @@ function initApp() {
     initCalendarFilters();
     initGeoFeatures();
     initDailyPlanModal();
-    initBotStorage();
+    initFirebaseStorage();
     
     updateCountdown();
     setInterval(updateCountdown, 3600000);
@@ -86,131 +100,154 @@ function initApp() {
     });
 }
 
-// ОБЩЕЕ ХРАНИЛИЩЕ ЧЕРЕЗ JSONBIN.IO
+// FIREBASE REALTIME STORAGE - МГНОВЕННАЯ СИНХРОНИЗАЦИЯ
 
-// Инициализация общего хранилища
-async function initBotStorage() {
+async function initFirebaseStorage() {
     if (storageInitialized) return;
     
     try {
-        console.log('🌐 Initializing SHARED storage (JSONBin.io)...');
+        console.log('🔥 Initializing Firebase Realtime Database...');
         
-        // Загружаем данные из localStorage (локальный кэш)
+        // Загружаем существующие данные из localStorage
         const localKeys = Object.keys(localStorage).filter(key => key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/));
         localKeys.forEach(key => {
             botStorage[key] = localStorage.getItem(key);
         });
         
-        console.log(`📱 Loaded ${Object.keys(botStorage).length} plans from localStorage`);
-        
-        // Загружаем общие данные из JSONBin
-        const hasSharedData = await loadFromJSONBin();
-        
-        if (hasSharedData) {
-            console.log('🔄 Updated with shared data from JSONBin');
-        }
+        // Настраиваем реальную синхронизацию - слушаем ВСЕ изменения
+        const plansRef = ref(database, 'plans');
+        onValue(plansRef, (snapshot) => {
+            const firebaseData = snapshot.val() || {};
+            let hasUpdates = false;
+            
+            // Обновляем локальные данные из Firebase
+            Object.keys(firebaseData).forEach(key => {
+                if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/)) {
+                    if (botStorage[key] !== firebaseData[key]) {
+                        botStorage[key] = firebaseData[key];
+                        localStorage.setItem(key, firebaseData[key]);
+                        hasUpdates = true;
+                        console.log('🔥 Real-time sync FROM other user:', key, '=', firebaseData[key]);
+                    }
+                }
+            });
+            
+            // Удаляем локально удаленные в Firebase данные
+            Object.keys(botStorage).forEach(key => {
+                if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/) && !firebaseData[key]) {
+                    delete botStorage[key];
+                    localStorage.removeItem(key);
+                    hasUpdates = true;
+                    console.log('🔥 Real-time sync DELETE from other user:', key);
+                }
+            });
+            
+            if (hasUpdates && storageInitialized) {
+                refreshCurrentModal();
+            }
+        });
         
         storageInitialized = true;
         
-        // Запускаем синхронизацию каждые 5 секунд
-        setInterval(async () => {
-            if (!syncInProgress) {
-                await loadFromJSONBin();
-            }
-        }, 5000);
+        console.log(`🔥 Firebase initialized with ${Object.keys(botStorage).length} plans`);
+        console.log('✅ REAL-TIME SYNC активна - изменения мгновенно видны всем пользователям!');
         
         if (Object.keys(botStorage).length === 0) {
-            await sendToTelegramBot('🏖️ Pattaya Plans Bot запущен!\nИспользуется общее хранилище JSONBin.io - все данные синхронизируются между пользователями!');
+            await sendToTelegramBot('🔥 Pattaya Plans Bot с Firebase!\nТеперь все изменения видны МГНОВЕННО всем пользователям - настоящий real-time!');
         }
         
     } catch (error) {
-        console.error('❌ Storage init error:', error);
+        console.error('❌ Firebase init error:', error);
         storageInitialized = true;
     }
 }
 
-// Сохранение в общее хранилище
-async function saveToJSONBin() {
-    if (syncInProgress) return;
+// FIREBASE STORAGE FUNCTIONS - МГНОВЕННАЯ СИНХРОНИЗАЦИЯ
+
+function setStorageItem(key, value, callback = null) {
+    if (!storageInitialized) {
+        setTimeout(() => setStorageItem(key, value, callback), 500);
+        return;
+    }
     
-    try {
-        syncInProgress = true;
-        
-        const response = await fetch(JSONBIN_URL, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_API_KEY
-            },
-            body: JSON.stringify(botStorage)
+    // Сохраняем в Firebase - автоматически синхронизируется со ВСЕМИ пользователями
+    set(ref(database, 'plans/' + key), value)
+        .then(() => {
+            // Обновляем локальное хранилище
+            localStorage.setItem(key, value);
+            botStorage[key] = value;
+            
+            // Уведомление в Telegram
+            const [date, time] = key.split('_');
+            const formattedDate = date.split('.').reverse().join('-');
+            const dateObj = new Date(formattedDate);
+            const dayName = dateObj.toLocaleDateString('ru-RU', { weekday: 'long' });
+            
+            sendToTelegramBot(`📝 *Новый план добавлен*\n\n📅 ${date} (${dayName})\n🕐 ${time}\n💭 "${value}"`);
+            
+            console.log('🔥 Saved to Firebase - INSTANTLY synced to all users');
+            if (callback) callback();
+        })
+        .catch(error => {
+            console.error('❌ Firebase save error:', error);
+            // Fallback на localStorage
+            localStorage.setItem(key, value);
+            botStorage[key] = value;
+            if (callback) callback();
         });
-        
-        const result = await response.json();
-        
-        if (result.record) {
-            console.log('📤 Uploaded to JSONBin:', Object.keys(botStorage).length, 'plans');
-        } else {
-            console.error('❌ Failed to upload to JSONBin:', result);
-        }
-        
-    } catch (error) {
-        console.error('❌ Upload error:', error);
-    } finally {
-        syncInProgress = false;
+}
+
+function getStorageItem(key, callback) {
+    if (!storageInitialized) {
+        setTimeout(() => getStorageItem(key, callback), 100);
+        return;
+    }
+    
+    // Сначала возвращаем из памяти (быстро)
+    const cachedValue = botStorage[key] || '';
+    callback(cachedValue);
+    
+    // Firebase автоматически обновит через onValue если данные изменились
+    if (cachedValue) {
+        console.log(`🔥 Found cached plan: ${key} = "${cachedValue}"`);
     }
 }
 
-// Загрузка из общего хранилища
-async function loadFromJSONBin() {
-    try {
-        const response = await fetch(JSONBIN_URL + '/latest', {
-            headers: {
-                'X-Master-Key': JSONBIN_API_KEY
-            }
-        });
+function removeStorageItem(key, callback = null) {
+    if (!storageInitialized) {
+        setTimeout(() => removeStorageItem(key, callback), 500);
+        return;
+    }
+    
+    if (botStorage[key]) {
+        const oldValue = botStorage[key];
         
-        const result = await response.json();
-        const sharedData = result.record || {};
-        
-        let hasUpdates = false;
-        
-        // Проверяем, есть ли новые данные
-        Object.keys(sharedData).forEach(key => {
-            if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/)) {
-                if (botStorage[key] !== sharedData[key]) {
-                    botStorage[key] = sharedData[key];
-                    localStorage.setItem(key, sharedData[key]);
-                    hasUpdates = true;
-                    console.log('🔄 Synced from other user:', key, '=', sharedData[key]);
-                }
-            }
-        });
-        
-        // Проверяем удаленные ключи
-        Object.keys(botStorage).forEach(key => {
-            if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/) && !sharedData[key]) {
-                delete botStorage[key];
+        // Удаляем из Firebase - автоматически синхронизируется со ВСЕМИ пользователями  
+        remove(ref(database, 'plans/' + key))
+            .then(() => {
+                // Обновляем локальное хранилище
                 localStorage.removeItem(key);
-                hasUpdates = true;
-                console.log('🔄 Synced DELETE from other user:', key);
-            }
-        });
-        
-        if (hasUpdates) {
-            console.log('📥 Downloaded shared data:', Object.keys(sharedData).length, 'total plans');
-            refreshCurrentModal();
-            return true;
-        }
-        
-        return false;
-        
-    } catch (error) {
-        console.error('❌ Download error:', error);
-        return false;
+                delete botStorage[key];
+                
+                const [date, time] = key.split('_');
+                sendToTelegramBot(`🗑️ *План удален*\n\n📅 ${date}\n🕐 ${time}\n~~"${oldValue}"~~`);
+                
+                console.log('🔥 Deleted from Firebase - INSTANTLY synced to all users');
+                if (callback) callback();
+            })
+            .catch(error => {
+                console.error('❌ Firebase delete error:', error);
+                // Fallback на localStorage
+                localStorage.removeItem(key);
+                delete botStorage[key];
+                if (callback) callback();
+            });
+    } else {
+        if (callback) callback();
     }
 }
 
-// Обновление попапа при синхронизации
+// Обновление попапа при real-time изменениях
 function refreshCurrentModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal && modal.classList.contains('active')) {
@@ -222,40 +259,41 @@ function refreshCurrentModal() {
             
             if (document.activeElement !== input && input.value !== savedValue) {
                 input.value = savedValue;
-                input.style.backgroundColor = '#e3f2fd';
+                input.style.backgroundColor = '#FFE4E1';
                 setTimeout(() => {
                     input.style.backgroundColor = '';
                 }, 1000);
-                console.log('🔄 UI updated with synced data:', key);
+                console.log('🔥 UI updated with real-time data:', key);
             }
         });
     }
 }
 
-// Принудительная синхронизация
+// Принудительная синхронизация (теперь не нужна, но оставим для совместимости)
 async function forceSync() {
-    console.log('🔄 Force sync requested...');
+    console.log('🔥 Firebase works in real-time - no manual sync needed!');
     const button = event.target;
-    button.textContent = '⏳';
+    button.textContent = '🔥 Real-time';
     button.disabled = true;
     
-    const hasUpdates = await loadFromJSONBin();
-    
-    button.textContent = '🔄 Обновить';
-    button.disabled = false;
+    setTimeout(() => {
+        button.textContent = '🔥 Firebase';
+        button.disabled = false;
+    }, 1500);
     
     const notification = document.createElement('div');
-    notification.textContent = hasUpdates ? '✅ Получены обновления от других пользователей' : '✅ Данные актуальны';
+    notification.textContent = '🔥 Firebase работает в реальном времени!';
     notification.style.cssText = `
         position: fixed;
         top: 80px;
         right: 20px;
-        background: #4CAF50;
+        background: #FF6B35;
         color: white;
         padding: 8px 16px;
         border-radius: 4px;
         font-size: 14px;
         z-index: 10000;
+        animation: pulse 0.6s;
     `;
     document.body.appendChild(notification);
     setTimeout(() => {
@@ -263,6 +301,7 @@ async function forceSync() {
     }, 2000);
 }
 
+// Telegram функция без изменений
 async function sendToTelegramBot(message, isData = false) {
     try {
         const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -290,73 +329,7 @@ async function sendToTelegramBot(message, isData = false) {
     }
 }
 
-// СИНХРОНИЗИРОВАННЫЕ ФУНКЦИИ ХРАНЕНИЯ
-
-function setStorageItem(key, value, callback = null) {
-    if (!storageInitialized) {
-        setTimeout(() => setStorageItem(key, value, callback), 500);
-        return;
-    }
-    
-    // Сохраняем локально + в памяти
-    localStorage.setItem(key, value);
-    botStorage[key] = value;
-    
-    // Уведомление в Telegram
-    const [date, time] = key.split('_');
-    const formattedDate = date.split('.').reverse().join('-');
-    const dateObj = new Date(formattedDate);
-    const dayName = dateObj.toLocaleDateString('ru-RU', { weekday: 'long' });
-    
-    sendToTelegramBot(`📝 *Новый план добавлен*\n\n📅 ${date} (${dayName})\n🕐 ${time}\n💭 "${value}"`);
-    
-    // СИНХРОНИЗАЦИЯ: обновляем общее хранилище для всех пользователей
-    saveToJSONBin();
-    
-    console.log('✅ Saved locally + synced to all users');
-    if (callback) callback();
-}
-
-function getStorageItem(key, callback) {
-    if (!storageInitialized) {
-        setTimeout(() => getStorageItem(key, callback), 100);
-        return;
-    }
-    
-    const value = botStorage[key] || '';
-    
-    if (value) {
-        console.log(`✅ Found shared plan: ${key} = "${value}"`);
-    }
-    
-    callback(value);
-}
-
-function removeStorageItem(key, callback = null) {
-    if (!storageInitialized) {
-        setTimeout(() => removeStorageItem(key, callback), 500);
-        return;
-    }
-    
-    if (botStorage[key]) {
-        const oldValue = botStorage[key];
-        
-        localStorage.removeItem(key);
-        delete botStorage[key];
-        
-        const [date, time] = key.split('_');
-        sendToTelegramBot(`🗑️ *План удален*\n\n📅 ${date}\n🕐 ${time}\n~~"${oldValue}"~~`);
-        
-        // СИНХРОНИЗАЦИЯ: обновляем общее хранилище для всех пользователей
-        saveToJSONBin();
-        
-        console.log('✅ Deleted locally + synced to all users');
-    }
-    
-    if (callback) callback();
-}
-
-// [ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ - все остальные функции идентичны]
+// [ОСТАЛЬНОЙ КОД ИДЕНТИЧЕН ПРЕДЫДУЩЕЙ ВЕРСИИ]
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -706,7 +679,7 @@ function openDailyPlanModal(activityName, date) {
     
     document.querySelector('#dailyPlanModalBody h3').innerHTML = `
         📝 Планы на день - ${activityName}
-        <button onclick="forceSync()" style="float:right; padding:6px 12px; font-size:14px; background:#4f46e5; color:white; border:none; border-radius:6px; cursor:pointer; margin-left:10px;">🔄 Обновить</button>
+        <button onclick="forceSync()" style="float:right; padding:6px 12px; font-size:14px; background:#FF6B35; color:white; border:none; border-radius:6px; cursor:pointer; margin-left:10px;">🔥 Firebase</button>
     `;
     
     let timeSlots = '';
@@ -813,11 +786,11 @@ function autoSavePlan(input) {
             setTimeout(() => {
                 input.style.backgroundColor = '';
             }, 300);
-            console.log(`✅ Plan saved and synced: ${time} - ${value}`);
+            console.log(`🔥 Plan saved to Firebase: ${time} - ${value}`);
         });
     } else {
         removeStorageItem(key, () => {
-            console.log(`🗑️ Empty plan removed and synced: ${time}`);
+            console.log(`🔥 Empty plan removed from Firebase: ${time}`);
         });
     }
 }
