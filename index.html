@@ -30,7 +30,6 @@
         </nav>
 
         <main>
-            <!-- ВКЛАДКА: КАЛЕНДАРЬ -->
             <section id="calendar" class="tab-content active">
                 <div class="filters">
                     <button class="filter-btn active" data-filter="all">Все</button>
@@ -38,11 +37,10 @@
                     <button class="filter-btn" data-filter="sight">Места</button>
                 </div>
                 <div id="activitiesGrid" class="grid">
-                    <!-- Карточки генерируются через JS -->
+                    <!-- JS -->
                 </div>
             </section>
 
-            <!-- ВКЛАДКА: СОВЕТЫ -->
             <section id="tips" class="tab-content">
                 <h2>🍽️ Обязательно попробовать!</h2>
                 <ul>
@@ -57,7 +55,6 @@
                     <li>🍗 <b>Кай ян</b> – маринованная курица на гриле.</li>
                     <li>🌿 <b>Пат капрао</b> – острое блюдо из мяса с базиликом.</li>
                 </ul>
-                
                 <h2>👦 Для Ивана</h2>
                 <ul>
                     <li>🍳 <b>Кай джио</b> – воздушный омлет.</li>
@@ -66,7 +63,6 @@
                     <li>🍢 <b>Ми сатай</b> – куриные шашлычки в арахисовом соусе.</li>
                     <li>🥭 <b>Као нио ма муанг</b> – клейкий рис с манго.</li>
                 </ul>
-
                 <h2>❄️ Холодные напитки Таиланда</h2>
                  <ul>
                     <li>🧋 <b>Ча йен</b> – холодный чай с молоком и пряностями.</li>
@@ -78,7 +74,6 @@
                     <li>💙 <b>Синий чай (butterfly pea)</b> – со льдом и лимоном.</li>
                     <li>🥭 <b>Манговый смузи</b> – густой напиток из спелого манго и льда.</li>
                 </ul>
-
                 <h2>💊 Аптечка</h2>
                 <ul>
                     <li>🌡️ <b>Парацетамол</b> – болеутоляющее и жаропонижающее.</li>
@@ -89,39 +84,33 @@
                 </ul>
             </section>
 
-            <!-- ВКЛАДКА: КОНТАКТЫ -->
             <section id="contacts" class="tab-content">
-                <h2>Важные контакты</h2>
-                <div id="contacts-list">
-                    <!-- Контакты будут добавлены JS -->
+                 <div id="contactsGrid" class="contacts-col">
+                    <!-- JS -->
                 </div>
             </section>
 
-            <!-- ВКЛАДКА: РЯДОМ -->
             <section id="nearby" class="tab-content">
-                <h2>Что поблизости?</h2>
-                <button id="locateBtn" class="btn-primary">Найти меня</button>
+                <button id="locateBtn" class="locate-button">Найти меня</button>
                 <div class="filters geo-filters">
                     <button class="geo-filter-btn active" data-filter="naklua">Наклуа</button>
                     <button class="geo-filter-btn" data-filter="pratamnak">Пратамнак</button>
                     <button class="geo-filter-btn" data-filter="jomtien">Джомтьен</button>
                 </div>
-                <div id="nearbyItems" class="geo-items-container">
-                    <p>Нажмите "Найти меня", чтобы увидеть ближайшие места.</p>
+                 <div id="nearbyItems" class="nearby-block">
+                    <!-- JS -->
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ДЕТАЛЕЙ -->
     <div id="modalOverlay" class="modal">
         <div class="modal-content">
-            <button class="close-btn" id="closeModal">&times;</button>
+            <button id="closeModal" class="close-btn">&times;</button>
             <div id="modalBody"></div>
         </div>
     </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ПЛАНЕРА -->
+    
     <div id="plannerModalOverlay" class="modal">
         <div class="modal-content planner-modal">
             <div class="planner-header">
@@ -129,7 +118,7 @@
                 <button class="close-btn" id="closePlannerModal">&times;</button>
             </div>
             <div id="plannerModalBody" class="planner-body">
-                <!-- Слоты времени генерируются через JS -->
+                <!-- Слоты времени генерируются JS -->
             </div>
             <div class="planner-footer">
                 <button id="savePlannerBtn" class="btn-primary">Сохранить</button>

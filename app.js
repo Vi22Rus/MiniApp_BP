@@ -1,32 +1,25 @@
-/* Version: 2.1.0 | Lines: 512 */
+/* Version: 2.1.0 | Lines: 430 */
 document.addEventListener('DOMContentLoaded', () => {
     try {
         initApp();
     } catch (e) {
-        console.error("Ошибка инициализации приложения:", e);
+        console.error("Критическая ошибка при инициализации:", e);
     }
 });
 
-// --- Глобальные переменные ---
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
-let activeGeoFilter = 'naklua';
-
-const allGeoData = [
-    { type: 'cafe', link: "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8", coords: { lat: 12.965314, lng: 100.885745 }, subblock: 'naklua' },
-    { type: 'cafe', link: "https://maps.app.goo.gl/fCCogyeGKWqJca8g7", coords: { lat: 12.964959, lng: 100.886551 }, subblock: 'naklua' },
-    { type: 'temple', link: "https://maps.app.goo.gl/VzHiKzb1UDQwrJ7SA", coords: { lat: 12.925998, lng: 100.876540 }, subblock: 'pratamnak' }
-];
+let currentPlannerDate = null;
 
 const kidsLeisure = [
-    { name: "Mini Siam", date: "01.01.2026", coords: { lat: 12.9554157, lng: 100.9088538 }, tips: "...", type: "sight" },
-    { name: "Деревня слонов", date: "04.01.2026", coords: { lat: 12.91604299, lng: 100.93883441 }, tips: "Шоу в 14:30 и 16:00.", type: "sight" },
-    { name: "Дельфинариум", date: "07.01.2026", coords: { lat: 12.95222191, lng: 100.93617557 }, tips: "Шоу в 15:00.", type: "sight" },
-    { name: "Сад Нонг Нуч", date: "11.01.2026", coords: { lat: 12.76575858, lng: 100.93505629 }, tips: "...", type: "sight" },
-    { name: "Музей искусств 3D", date: "13.01.2026", coords: { lat: 12.94832322, lng: 100.88976288 }, tips: "...", type: "sight" },
-    { name: "Аюттайя", date: "16.01.2026", coords: { lat: 14.35741905, lng: 100.56757512 }, tips: "...", type: "sight" },
-    { name: "Зоопарк Кхао Кхео", date: "19.01.2026", coords: { lat: 13.21500644, lng: 101.05700099 }, tips: "...", type: "sight" },
-    { name: "Плавучий рынок", date: "22.01.2026", coords: { lat: 12.86799376, lng: 100.90469404 }, tips: "...", type: "sight" },
+    { name: "Mini Siam", date: "01.01.2026", coords: { lat: 12.9554157, lng: 100.9088538 }, tips: "Красивый парк с миниатюрами со всего мира.", type: "sight" },
+    { name: "Деревня слонов", date: "04.01.2026", coords: { lat: 12.91604299, lng: 100.93883441 }, tips: "Шоу в 14:30 и 16:00. Можно покормить слонов.", type: "sight" },
+    { name: "Дельфинариум", date: "07.01.2026", coords: { lat: 12.95222191, lng: 100.93617557 }, tips: "Шоу в 15:00. Есть плавание с дельфинами.", type: "sight" },
+    { name: "Сад Нонг Нуч", date: "11.01.2026", coords: { lat: 12.76575858, lng: 100.93505629 }, tips: "Огромный тропический сад, шоу слонов и культурное шоу.", type: "sight" },
+    { name: "Музей искусств 3D", date: "13.01.2026", coords: { lat: 12.94832322, lng: 100.88976288 }, tips: "Art in Paradise. Приходить лучше в будни, меньше людей.", type: "sight" },
+    { name: "Аюттайя", date: "16.01.2026", coords: { lat: 14.35741905, lng: 100.56757512 }, tips: "Древняя столица Сиама. Ехать на целый день.", type: "sight" },
+    { name: "Зоопарк Кхао Кхео", date: "19.01.2026", coords: { lat: 13.21500644, lng: 101.05700099 }, tips: "Открытый зоопарк, можно кормить животных.", type: "sight" },
+    { name: "Плавучий рынок", date: "22.01.2026", coords: { lat: 12.86799376, lng: 100.90469404 }, tips: "Туристическое место, но колоритное.", type: "sight" },
 ];
 
 function generateBeachDays() {
@@ -37,7 +30,7 @@ function generateBeachDays() {
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const date = d.toLocaleDateString('ru-RU');
         if (!usedDates.includes(date)) {
-            days.push({ type: "sea", name: "Пляжинг 🌊", date, coords: null, tips: "Отдых" });
+            days.push({ type: "sea", name: "Пляжинг", date, coords: null, tips: "Отдых на море" });
         }
     }
     return days;
@@ -49,13 +42,9 @@ const activities = [...generateBeachDays(), ...kidsLeisure].sort((a, b) => {
     return dateA - dateB;
 });
 
-const contacts = [
-    { name: "Туристическая полиция", phone: "1155" },
-    { name: "Скорая помощь", phone: "1669" },
-    { name: "Консульство РФ", phone: "+66-2-234-98-24" }
+const points = [
+    { name: 'MO Play Kidz', coords: {lat: 12.935051, lng: 100.882722}, icon: '👶' }
 ];
-
-let currentPlannerDate = null;
 
 function initApp() {
     initTabs();
@@ -64,9 +53,9 @@ function initApp() {
     updateCountdown();
     setInterval(updateCountdown, 3600000);
     renderActivities(activities);
-    renderContacts(contacts);
+    renderContacts(points);
     document.getElementById('closeModal').addEventListener('click', closeModal);
-    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
     });
     initPlanner();
@@ -87,48 +76,91 @@ function initCalendarFilters() {
         f.addEventListener('click', () => {
             document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
             f.classList.add('active');
-            const filter = f.dataset.filter;
-            const filtered = filter === 'all' ? activities : activities.filter(a => a.type === filter);
+            const filtered = f.dataset.filter === 'all' ? activities : activities.filter(a => a.type === f.dataset.filter);
             renderActivities(filtered);
+            localStorage.setItem('filter', f.dataset.filter);
         });
     });
+    const saved = localStorage.getItem('filter') || 'all';
+    document.querySelector(`.filter-btn[data-filter="${saved}"]`)?.click();
 }
 
 function renderActivities(list) {
     const grid = document.getElementById('activitiesGrid');
     if (!grid) return;
+
     grid.innerHTML = list.map(a => {
-        const cardClass = `card`;
+        const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
+        const prices = {
+            'Mini Siam': `<p class="price-tag"><span class="price-label">Взр. 230 ฿ / Дет. 130 ฿</span></p>`,
+            'Деревня слонов': `<p class="price-tag"><span class="price-label">Взр. 650 ฿ / Дет. 500 ฿</span></p>`,
+            'Дельфинариум': `<p class="price-tag"><span class="price-label">Взр. 630 ฿ / Дет. 450 ฿</span></p>`,
+            'Сад Нонг Нуч': `<p class="price-tag"><span class="price-label">Взр. 420 ฿ / Дет. 320 ฿</span></p>`,
+            'Музей искусств 3D': `<p class="price-tag"><span class="price-label">Взр. 235 ฿ / Дет. 180 ฿</span></p>`,
+            'Зоопарк Кхао Кхео': `<p class="price-tag"><span class="price-label">Взр. 350 ฿ / Дет. 120 ฿</span></p>`,
+        };
+        const priceLine = prices[a.name] || '';
+        const dist = userCoords && a.coords ? `<p class="distance-tag">~${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
+        
         let buttonHtml = '';
         if (a.type === 'sea') {
             buttonHtml = `<button class="btn-primary planner-btn" data-date="${a.date}">Планы</button>`;
         } else if (a.type === 'sight') {
-            buttonHtml = `<button class="btn-primary details-btn" data-name="${a.name}" data-date="${a.date}">Детали</button>`;
+            buttonHtml = `<button class="details" data-name="${a.name}" data-date="${a.date}">Детали</button>`;
         }
+        
         return `
             <div class="${cardClass}">
-                <h3>${getIconForActivity(a.name)}${a.name}</h3>
+                <h3>${getIconForActivity(a.name)} ${a.name}</h3>
                 <p>${a.date}</p>
+                ${priceLine}
+                ${dist}
                 ${buttonHtml}
             </div>
         `;
     }).join('');
+    
     bindDetailButtons();
     bindPlannerButtons();
 }
 
 function bindDetailButtons() {
-    document.querySelectorAll('.details-btn').forEach(btn => {
+    document.querySelectorAll('.details').forEach(btn => {
         btn.addEventListener('click', () => {
-            const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
+            const name = btn.dataset.name;
+            const date = btn.dataset.date;
+            const act = activities.find(x => x.name === name && x.date === date);
             if (act) showModal(act);
         });
     });
 }
 
-function showModal(act) {
-    const modalBody = document.getElementById('modalBody');
-    modalBody.innerHTML = `<h2>${act.name}</h2><p>${act.tips || ''}</p>`;
+function getIconForActivity(name) {
+    const icons = {
+        'Mini Siam': '🏛️', 'Деревня слонов': '🐘', 'Дельфинариум': '🐬',
+        'Сад Нонг Нуч': '🌺', 'Музей искусств 3D': '🎨', 'Аюттайя': '⛩️',
+        'Зоопарк Кхао Кхео': '🦒', 'Плавучий рынок': '🛶'
+    };
+    return icons[name] || '';
+}
+
+function showModal(place) {
+    let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
+    if (place.tips) {
+        content += `<p>💡 ${place.tips}</p>`;
+    }
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    const to = `${place.coords.lat},${place.coords.lng}`;
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+
+    if (userCoords) {
+        const userFrom = `${userCoords[0]},${userCoords[1]}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+        const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
+        content += `<p>📏 Расстояние: ~${distance} км</p>`;
+    }
+
+    document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
 
@@ -136,6 +168,53 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
 }
 
+function updateCountdown() {
+    const startTrip = new Date('2025-12-29');
+    const now = new Date();
+    const days = Math.ceil((startTrip - now) / 864e5);
+    document.getElementById('countdownText').textContent = days > 0 ? 'До поездки' : 'Поездка!';
+    document.getElementById('days').textContent = days > 0 ? days : '🎉';
+    document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
+}
+
+function getDistance(from, to) {
+    const toRad = d => d * Math.PI / 180;
+    const R = 6371;
+    const dLat = toRad(to[0] - from[0]);
+    const dLon = toRad(to[1] - from[1]);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(from[0])) * Math.cos(toRad(to[0])) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return (R * c).toFixed(1);
+}
+
+function initGeoFeatures() {
+    document.getElementById('locateBtn').addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            return alert('Геолокация не поддерживается.');
+        }
+        navigator.geolocation.getCurrentPosition(pos => {
+            userCoords = [pos.coords.latitude, pos.coords.longitude];
+            renderActivities(activities);
+            renderContacts(points);
+        }, () => alert('Не удалось получить местоположение.'));
+    });
+}
+
+function renderContacts(list) {
+    const grid = document.getElementById('contactsGrid');
+    if (!grid) return;
+    let items = list.slice();
+    if (userCoords) {
+        items.forEach(p => p.distance = parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng])));
+        items.sort((a,b) => a.distance - b.distance);
+    }
+    grid.innerHTML = items.map(p => {
+        const distTag = p.distance ? `<span class="distance-tag">~${p.distance.toFixed(1)} км</span>` : '';
+        return `<button class="contact-btn" onclick='window.open("https://www.google.com/maps/dir/?api=1&destination=${p.coords.lat},${p.coords.lng}", "_blank")'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
+    }).join('');
+}
+
+// --- PLANNER LOGIC ---
 function initPlanner() {
     const plannerOverlay = document.getElementById('plannerModalOverlay');
     const closeBtn = document.getElementById('closePlannerModal');
@@ -154,7 +233,6 @@ function initPlanner() {
     saveBtn.addEventListener('click', () => {
         if (currentPlannerDate) {
             saveDayPlan(currentPlannerDate);
-            alert('План сохранен!');
             closePlanner();
         }
     });
@@ -179,10 +257,11 @@ function openDayPlanner(date) {
 
     const savedPlans = JSON.parse(localStorage.getItem(`plan_${date}`) || '{}');
 
-    for (let hour = 7; hour <= 20; hour++) {
+    for (let hour = 7; hour < 21; hour++) {
         const timeLabel = `${String(hour).padStart(2, '0')}:00`;
         const nextHourLabel = `${String(hour + 1).padStart(2, '0')}:00`;
         const planText = savedPlans[timeLabel] || '';
+
         const row = document.createElement('div');
         row.className = 'planner-row';
         row.innerHTML = `
@@ -209,96 +288,4 @@ function saveDayPlan(date) {
     } else {
         localStorage.removeItem(`plan_${date}`);
     }
-}
-
-function renderContacts(contactsList) {
-    const listEl = document.getElementById('contacts-list');
-    if (!listEl) return;
-    listEl.innerHTML = contactsList.map(c => 
-        `<div class="contact-item"><strong>${c.name}:</strong> <a href="tel:${c.phone}">${c.phone}</a></div>`
-    ).join('');
-}
-
-function initGeoFeatures() {
-    document.getElementById('locateBtn').addEventListener('click', () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(position => {
-                userCoords = { lat: position.coords.latitude, lng: position.coords.longitude };
-                renderNearbyItems();
-            }, () => {
-                alert('Не удалось определить местоположение.');
-            });
-        } else {
-            alert('Геолокация не поддерживается вашим браузером.');
-        }
-    });
-}
-
-function renderNearbyItems() {
-    const container = document.getElementById('nearbyItems');
-    if (!userCoords) {
-        container.innerHTML = '<p>Нажмите "Найти меня", чтобы увидеть ближайшие места.</p>';
-        return;
-    }
-    
-    allGeoData.forEach(item => {
-        item.distance = getDistance(userCoords, item.coords);
-    });
-    
-    allGeoData.sort((a, b) => a.distance - b.distance);
-    
-    container.innerHTML = allGeoData.map(item => `
-        <div class="card">
-            <p>${item.type === 'cafe' ? 'Кафе' : 'Храм'} (~${item.distance.toFixed(1)} км)</p>
-            <a href="${item.link}" target="_blank">Открыть на карте</a>
-        </div>
-    `).join('');
-}
-
-function getDistance(coords1, coords2) {
-    const toRad = x => x * Math.PI / 180;
-    const R = 6371;
-    const dLat = toRad(coords2.lat - coords1.lat);
-    const dLon = toRad(coords2.lng - coords1.lng);
-    const lat1 = toRad(coords1.lat);
-    const lat2 = toRad(coords2.lat);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-}
-
-function updateCountdown() {
-    const targetDate = new Date('2025-12-29T00:00:00');
-    const now = new Date();
-    const diff = targetDate - now;
-
-    const daysEl = document.getElementById('days');
-    const textEl = document.getElementById('countdownText');
-    const labelEl = document.getElementById('countdown-label');
-
-    if (diff <= 0) {
-        textEl.textContent = 'Поездка началась!';
-        daysEl.textContent = '🎉';
-        labelEl.textContent = '';
-        return;
-    }
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    daysEl.textContent = days;
-    textEl.textContent = 'До поездки';
-    labelEl.textContent = 'дней';
-}
-
-function getIconForActivity(name) {
-    const icons = {
-        'Mini Siam': '🏛️',
-        'Деревня слонов': '🐘',
-        'Дельфинариум': '🐬',
-        'Сад Нонг Нуч': '🌺',
-        'Музей искусств 3D': '🎨',
-        'Аюттайя': '⛩️',
-        'Зоопарк Кхао Кхео': '🦒',
-        'Плавучий рынок': '🛶'
-    };
-    return icons[name] || '';
 }
