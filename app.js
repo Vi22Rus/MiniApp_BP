@@ -301,13 +301,32 @@ function generateBeachDays() {
 
 const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b) => new Date(a.date.split('.').reverse().join('-')) - new Date(b.date.split('.').reverse().join('-')));
 
+// ИСПРАВЛЕННАЯ функция updateCountdown с новой логикой
 function updateCountdown() {
-    const startTrip = new Date('2025-12-29');
+    const startTrip = new Date('2025-12-29');  // Начало поездки
+    const endTrip = new Date('2026-01-26');    // Конец поездки (отъезд)
     const now = new Date();
-    const days = Math.ceil((startTrip - now) / 864e5);
-    document.getElementById('countdownText').textContent = days > 0 ? 'До поездки:' : 'Поездка!';
-    document.getElementById('days').textContent = days > 0 ? days : '✔';
-    document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
+    
+    if (now < startTrip) {
+        // До поездки
+        const days = Math.ceil((startTrip - now) / 864e5);
+        document.getElementById('countdownText').textContent = 'До поездки:';
+        document.getElementById('days').textContent = days;
+        document.querySelector('.countdown-label').textContent = 'дней';
+        
+    } else if (now >= startTrip && now < endTrip) {  // ИЗМЕНЕНО: < вместо <=
+        // Во время поездки - показываем дни до отъезда
+        const daysToGo = Math.ceil((endTrip - now) / 864e5);
+        document.getElementById('countdownText').textContent = 'До отъезда:';
+        document.getElementById('days').textContent = daysToGo;
+        document.querySelector('.countdown-label').textContent = 'дней';
+        
+    } else {  // now >= endTrip (с 26.01.2026)
+        // В последний день и после поездки
+        document.getElementById('countdownText').textContent = 'Поездка завершена!';
+        document.getElementById('days').textContent = '✔';
+        document.querySelector('.countdown-label').textContent = '';
+    }
 }
 
 function renderActivities(list) {
