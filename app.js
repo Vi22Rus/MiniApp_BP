@@ -327,9 +327,9 @@ function renderActivities(list) {
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
         
-        // ИЗМЕНЕНА ТОЛЬКО ЭТА СТРОКА для типа 'sea'
+        // ИСПРАВЛЕНА: убран onclick, добавлен класс daily-plan-btn
         const buttonHtml = a.type === 'sea' ? 
-            `<button class="details" onclick="openDailyPlanModal('${a.name}', '${a.date}')">Планы на день</button>` :
+            `<button class="details daily-plan-btn" data-name="${a.name}" data-date="${a.date}">Планы на день</button>` :
             (a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : '');
         
         return `<div class="${cardClass}"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
@@ -340,8 +340,13 @@ function renderActivities(list) {
 function bindDetailButtons() {
     document.querySelectorAll('.details').forEach(btn => {
         btn.onclick = () => {
-            const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
-            if (act) showModal(act);
+            // ИСПРАВЛЕНА: добавлена проверка на класс daily-plan-btn
+            if (btn.classList.contains('daily-plan-btn')) {
+                openDailyPlanModal(btn.dataset.name, btn.dataset.date);
+            } else {
+                const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
+                if (act) showModal(act);
+            }
         };
     });
 }
