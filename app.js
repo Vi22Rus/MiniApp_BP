@@ -1,6 +1,6 @@
-// Version: 1.6.0 | Lines: 600
+// Version: 1.7.0 | Lines: 620
 // Last updated: 2025-09-28
-// Версия скрипта: app.js (600 строк) с FIREBASE REALTIME DATABASE
+// Версия скрипта: app.js (620 строк) с FIREBASE + исправленными ES6 модулями
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua';
@@ -9,7 +9,7 @@ let activeGeoFilter = 'naklua';
 const BOT_TOKEN = '8238598464:AAGwjUOg3H5j69xoFeNnaiUO9Y1wkjZSIX4';
 const CHAT_ID = '231009417';
 
-// FIREBASE CONFIGURATION - ВАШ КОНФИГ
+// FIREBASE CONFIGURATION
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
   authDomain: "pattaya-plans-app.firebaseapp.com",
@@ -22,7 +22,7 @@ const firebaseConfig = {
 
 // Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, remove, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 // Firebase initialization
 const app = initializeApp(firebaseConfig);
@@ -31,7 +31,6 @@ const database = getDatabase(app);
 // Хранилище и синхронизация
 let botStorage = {};
 let storageInitialized = false;
-let firebaseListeners = new Map();
 
 const allGeoData = [
     // Кафе (0-14)
@@ -82,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
+    console.log('🚀 Initializing app with Firebase...');
+    
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
@@ -94,13 +95,20 @@ function initApp() {
     renderActivities(activities);
     renderContacts(points);
     
+    // ИСПРАВЛЕНО: инициализация кнопок контактов после рендера
+    setTimeout(() => {
+        initContactButtons();
+    }, 100);
+    
+    console.log('✅ App initialized successfully with Firebase');
+    
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
     });
 }
 
-// FIREBASE REALTIME STORAGE - МГНОВЕННАЯ СИНХРОНИЗАЦИЯ
+// FIREBASE REALTIME DATABASE
 
 async function initFirebaseStorage() {
     if (storageInitialized) return;
@@ -108,19 +116,19 @@ async function initFirebaseStorage() {
     try {
         console.log('🔥 Initializing Firebase Realtime Database...');
         
-        // Загружаем существующие данные из localStorage
+        // Загружаем данные из localStorage
         const localKeys = Object.keys(localStorage).filter(key => key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/));
         localKeys.forEach(key => {
             botStorage[key] = localStorage.getItem(key);
         });
         
-        // Настраиваем реальную синхронизацию - слушаем ВСЕ изменения
+        // Настраиваем real-time синхронизацию
         const plansRef = ref(database, 'plans');
         onValue(plansRef, (snapshot) => {
             const firebaseData = snapshot.val() || {};
             let hasUpdates = false;
             
-            // Обновляем локальные данные из Firebase
+            // Обновляем данные из Firebase
             Object.keys(firebaseData).forEach(key => {
                 if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/)) {
                     if (botStorage[key] !== firebaseData[key]) {
@@ -132,7 +140,7 @@ async function initFirebaseStorage() {
                 }
             });
             
-            // Удаляем локально удаленные в Firebase данные
+            // Удаляем локально удаленные данные
             Object.keys(botStorage).forEach(key => {
                 if (key.includes('_') && key.match(/\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}/) && !firebaseData[key]) {
                     delete botStorage[key];
@@ -153,7 +161,7 @@ async function initFirebaseStorage() {
         console.log('✅ REAL-TIME SYNC активна - изменения мгновенно видны всем пользователям!');
         
         if (Object.keys(botStorage).length === 0) {
-            await sendToTelegramBot('🔥 Pattaya Plans Bot с Firebase!\nТеперь все изменения видны МГНОВЕННО всем пользователям - настоящий real-time!');
+            await sendToTelegramBot('🔥 Pattaya Plans Bot с Firebase!\nТеперь все изменения видны МГНОВЕННО всем пользователям!');
         }
         
     } catch (error) {
@@ -162,18 +170,15 @@ async function initFirebaseStorage() {
     }
 }
 
-// FIREBASE STORAGE FUNCTIONS - МГНОВЕННАЯ СИНХРОНИЗАЦИЯ
-
 function setStorageItem(key, value, callback = null) {
     if (!storageInitialized) {
         setTimeout(() => setStorageItem(key, value, callback), 500);
         return;
     }
     
-    // Сохраняем в Firebase - автоматически синхронизируется со ВСЕМИ пользователями
+    // Сохраняем в Firebase - мгновенная синхронизация
     set(ref(database, 'plans/' + key), value)
         .then(() => {
-            // Обновляем локальное хранилище
             localStorage.setItem(key, value);
             botStorage[key] = value;
             
@@ -190,7 +195,6 @@ function setStorageItem(key, value, callback = null) {
         })
         .catch(error => {
             console.error('❌ Firebase save error:', error);
-            // Fallback на localStorage
             localStorage.setItem(key, value);
             botStorage[key] = value;
             if (callback) callback();
@@ -203,11 +207,9 @@ function getStorageItem(key, callback) {
         return;
     }
     
-    // Сначала возвращаем из памяти (быстро)
     const cachedValue = botStorage[key] || '';
     callback(cachedValue);
     
-    // Firebase автоматически обновит через onValue если данные изменились
     if (cachedValue) {
         console.log(`🔥 Found cached plan: ${key} = "${cachedValue}"`);
     }
@@ -222,10 +224,8 @@ function removeStorageItem(key, callback = null) {
     if (botStorage[key]) {
         const oldValue = botStorage[key];
         
-        // Удаляем из Firebase - автоматически синхронизируется со ВСЕМИ пользователями  
         remove(ref(database, 'plans/' + key))
             .then(() => {
-                // Обновляем локальное хранилище
                 localStorage.removeItem(key);
                 delete botStorage[key];
                 
@@ -237,7 +237,6 @@ function removeStorageItem(key, callback = null) {
             })
             .catch(error => {
                 console.error('❌ Firebase delete error:', error);
-                // Fallback на localStorage
                 localStorage.removeItem(key);
                 delete botStorage[key];
                 if (callback) callback();
@@ -247,7 +246,6 @@ function removeStorageItem(key, callback = null) {
     }
 }
 
-// Обновление попапа при real-time изменениях
 function refreshCurrentModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal && modal.classList.contains('active')) {
@@ -269,8 +267,7 @@ function refreshCurrentModal() {
     }
 }
 
-// Принудительная синхронизация (теперь не нужна, но оставим для совместимости)
-async function forceSync() {
+function forceSync() {
     console.log('🔥 Firebase works in real-time - no manual sync needed!');
     const button = event.target;
     button.textContent = '🔥 Real-time';
@@ -301,7 +298,6 @@ async function forceSync() {
     }, 2000);
 }
 
-// Telegram функция без изменений
 async function sendToTelegramBot(message, isData = false) {
     try {
         const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -329,7 +325,7 @@ async function sendToTelegramBot(message, isData = false) {
     }
 }
 
-// [ОСТАЛЬНОЙ КОД ИДЕНТИЧЕН ПРЕДЫДУЩЕЙ ВЕРСИИ]
+// ОСТАЛЬНЫЕ ФУНКЦИИ
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -644,10 +640,41 @@ function renderContacts(list) {
         items.forEach(p => p.distance = parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng])));
         items.sort((a,b) => a.distance - b.distance);
     }
+    // ИСПРАВЛЕНО: убираем onclick, используем data-contact
     grid.innerHTML = items.map(p => {
         const distTag = p.distance ? `<span class="distance-tag">≈${p.distance.toFixed(1)} км</span>` : '';
-        return `<button class="contact-btn" onclick='showContactModal(${JSON.stringify(p)})'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
+        return `<button class="contact-btn" data-contact='${JSON.stringify(p)}'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
     }).join('');
+}
+
+// ИСПРАВЛЕНО: инициализация кнопок контактов для ES6 модулей
+function initContactButtons() {
+    document.querySelectorAll('.contact-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const contact = JSON.parse(btn.dataset.contact);
+            showContactModal(contact);
+        });
+    });
+}
+
+function showContactModal(contact) {
+    let content = `<h3>${contact.icon} ${contact.name}</h3>`;
+    
+    if (contact.coords) {
+        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+        const to = `${contact.coords.lat},${contact.coords.lng}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+        
+        if (userCoords) {
+            const userFrom = `${userCoords[0]},${userCoords[1]}`;
+            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+            const distance = getDistance(userCoords, [contact.coords.lat, contact.coords.lng]);
+            content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+        }
+    }
+    
+    document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalOverlay').classList.add('active');
 }
 
 function getIconForActivity(name) {
@@ -794,3 +821,8 @@ function autoSavePlan(input) {
         });
     }
 }
+
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ HTML (исправление ES6 модулей)
+window.closeModal = closeModal;
+window.showContactModal = showContactModal;
+window.forceSync = forceSync;
