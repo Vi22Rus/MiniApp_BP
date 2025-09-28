@@ -6,7 +6,7 @@ let userCoords = null;
 let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
 
 // GOOGLE SHEETS INTEGRATION
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxzkVcKcnBmHniTJI2eOx8BOQhyF8rdrTvbEuBLcv7Xl8B2KK6U4ZfLeU888Yl22xo3/exec';
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzADg4eYYImVE4C498YyMkLL8fmNkoPiP8X8rFh-ckOkpcX-YJ6mT-Kl2_1ROD5gmKE/exec';
 
 const allGeoData = [
     // Кафе (0-14)
