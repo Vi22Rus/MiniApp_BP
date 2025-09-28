@@ -592,11 +592,17 @@ function setStorageItem(key, value, callback = null) {
     });
 }
 
-function getStorageItem(key, callback) {
+function setStorageItem(key, value, callback = null) {
+    console.log('🔥 START: Saving to Google Sheets:', { key, value });
+    
     const data = {
-        action: 'get',
-        key: key
+        action: 'set',
+        key: key,
+        value: value
     };
+    
+    console.log('🔥 DATA:', JSON.stringify(data));
+    console.log('🔥 URL:', GOOGLE_SHEETS_URL);
     
     fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
@@ -605,23 +611,34 @@ function getStorageItem(key, callback) {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
-    .then(result => {
+    .then(response => {
+        console.log('🔥 Response status:', response.status);
+        console.log('🔥 Response ok:', response.ok);
+        return response.text(); // Сначала как текст
+    })
+    .then(text => {
+        console.log('🔥 Raw response:', text);
+        const result = JSON.parse(text);
+        console.log('🔥 Parsed result:', result);
+        
         if (result.success) {
-            console.log('✅ Loaded from Google Sheets (shared)');
-            callback(result.value || '');
+            console.log('✅ Saved to Google Sheets (shared)');
         } else {
-            throw new Error('Google Sheets error');
+            throw new Error(`Google Sheets error: ${result.error || 'Unknown'}`);
         }
+        if (callback) callback();
     })
     .catch(error => {
-        console.error('Google Sheets error:', error);
+        console.error('❌ Google Sheets FAILED:', error);
+        console.log('❌ Falling back to localStorage');
+        
         // Fallback на localStorage при ошибке
-        const fallbackValue = localStorage.getItem(key) || '';
-        console.log('📱 Loaded from localStorage (Sheets fallback)');
-        callback(fallbackValue);
+        localStorage.setItem(key, value);
+        console.log('📱 Saved to localStorage (Sheets fallback)');
+        if (callback) callback();
     });
 }
+
 
 function removeStorageItem(key, callback = null) {
     const data = {
