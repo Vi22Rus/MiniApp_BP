@@ -1,10 +1,10 @@
-// Version: 1.2.4 | Lines: 450
+// Version: 1.2.4 | Lines: 424
 // Last updated: 2025-09-28
+// Версия скрипта: app.js (424 строки)
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
-let activeGeoFilter = 'naklua';
+let activeGeoFilter = 'naklua'; // Фильтр по районам для кафе
 
-// Фильтр по районам для кафе
 const allGeoData = [
     // Кафе (0-14)
     { type: 'cafe', link: "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8", coords: [12.965314, 100.885745], subblock: 'naklua' },
@@ -22,7 +22,6 @@ const allGeoData = [
     { type: 'cafe', link: "https://maps.app.goo.gl/zPpiXtiNQts6f1Tb6", coords: [12.909461, 100.864167], subblock: 'pratamnak' },
     { type: 'cafe', link: "https://maps.app.goo.gl/rFeQbBftxVTd2M6j9", coords: [12.917532, 100.867051], subblock: 'pratamnak' },
     { type: 'cafe', link: "https://maps.app.goo.gl/fn868NKBZYGE4tUJ7", coords: [12.892621, 100.873230], subblock: 'jomtien' },
-    
     // Храмы (15-24)
     { type: 'temple', link: "https://maps.app.goo.gl/VzHiKzb1UDQwrJ7SA", coords: [12.925998, 100.876540] },
     { type: 'temple', link: "https://maps.app.goo.gl/1Tho69ErwjcJoLZu6", coords: [12.925280, 100.877069] },
@@ -38,7 +37,7 @@ const allGeoData = [
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
-    const R = 6371;
+    const R = 6371; 
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
@@ -58,18 +57,18 @@ function initApp() {
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
+    initDailyPlanModal(); // ДОБАВЛЕННЫЙ вызов
+    
     updateCountdown();
     setInterval(updateCountdown, 3600000);
+    
     renderActivities(activities);
     renderContacts(points);
-    initDailyPlanModal();
     
-    const modal = document.getElementById('activityModal');
-    if (modal) {
-        modal.addEventListener('click', e => {
-            if (e.target === modal) closeModal();
-        });
-    }
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+        if (e.target.id === 'modalOverlay') closeModal();
+    });
 }
 
 function initTabs() {
@@ -92,108 +91,99 @@ function initCalendarFilters() {
             localStorage.setItem('filter', f.dataset.filter);
         });
     });
-    
     const saved = localStorage.getItem('filter') || 'all';
     document.querySelector(`.filter-btn[data-filter="${saved}"]`)?.click();
 }
 
 function initGeoFeatures() {
-    const locateBtn = document.querySelector('.locate-button');
-    if (locateBtn) {
-        locateBtn.addEventListener('click', getUserLocation);
-    }
-    
+    document.getElementById('locateBtn').addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            alert('Геолокация не поддерживается.');
+            return resetGeoState();
+        }
+        navigator.geolocation.getCurrentPosition(pos => {
+            userCoords = [pos.coords.latitude, pos.coords.longitude];
+            updateGeoView();
+        }, () => {
+            alert('Не удалось получить местоположение.');
+            resetGeoState();
+        });
+    });
+
     document.querySelectorAll('.geo-filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.geo-filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            activeGeoFilter = btn.dataset.geoFilter;
-            updateCafeContent();
+            activeGeoFilter = btn.dataset.filter;
             if (userCoords) updateGeoView();
         });
     });
-    
-    updateCafeContent();
-    updateTemplesContent();
-}
 
-function getUserLocation() {
-    if (!navigator.geolocation) {
-        alert('Геолокация не поддерживается браузером.');
-        return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(pos => {
-        userCoords = [pos.coords.latitude, pos.coords.longitude];
-        updateGeoView();
-    }, () => {
-        alert('Не удалось получить местоположение.');
-    });
+    document.querySelectorAll('.geo-item-btn').forEach(initGeoItemButton);
 }
 
 function updateGeoView() {
     updateAllDistances();
     sortAllGeoBlocks();
-    updateNearbySection();
+    applyGeoFilter();
 }
 
 function updateAllDistances() {
     if (!userCoords) return;
-    
     document.querySelectorAll('.geo-item-btn').forEach(button => {
         const id = parseInt(button.dataset.id, 10);
-        if (isNaN(id) || !allGeoData[id]) return;
+        if (isNaN(id)) return;
         
         const distance = getDistance(userCoords, allGeoData[id].coords);
         button.dataset.distance = distance;
-        
         let distSpan = button.querySelector('.distance-tag');
         if (!distSpan) {
             distSpan = document.createElement('span');
             distSpan.className = 'distance-tag';
             button.appendChild(distSpan);
         }
-        distSpan.textContent = `≈ ${distance} км`;
+        distSpan.textContent = ` ≈ ${distance} км`;
     });
 }
 
 function sortAllGeoBlocks() {
     ['naklua', 'pratamnak', 'jomtien'].forEach(subblockName => {
-        const container = document.querySelector(`.cafe-sub-block[data-subblock="${subblockName}"]`);
-        if (container) {
+        const container = document.querySelector(`.cafe-sub-block[data-subblock-name="${subblockName}"]`);
+        if(container) {
             const buttons = Array.from(container.querySelectorAll('.geo-item-btn'));
             buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
             buttons.forEach(button => container.appendChild(button));
         }
     });
-    
+
     const templesContainer = document.querySelector('.geo-temples .geo-items-container');
-    if (templesContainer) {
+    if(templesContainer) {
         const buttons = Array.from(templesContainer.querySelectorAll('.geo-item-btn'));
         buttons.sort((a, b) => (parseFloat(a.dataset.distance) || 9999) - (parseFloat(b.dataset.distance) || 9999));
         buttons.forEach(button => templesContainer.appendChild(button));
     }
 }
 
-function updateNearbySection() {
+function applyGeoFilter() {
+    restoreAllButtonsVisibility();
     const nearbyContainer = document.getElementById('nearbyItems');
-    if (!nearbyContainer) return;
-    
     nearbyContainer.innerHTML = '';
-    
-    const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock="${activeGeoFilter}"]`);
+
+    // Находим ближайшее кафе в зависимости от фильтра
+    const targetSubblock = document.querySelector(`.cafe-sub-block[data-subblock-name="${activeGeoFilter}"]`);
     const closestCafeButton = targetSubblock ? targetSubblock.querySelector('.geo-item-btn') : null;
-    
+
+    // Находим ближайший храм (он всегда первый в своем отсортированном контейнере)
     const templesContainer = document.querySelector('.geo-temples .geo-items-container');
     const closestTempleButton = templesContainer ? templesContainer.querySelector('.geo-item-btn') : null;
-    
+
     if (closestCafeButton) {
         const clone = closestCafeButton.cloneNode(true);
         initGeoItemButton(clone);
         nearbyContainer.appendChild(clone);
         closestCafeButton.style.display = 'none';
     }
-    
+
     if (closestTempleButton) {
         const clone = closestTempleButton.cloneNode(true);
         initGeoItemButton(clone);
@@ -202,237 +192,201 @@ function updateNearbySection() {
     }
     
     if (!closestCafeButton && !closestTempleButton) {
-        nearbyContainer.innerHTML = '<div class="empty-state">Места не найдены</div>';
+        nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений</div>`;
     }
 }
 
-function updateCafeContent() {
-    const cafeContent = document.getElementById('cafeContent');
-    if (!cafeContent) return;
-    
-    const subblocks = {
-        naklua: { name: 'Наклуа', items: [] },
-        pratamnak: { name: 'Пратамнак', items: [] },
-        jomtien: { name: 'Джомтьен', items: [] }
-    };
-    
-    allGeoData.forEach((item, index) => {
-        if (item.type === 'cafe' && subblocks[item.subblock]) {
-            subblocks[item.subblock].items.push({ ...item, id: index });
-        }
-    });
-    
-    cafeContent.innerHTML = Object.keys(subblocks).map(key => {
-        const subblock = subblocks[key];
-        if (subblock.items.length === 0) return '';
-        
-        return `
-            <div class="cafe-sub-block ${key}" data-subblock="${key}">
-                <h4>📍 ${subblock.name}</h4>
-                ${subblock.items.map(item => `
-                    <button class="geo-item-btn" data-id="${item.id}">
-                        <span class="icon">☕</span>
-                        <span class="name">Кафе</span>
-                    </button>
-                `).join('')}
-            </div>
-        `;
-    }).join('');
-    
-    document.querySelectorAll('.geo-item-btn').forEach(initGeoItemButton);
+function restoreAllButtonsVisibility() {
+    document.querySelectorAll('.geo-item-btn').forEach(btn => btn.style.display = 'flex');
 }
 
-function updateTemplesContent() {
-    const templesContainer = document.getElementById('templesContainer');
-    if (!templesContainer) return;
-    
-    const temples = allGeoData.filter((item, index) => item.type === 'temple').map((item, originalIndex) => {
-        const realIndex = allGeoData.findIndex(data => data === item);
-        return { ...item, id: realIndex };
-    });
-    
-    templesContainer.innerHTML = temples.map(temple => `
-        <button class="geo-item-btn" data-id="${temple.id}">
-            <span class="icon">🏛️</span>
-            <span class="name">Храм</span>
-        </button>
-    `).join('');
-    
-    document.querySelectorAll('#templesContainer .geo-item-btn').forEach(initGeoItemButton);
+function resetGeoState() {
+    userCoords = null;
+    document.getElementById('nearbyItems').innerHTML = `<div class="empty-state">Нажмите "Получить местоположение"</div>`;
+    restoreAllButtonsVisibility();
+    document.querySelectorAll('.distance-tag').forEach(tag => tag.remove());
+    document.querySelectorAll('[data-distance]').forEach(el => delete el.dataset.distance);
 }
 
 function initGeoItemButton(button) {
-    let startY = 0;
-    let startTime = 0;
-    let isLongPress = false;
-    
-    button.addEventListener('touchstart', e => {
-        startY = e.touches[0].clientY;
-        startTime = Date.now();
-        isLongPress = false;
-        
-        setTimeout(() => {
-            if (Date.now() - startTime >= 800) {
-                isLongPress = true;
-                const id = parseInt(button.dataset.id, 10);
-                if (!isNaN(id) && allGeoData[id] && userCoords) {
-                    const coords = allGeoData[id].coords;
-                    const routeUrl = `https://www.google.com/maps/dir/${userCoords[0]},${userCoords[1]}/${coords[0]},${coords[1]}`;
-                    window.open(routeUrl, '_blank');
-                }
+    const id = parseInt(button.dataset.id, 10);
+    if (isNaN(id)) return;
+
+    let pressTimer = null;
+    let startX, startY;
+    let isScrolling = false;
+    const MOVE_THRESHOLD = 10;
+
+    const handlePressStart = (e) => {
+        isScrolling = false;
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+        pressTimer = setTimeout(() => {
+            if (!isScrolling) {
+                if (!userCoords) return alert('Сначала определите ваше местоположение.');
+                const destination = allGeoData[id].coords.join(',');
+                const origin = userCoords.join(',');
+                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
             }
+            pressTimer = null;
         }, 800);
-    });
-    
-    button.addEventListener('touchmove', e => {
-        const currentY = e.touches[0].clientY;
-        if (Math.abs(currentY - startY) > 10) {
-            isLongPress = false;
+    };
+
+    const handlePressMove = (e) => {
+        if (isScrolling || !pressTimer) return;
+        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        if (Math.abs(currentX - startX) > MOVE_THRESHOLD || Math.abs(currentY - startY) > MOVE_THRESHOLD) {
+            isScrolling = true;
+            clearTimeout(pressTimer);
+            pressTimer = null;
         }
-    });
-    
-    button.addEventListener('touchend', e => {
-        e.preventDefault();
-        if (Date.now() - startTime < 800 && !isLongPress) {
-            const id = parseInt(button.dataset.id, 10);
-            if (!isNaN(id) && allGeoData[id]) {
-                window.open(allGeoData[id].link, '_blank');
-            }
+    };
+
+    const handlePressEnd = (e) => {
+        if (!isScrolling && pressTimer) {
+            e.preventDefault();
+            clearTimeout(pressTimer);
+            window.open(allGeoData[id].link, '_blank');
         }
-    });
-    
-    button.addEventListener('click', e => {
-        e.preventDefault();
-        if (!isLongPress) {
-            const id = parseInt(button.dataset.id, 10);
-            if (!isNaN(id) && allGeoData[id]) {
-                window.open(allGeoData[id].link, '_blank');
-            }
-        }
-    });
+        pressTimer = null;
+    };
+
+    const handlePressCancel = () => { clearTimeout(pressTimer); pressTimer = null; };
+
+    button.removeEventListener('mousedown', handlePressStart);
+    button.removeEventListener('mousemove', handlePressMove);
+    button.removeEventListener('mouseup', handlePressEnd);
+    button.removeEventListener('mouseleave', handlePressCancel);
+    button.addEventListener('mousedown', handlePressStart);
+    button.addEventListener('mousemove', handlePressMove);
+    button.addEventListener('mouseup', handlePressEnd);
+    button.addEventListener('mouseleave', handlePressCancel);
+
+    button.removeEventListener('touchstart', handlePressStart);
+    button.removeEventListener('touchmove', handlePressMove);
+    button.removeEventListener('touchend', handlePressEnd);
+    button.removeEventListener('touchcancel', handlePressCancel);
+    button.addEventListener('touchstart', handlePressStart, { passive: true });
+    button.addEventListener('touchmove', handlePressMove, { passive: true });
+    button.addEventListener('touchend', handlePressEnd);
+    button.addEventListener('touchcancel', handlePressCancel);
 }
 
-function openInMaps(url) {
-    window.open(url, '_blank');
+// -- Остальная логика приложения --
+
+const kidsLeisure = [
+    { name: 'Mini Siam', date: '01.01.2026', coords: { lat: 12.9554157, lng: 100.9088538 }, tips: 'Парк миниатюр.', type: 'sight' },
+    { name: 'Деревня слонов', date: '04.01.2026', coords: { lat: 12.91604299, lng: 100.93883441 }, tips: 'Шоу слонов (14:30–16:00).', type: 'sight' },
+    { name: 'Дельфинариум', date: '07.01.2026', coords: { lat: 12.95222191, lng: 100.93617557 }, tips: 'Шоу дельфинов в 15:00.', type: 'sight' },
+    { name: 'Сад Нонг Нуч', date: '11.01.2026', coords: { lat: 12.76575858, lng: 100.93505629 }, tips: 'Шоу слонов и сад.', type: 'sight' },
+    { name: 'Музей искусств 3D', date: '13.01.2026', coords: { lat: 12.94832322, lng: 100.88976288 }, tips: 'Интерактивные фотозоны.', type: 'sight' },
+    { name: 'Аюттайя', date: '16.01.2026', coords: { lat: 14.35741905, lng: 100.56757512 }, tips: 'Древняя столица.', type: 'sight' },
+    { name: 'Зоопарк Кхао Кхео', date: '19.01.2026', coords: { lat: 13.21500644, lng: 101.05700099 }, tips: 'Открытый зоопарк.', type: 'sight' },
+    { name: 'Плавучий рынок', date: '22.01.2026', coords: { lat: 12.86799376, lng: 100.90469404 }, tips: 'Торговля на лодках.', type: 'sight' }
+];
+
+function generateBeachDays() {
+    const used = kidsLeisure.map(x => x.date), days = [];
+    const start = new Date('2025-12-29'), end = new Date('2026-01-26');
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const date = d.toLocaleDateString('ru-RU');
+        if (!used.includes(date)) {
+            days.push({ type: 'sea', name: 'Пляжинг', date, coords: null, tips: 'Отдых на море.' });
+        }
+    }
+    return days;
 }
+
+const activities = [...generateBeachDays(), ...kidsLeisure].sort((a,b) => new Date(a.date.split('.').reverse().join('-')) - new Date(b.date.split('.').reverse().join('-')));
 
 function updateCountdown() {
-    const targetDate = new Date('2025-01-07T00:00:00+07:00');
+    const startTrip = new Date('2025-12-29');
     const now = new Date();
-    const diff = targetDate - now;
-    
-    const textElement = document.getElementById('countdownText');
-    const daysElement = document.getElementById('days');
-    
-    if (!textElement || !daysElement) return;
-    
-    if (diff > 0) {
-        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        textElement.textContent = 'До отпуска осталось';
-        daysElement.textContent = days;
-    } else {
-        textElement.textContent = 'Отпуск начался!';
-        daysElement.textContent = '🎉';
-    }
+    const days = Math.ceil((startTrip - now) / 864e5);
+    document.getElementById('countdownText').textContent = days > 0 ? 'До поездки:' : 'Поездка!';
+    document.getElementById('days').textContent = days > 0 ? days : '✔';
+    document.querySelector('.countdown-label').textContent = days > 0 ? 'дней' : '';
 }
-
-const activities = [
-    { name: 'Mini Siam', type: 'sight', date: '2025-01-08', coords: {lat: 12.9833, lng: 100.9167} },
-    { name: 'Деревня слонов', type: 'sight', date: '2025-01-10', coords: {lat: 12.8833, lng: 100.9833} },
-    { name: 'Дельфинариум', type: 'sight', date: '2025-01-12', coords: {lat: 12.8500, lng: 100.9167} },
-    { name: 'Сад Нонг Нуч', type: 'sight', date: '2025-01-14', coords: {lat: 12.7667, lng: 100.9500} },
-    { name: 'Музей искусств 3D', type: 'sight', date: '2025-01-16', coords: {lat: 12.9333, lng: 100.8833} },
-    { name: 'Аюттайя', type: 'sight', date: '2025-01-18', coords: {lat: 14.3692, lng: 100.5877} },
-    { name: 'Зоопарк Кхао Кхео', type: 'sight', date: '2025-01-20', coords: {lat: 13.1167, lng: 101.0667} },
-    { name: 'Плавучий рынок', type: 'sight', date: '2025-01-22', coords: {lat: 13.4167, lng: 100.3333} },
-    { name: 'Пляж Джомтьен', type: 'sea', date: '2025-01-09' },
-    { name: 'Пляж Наклуа', type: 'sea', date: '2025-01-11' },
-    { name: 'Пляж Банг Саре', type: 'sea', date: '2025-01-13' },
-    { name: 'Пляж Пратамнак', type: 'sea', date: '2025-01-15' },
-    { name: 'Пляж Вонгамат', type: 'sea', date: '2025-01-17' },
-    { name: 'Пляж Кози Бич', type: 'sea', date: '2025-01-19' }
-];
 
 function renderActivities(list) {
     const grid = document.getElementById('activitiesGrid');
     if (!grid) return;
-    
-    grid.innerHTML = list.map(a => `
-        <div class="card activity-${a.type}">
-            <h3>${getIconForActivity(a.name)} ${a.name}</h3>
-            <p>📅 ${a.date}</p>
-            ${a.type === 'sea' ? 
-                `<button class="details" onclick="openDailyPlanModal('${a.name}', '${a.date}')">📝 Планы на день</button>` :
-                `<button class="details" onclick="showActivityDetails('${a.name}')">Подробнее</button>`
-            }
-        </div>
-    `).join('');
+    grid.innerHTML = list.map(a => {
+        const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
+        let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
+        const prices = {
+            'Mini Siam': `<p class="price-tag"><span class="price-label">Взрослый</span> 230 ฿ / <span class="price-label">Детский</span> 130 ฿</p>`,
+            'Деревня слонов': `<p class="price-tag"><span class="price-label">Взрослый</span> 650 ฿ / <span class="price-label">Детский</span> 500 ฿</p>`,
+            'Дельфинариум': `<p class="price-tag"><span class="price-label">Взрослый</span> 630 ฿ / <span class="price-label">Детский</span> 450 ฿</p>`,
+            'Сад Нонг Нуч': `<p class="price-tag"><span class="price-label">Взрослый</span> 420 ฿ / <span class="price-label">Детский</span> 320 ฿</p>`,
+            'Музей искусств 3D': `<p class="price-tag"><span class="price-label">Взрослый</span> 235 ฿ / <span class="price-label">Детский</span> 180 ฿</p>`,
+            'Зоопарк Кхао Кхео': `<p class="price-tag"><span class="price-label">Взрослый</span> 350 ฿ / <span class="price-label">Детский</span> 120 ฿</p>`,
+        };
+        const priceLine = prices[a.name] || '';
+        const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
+        // ИЗМЕНЕНА следующая строка для кнопок типа 'sea'
+        const buttonHtml = a.type === 'sea' ? `<button class="details" onclick="openDailyPlanModal('${a.name}', '${a.date}')">📝 Планы на день</button>` : (a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : '');
+        return `<div class="${cardClass}"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+    }).join('');
+    bindDetailButtons();
 }
 
-function showActivityDetails(activityName) {
-    const activity = activities.find(a => a.name === activityName);
-    if (!activity) return;
-    
-    const prices = {
-        'Mini Siam': `<p class="price-label">Цена:</p><p class="price-tag">Взрослый 230 ฿ / Детский 130 ฿</p>`,
-        'Деревня слонов': `<p class="price-label">Цена:</p><p class="price-tag">Взрослый 650 ฿ / Детский 500 ฿</p>`,
-        'Дельфинариум': `<p class="price-label">Цена:</p><p class="price-tag">Взрослый 630 ฿ / Детский 450 ฿</p>`,
-        'Сад Нонг Нуч': `<p class="price-label">Цена:</p><p class="price-tag">Взрослый 420 ฿ / Детский 320 ฿</p>`,
-        'Музей искусств 3D': `<p class="price-label">Цена:</p><p class="price-tag">Взрослый 235 ฿ / Детский 180 ฿</p>`,
-        'Зоопарк Кхао Кхео': `<p class="price-label">Цена:</p><p class="price-tag">Взрослый 350 ฿ / Детский 120 ฿</p>`,
-    };
-    
-    const priceLine = prices[activity.name] || '';
-    const dist = userCoords && activity.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [activity.coords.lat, activity.coords.lng])} км</p>` : '';
-    
-    let content = `
-        <h3>${getIconForActivity(activity.name)} ${activity.name}</h3>
-        <p><strong>Дата:</strong> ${activity.date}</p>
-        ${priceLine}
-        ${dist}
-    `;
-    
-    if (activity.coords) {
-        content += `<button class="details" onclick="openInMaps('https://www.google.com/maps/search/?api=1&query=${activity.coords.lat},${activity.coords.lng}')">🗺️ Открыть на карте</button>`;
+function bindDetailButtons() {
+    document.querySelectorAll('.details').forEach(btn => {
+        btn.onclick = () => {
+            const act = activities.find(x => x.name === btn.dataset.name && x.date === btn.dataset.date);
+            if (act) showModal(act);
+        };
+    });
+}
+
+function showModal(place) {
+    let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
+    if (place.tips) content += `<p>💡 ${place.tips}</p>`;
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    const to = `${place.coords.lat},${place.coords.lng}`;
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+    if (userCoords) {
+        const userFrom = `${userCoords[0]},${userCoords[1]}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+        const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
+        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-    
     document.getElementById('modalBody').innerHTML = content;
-    document.getElementById('activityModal').classList.add('active');
+    document.getElementById('modalOverlay').classList.add('active');
 }
 
-const points = [
-    { name: 'MO Play Kidz', coords: {lat: 12.935051, lng: 100.882722}, icon: '👶' }
-];
+const points = [ { name: 'MO Play Kidz', coords: {lat: 12.935051, lng: 100.882722}, icon: '👶' } ];
 
 function renderContacts(list) {
-    // Контакты уже отрендерены в HTML
+    const grid = document.getElementById('contactsGrid');
+    if (!grid) return;
+    let items = list.slice();
+    if (userCoords) {
+        items.forEach(p => p.distance = parseFloat(getDistance(userCoords, [p.coords.lat, p.coords.lng])));
+        items.sort((a,b) => a.distance - b.distance);
+    }
+    grid.innerHTML = items.map(p => {
+        const distTag = p.distance ? `<span class="distance-tag">≈${p.distance.toFixed(1)} км</span>` : '';
+        return `<button class="contact-btn" onclick='showContactModal(${JSON.stringify(p)})'><span class="icon">${p.icon}</span><span>${p.name}</span>${distTag}</button>`;
+    }).join('');
 }
 
 function getIconForActivity(name) {
     const icons = {
-        'Mini Siam': '🏛️',
-        'Деревня слонов': '🐘',
-        'Дельфинариум': '🐬',
-        'Сад Нонг Нуч': '🌺',
-        'Музей искусств 3D': '🎨',
-        'Аюттайя': '⛩️',
-        'Зоопарк Кхао Кхео': '🦒',
-        'Плавучий рынок': '🛶',
-        'Пляж Джомтьен': '🏖️',
-        'Пляж Наклуа': '🏖️',
-        'Пляж Банг Саре': '🏖️',
-        'Пляж Пратамнак': '🏖️',
-        'Пляж Вонгамат': '🏖️',
-        'Пляж Кози Бич': '🏖️'
+        'Mini Siam': '🏛️', 'Деревня слонов': '🐘', 'Дельфинариум': '🐬', 'Сад Нонг Нуч': '🌺',
+        'Музей искусств 3D': '🎨', 'Аюттайя': '⛩️', 'Зоопарк Кхао Кхео': '🦒', 'Плавучий рынок': '🛶'
     };
     return icons[name] || '📍';
 }
 
 function closeModal() {
-    document.getElementById('activityModal').classList.remove('active');
+    document.getElementById('modalOverlay').classList.remove('active');
 }
 
-// Функции для попапа ежедневника
+// ДОБАВЛЕННЫЕ функции для ежедневника
 function initDailyPlanModal() {
     const modal = document.getElementById('dailyPlanModal');
     if (modal) {
@@ -464,7 +418,7 @@ function openDailyPlanModal(activityName, date) {
                        data-time="${startTime}" 
                        data-date="${date}"
                        value="${savedPlan}"
-                       placeholder="..................................">
+                       placeholder="..............................">
             </div>
         `;
     }
