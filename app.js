@@ -12,7 +12,7 @@ const CHAT_ID = '231009417';
 // Хранилище и синхронизация
 let botStorage = {};
 let storageInitialized = false;
-let lastUpdateId = 0;
+let lastUpdateId = -1; // Сброс offset для корректной работы
 let syncInterval = null;
 let saveTimeout = null;
 
