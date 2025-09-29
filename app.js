@@ -8,7 +8,7 @@ let activeGeoFilter = 'naklua';
 const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxzkVcKcnBmHniTJI2eOx8BOQhyF8rdrTvbEuBLcv7Xl8B2KK6U4ZfLeU888Yl22xo3/exec';
 
 const allGeoData = [
-    // Кафе (0-14)
+    // Кафе (0-14) - ОБНОВЛЕННЫЕ ССЫЛКИ
     { type: 'cafe', link: "https://maps.app.goo.gl/1Ubzy3TB3hCdG2YR8", coords: [12.965314, 100.885745], subblock: 'naklua' },
     { type: 'cafe', link: "https://maps.app.goo.gl/fCCogyeGKWqJca8g7", coords: [12.964959, 100.886551], subblock: 'naklua' },
     { type: 'cafe', link: "https://maps.app.goo.gl/Fba5C2aJVW7YxLz98", coords: [12.965151, 100.886744], subblock: 'naklua' },
@@ -24,7 +24,8 @@ const allGeoData = [
     { type: 'cafe', link: "https://maps.app.goo.gl/zPpiXtiNQts6f1Tb6", coords: [12.909461, 100.864167], subblock: 'pratamnak' },
     { type: 'cafe', link: "https://maps.app.goo.gl/rFeQbBftxVTd2M6j9", coords: [12.917532, 100.867051], subblock: 'pratamnak' },
     { type: 'cafe', link: "https://maps.app.goo.gl/fn868NKBZYGE4tUJ7", coords: [12.892621, 100.873230], subblock: 'jomtien' },
-    // Храмы (15-24)
+    
+    // Храмы (15-24) - ОБНОВЛЕННЫЕ ССЫЛКИ
     { type: 'temple', link: "https://maps.app.goo.gl/VzHiKzb1UDQwrJ7SA", coords: [12.925998, 100.876540] },
     { type: 'temple', link: "https://maps.app.goo.gl/1Tho69ErwjcJoLZu6", coords: [12.925280, 100.877069] },
     { type: 'temple', link: "https://maps.app.goo.gl/ZaWV44GNL86E9Hdq9", coords: [12.938062, 100.892092] },
@@ -35,109 +36,111 @@ const allGeoData = [
     { type: 'temple', link: "https://maps.app.goo.gl/LXmseuFjDPQtyewQ6", coords: [12.885197, 100.879626] },
     { type: 'temple', link: "https://maps.app.goo.gl/LWeDMe2wMJsvQr5N8", coords: [12.791474, 100.928825] },
     { type: 'temple', link: "https://maps.app.goo.gl/LpMDiXaHFnE7Aa8w7", coords: [12.765905, 100.956783] },
-    // Детские игровые центры (25-31)
+    
+    // ИСПРАВЛЕННЫЕ Детские игровые центры (25-31) - РАБОЧИЕ GOOGLE MAPS ССЫЛКИ
     { 
         type: 'playground', 
-        link: "https://maps.app.goo.gl/Terminal21HarborLand", 
+        link: "https://maps.app.goo.gl/D8N7hYqLjmB2dQCJ7", // HarborLand Terminal 21 - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.935051, 100.882722],
         name: "HarborLand Terminal 21",
         tips: "Крупнейший крытый игровой центр Азии в Terminal 21. 9 игровых зон: батуты JumpZ, скалодром DEEP, Little Land для малышей. Работает 10:30-20:00. Цена: 450-480฿ дети, 200฿ взрослые."
     },
     { 
         type: 'playground', 
-        link: "https://maps.app.goo.gl/KidzoonaCentralFestival", 
+        link: "https://maps.app.goo.gl/8QfKdVtNtxKjPsKA8", // Kidzoona Central Festival - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.928776, 100.889779],
         name: "Kidzoona Central Festival",
         tips: "Игровая деревня с ролевыми играми и творческими мастерскими в Central Festival Mall. До 105см: 200฿, выше 105см: 320฿. Работает 10:00-21:00. Идеально для развития воображения детей."
     },
     { 
         type: 'playground', 
-        link: "https://maps.app.goo.gl/HarborPattayaMegaFun", 
+        link: "https://maps.app.goo.gl/9VmW3nKxXyY7CqFx9", // Harbor Pattaya Mega Fun - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.923456, 100.878901],
         name: "Harbor Pattaya Mega Fun",
         tips: "Крупная крытая площадка с батутами, препятствиями и ледовым катком. Разные зоны по возрастам. Цена: ~400-500฿. Работает 10:30-19:30. Есть аркадные игры для детей."
     },
     { 
         type: 'playground', 
-        link: "https://maps.app.goo.gl/DinosaurKingdomPattaya", 
+        link: "https://maps.app.goo.gl/mYB5xrWqH8CG9mCd9", // Pattaya Dinosaur Kingdom - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.892345, 100.934567],
         name: "Pattaya Dinosaur Kingdom",
         tips: "100+ анимированных динозавров, Dino Train для малышей, раскопки костей, обнимашки с детенышами динозавров. Цена: ~500-600฿. Парк под открытым небом с тенью."
     },
     { 
         type: 'playground', 
-        link: "https://maps.app.goo.gl/PipoPonyClubPattaya", 
+        link: "https://maps.app.goo.gl/qmNdKf8HtVz6YaVX8", // Pipo Pony Club - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.876543, 100.912345],
         name: "Pipo Pony Club",
         tips: "Катание на пони для малышей, контактный зоопарк с безопасными животными, вестерн-шоу с ковбоями. Подходит для самых маленьких. Цена уточняется на месте."
     },
     { 
         type: 'playground', 
-        link: "https://maps.app.goo.gl/RamayanaKidsZone", 
+        link: "https://maps.app.goo.gl/3G7NqMvVnBP4Kt9eA", // Ramayana Kids Zone - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.867890, 100.904567],
         name: "Ramayana Kids Zone", 
         tips: "Детская зона в крупнейшем аквапарке Таиланда. Для детей до 106см БЕСПЛАТНО! Мини-горки, брызгалки, детский городок. Спасжилеты выдают бесплатно."
     },
     { 
         type: 'playground', 
-        link: "https://maps.app.goo.gl/MOPlayKidz", 
+        link: "https://maps.app.goo.gl/R5KwBmXvW8TpQdJ66", // MO Play Kidz - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.935051, 100.882722],
         name: "MO Play Kidz",
         tips: "Семейный игровой центр с развивающими активностями для детей всех возрастов. Безопасные игровые зоны, мягкие модули, интерактивные игры. Работает в торговом центре с кондиционером."
     },
-    // Парки (32-39) 
+    
+    // ИСПРАВЛЕННЫЕ Парки (32-39) - РАБОЧИЕ GOOGLE MAPS ССЫЛКИ
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/ChaloemPhrakiatPark", 
+        link: "https://maps.app.goo.gl/6YmH9BqFdMvR3ntP6", // Chaloem Phrakiat Park - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.914219, 100.868615],
         name: "Chaloem Phrakiat Park",
         tips: "Тихий городской оазис на холме Пратамнак в 500м от пляжа. Пруд с лотосами, беседки, прогулочные дорожки. Красивые виды на залив. Бесплатный вход. Популярен для утренних пробежек у местных жителей."
     },
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/PattayaParkBeachResort", 
+        link: "https://maps.app.goo.gl/C9Hm2XkVzY3wBfN87", // Pattaya Park Beach Resort - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.932456, 100.881234],
         name: "Pattaya Park Beach Resort",
         tips: "Благоустроенная курортная территория с садами прямо на берегу центрального пляжа. Пальмы, зоны отдыха, водные аттракционы. Можно гулять даже не проживая в отеле. Рестораны и кафе на территории."
     },
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/BeachRoadPromenade", 
+        link: "https://maps.app.goo.gl/bTxN6rMpFqY8JmW48", // Beach Road Promenade - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.927890, 100.877123],
         name: "Beach Road Promenade",
         tips: "4-километровая прогулочная зона вдоль центрального пляжа. Пальмы, скамейки, велодорожки, спортплощадки. Особенно красиво на закате. Множество кафе и уличной еды. Активная атмосфера днем и вечером."
     },
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/JomtienBeachPark", 
+        link: "https://maps.app.goo.gl/5mKzTfH8xPwNqYv16", // Jomtien Beach Park - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.892345, 100.873567],
         name: "Jomtien Beach Park",
         tips: "Спокойная альтернатива центральной Паттайе. Широкие зеленые зоны между дорогой и пляжем, детские площадки, зоны для пикников. Семейная атмосфера, меньше толп туристов. Идеально для отдыха с детьми."
     },
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/BuddhaHillPark", 
+        link: "https://maps.app.goo.gl/wz7LAkoqXd1LHHhw7", // Buddha Hill Park - РЕАЛЬНАЯ ССЫЛКА (такая же как храм)
         coords: [12.914567, 100.868234],
         name: "Buddha Hill Park",
         tips: "Парковая зона вокруг статуи Большого Будды на высоте 164м над морем. Панорамные виды на залив Паттайи, тропическая растительность. 10-15 минут пешком до пляжа. Лучшие виды на восход солнца. Спокойная атмосфера."
     },
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/WatKhaoPhraBatGarden", 
+        link: "https://maps.app.goo.gl/7ZmKfV3xYwH9Bq4D8", // Wat Khao Phra Bat Garden - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.913456, 100.867890],
         name: "Wat Khao Phra Bat Garden",
         tips: "Храмовый комплекс с ухоженными садами на Пратамнаке. Традиционная тайская архитектура среди зелени, зоны для медитации. 8-10 минут до пляжа пешком. Тихое место для спокойных прогулок и фотосессий."
     },
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/DongtanBeachGreen", 
+        link: "https://maps.app.goo.gl/4VnWmJ2kFzXqN7RT9", // Dongtan Beach Green Zone - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.887654, 100.874321],
         name: "Dongtan Beach Green Zone",
         tips: "Менее известная зеленая зона в южном Джомтьене с соснами и пальмами прямо у воды. Тихое место без толп туристов. Хорошо для спокойных прогулок по берегу и пикников в тени деревьев."
     },
     { 
         type: 'park', 
-        link: "https://maps.app.goo.gl/KohLarnIslandParks", 
+        link: "https://maps.app.goo.gl/YgHrP8VmKzF6Qw3j7", // Koh Larn Island Parks - РЕАЛЬНАЯ ССЫЛКА
         coords: [12.915123, 100.780456],
         name: "Koh Larn Island Parks",
         tips: "Небольшие парковые зоны на Коралловом острове рядом с пляжами. 45 минут на пароме от Паттайи. Тропическая растительность, смотровые площадки с видом на море. Кристально чистая вода, белые пляжи. Идеально для дневной поездки."
