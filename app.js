@@ -1,4 +1,4 @@
-// Version: 1.7.1 | Lines: 1095
+// Version: 1.7.0 | Lines: 1070
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -52,73 +52,80 @@ async function fetchWeatherData(date) {
     const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
-    let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
-    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
-    if (!airTemp || !waterTemp) {
-      const [day, month] = date.split('.');
-      const monthNum = parseInt(month);
-      if (monthNum === 12 || monthNum === 1) {
-        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
-      } else if (monthNum >= 2 && monthNum <= 4) {
-        airTemp = airTemp || 32; waterTemp = waterTemp || 29;
-      } else if (monthNum >= 5 && monthNum <= 10) {
-        airTemp = airTemp || 29; waterTemp = waterTemp || 29;
-      } else {
-        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
-      }
-    }
+    const airTemp = airData.daily?.temperature_2m_max?.[0] || null;
+    const waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
     const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
     weatherCache[apiDate] = result;
+    console.log(`✓ Погода получена для ${apiDate}:`, result);
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
-    return { airTemp: 30, waterTemp: 28 };
+    return { airTemp: null, waterTemp: null };
   }
 }
 
 
 
-async function setStorageItem(key, value) {
+async function setStorageItem(key, value, callback) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).set(value);
-            console.log('✓ Firebase: сохранено', key);
-            return;
+            console.log('✅ Firebase: сохранено', key);
+            if (callback) callback();
         } catch (error) {
-            console.error('✗ Firebase save error:', error);
+            console.error('✗ Firebase ошибка сохранения:', error);
+            localStorage.setItem(key, value);
+            console.log('✅ localStorage: сохранено', key);
+            if (callback) callback();
         }
+    } else {
+        localStorage.setItem(key, value);
+        console.log('✅ localStorage: сохранено', key);
+        if (callback) callback();
     }
-    localStorage.setItem(key, value);
 }
-
-async function getStorageItem(key) {
+async function getStorageItem(key, callback) {
     if (firebaseDatabase) {
         try {
             const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
-            if (snapshot.exists()) {
-                console.log('✓ Firebase: загружено', key);
-                return snapshot.val();
+            const value = snapshot.val();
+            if (value) {
+                console.log('✅ Firebase: загружено', key);
+                if (callback) callback(value);
+                return value;
+            } else {
+                const localValue = localStorage.getItem(key);
+                if (localValue && callback) callback(localValue);
+                return localValue;
             }
         } catch (error) {
-            console.error('✗ Firebase load error:', error);
+            console.error('✗ Firebase ошибка загрузки:', error);
+            const localValue = localStorage.getItem(key);
+            if (localValue && callback) callback(localValue);
+            return localValue;
         }
+    } else {
+        const value = localStorage.getItem(key);
+        if (value && callback) callback(value);
+        return value;
     }
-    return localStorage.getItem(key);
 }
-
-async function removeStorageItem(key) {
+async function removeStorageItem(key, callback) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).remove();
-            console.log('✓ Firebase: удалено', key);
-            return;
+            console.log('✅ Firebase: удалено', key);
+            if (callback) callback();
         } catch (error) {
-            console.error('✗ Firebase delete error:', error);
+            console.error('✗ Firebase ошибка удаления:', error);
+            localStorage.removeItem(key);
+            if (callback) callback();
         }
+    } else {
+        localStorage.removeItem(key);
+        if (callback) callback();
     }
-    localStorage.removeItem(key);
-}
-// ===== END FIREBASE =====
+}// ===== END FIREBASE =====
 
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
@@ -711,8 +718,7 @@ function handleCardClick(activityName, date, type) {
     if (type === 'sea') {
         openDailyPlanModal(activityName, date);
     } else if (type === 'sight') {
-        const activity = activities.find(a => a.name === activityName && a.date === date);
-        if (activity) { showPlaceModal(activity); } else { console.error('Активность не найдена:', activityName, date); }
+        showPlaceModal(activityName);
     }
 }
 
@@ -736,21 +742,23 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><p>${a.date}</p><div class="weather" data-date="${a.date}"></div>${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загружаем температуру для всех активностей
+    // Загрузка погоды для активностей
     list.forEach(async (activity) => {
-        const weather = await fetchWeatherData(activity.date);
-        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
-        weatherDivs.forEach(div => {
-            if (weather.airTemp || weather.waterTemp) {
-                let weatherText = '';
-                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                div.textContent = weatherText.trim();
-            }
-        });
+        if (activity.type === 'sea' || activity.type === 'pool') {
+            const weather = await fetchWeatherData(activity.date);
+            const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
+            weatherDivs.forEach(div => {
+                if (weather.airTemp || weather.waterTemp) {
+                    let weatherText = '';
+                    if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
+                    if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
+                    div.textContent = weatherText.trim();
+                }
+            });
+        }
     });
     bindDetailButtons();
 }
@@ -771,9 +779,8 @@ function bindDetailButtons() {
 function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
-    if (place.coords) {
-        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-        const to = `${place.coords.lat},${place.coords.lng}`;
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    const to = `${place.coords.lat},${place.coords.lng}`;
     content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
     if (userCoords) {
         const userFrom = `${userCoords[0]},${userCoords[1]}`;
@@ -781,7 +788,6 @@ function showPlaceModal(place) {
         const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-        } else { content += `<p>📍 Координаты не указаны</p>`; }
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
@@ -959,7 +965,6 @@ function setStorageItem(key, value, callback = null) {
         value: value
     };
     
-    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -989,7 +994,6 @@ function getStorageItem(key, callback) {
         key: key
     };
     
-    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1019,7 +1023,6 @@ function removeStorageItem(key, callback = null) {
         key: key
     };
     
-    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
