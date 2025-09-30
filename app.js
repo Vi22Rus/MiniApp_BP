@@ -1,4 +1,4 @@
-// ПОГОДА
+// ПОГОДА API
 let weatherData = {};
 async function loadWeatherData() {
     try {
@@ -617,10 +617,10 @@ function renderActivities(list) {
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
         
         const clickHandler = a.type === 'sea' ? 
-            `onclick="openDailyPlanModal('${a.date}')" style="cursor:pointer;"` :
-            (a.tips ? `onclick="showDetails('${a.name}', '${a.tips}')" style="cursor:pointer;"` : '');
-        
-        return `<div class="${cardClass}" ${clickHandler}><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${getWeatherHTML(a.date)}</div>`;
+            `onclick="openDailyPlanModal('$${a.date}')" style="cursor:pointer;"` :
+            (a.tips ? `onclick="showDetails('$${a.name}', '$${a.tips}')" style="cursor:pointer;"` : '');
+
+        return `<div class="$${cardClass}" $${clickHandler}><h3>$${icon}$${a.name}</h3><p>$${a.date}</p>$${priceLine}$${dist}$${getWeatherHTML(a.date)}</div>`;
     }).join('');
     bindDetailButtons();
 }
