@@ -194,34 +194,6 @@ const allGeoData = [
 ];
 
 
-// Функция для инициализации allGeoData из HTML элементов
-function initAllGeoData() {
-    document.querySelectorAll('.geo-item-btn').forEach(button => {
-        const id = parseInt(button.dataset.id, 10);
-        if (isNaN(id)) return;
-
-        // Извлекаем данные из атрибутов кнопки
-        const name = button.querySelector('strong')?.textContent || 'Unknown';
-        const icon = button.querySelector('.icon')?.textContent || '📍';
-        const link = button.dataset.link || '#';
-        const type = button.dataset.type || 'unknown';
-
-        // Пытаемся извлечь координаты из data-атрибутов или других источников
-        const lat = parseFloat(button.dataset.lat);
-        const lng = parseFloat(button.dataset.lng);
-
-        allGeoData[id] = {
-            name: name,
-            icon: icon,
-            link: link,
-            type: type,
-            coords: !isNaN(lat) && !isNaN(lng) ? [lat, lng] : [12.9236, 100.8825]
-        };
-    });
-    console.log('✓ allGeoData инициализирован:', Object.keys(allGeoData).length, 'мест');
-}
-
-
 function formatDateForAPI(dateStr) {
   const [day, month, year] = dateStr.split('.');
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
@@ -434,8 +406,7 @@ function initCalendarFilters() {
 }
 
 function initGeoFeatures() {
-    initAllGeoData(); // Инициализация данных о местах
-    document.getElementById('locateBtn').addEventListener('click', () => {
+       document.getElementById('locateBtn').addEventListener('click', () => {
         if (!navigator.geolocation) {
             alert('Геолокация не поддерживается.');
             return resetGeoState();
