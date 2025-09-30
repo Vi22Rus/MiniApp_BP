@@ -1,6 +1,6 @@
-// Version: 1.8.2 | Lines: 851 (after edit)
-// Изменения: удалён устаревший код интеграции с Google Sheets (set/get/removeStorageItem) 2025-09-30
-// Last updated: 2025-09-30
+// Version: 1.8.3 | Lines: 915 (after edit)
+// Изменения: удалён Google Sheets; исправлена renderActivities (undefined place) 2025-09-30
+
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
 // ===== FIREBASE CONFIGURATION =====
@@ -597,38 +597,13 @@ function renderActivities(list) {
     if (!grid) return;
     grid.innerHTML = list.map(a => {
         const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
-        let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
-        const prices = {
-            'Mini Siam': `<p class="price">Взрослый 230 ฿ / Детский 130 ฿</p>`,
-            'Деревня слонов': `<p class="price">Взрослый 650 ฿ / Детский 500 ฿</p>`,
-            'Дельфинариум': `<p class="price">Взрослый 630 ฿ / Детский 450 ฿</p>`,
-            'Сад Нонг Нуч': `<p class="price">Взрослый 420 ฿ / Детский 320 ฿</p>`,
-            'Музей искусств 3D': `<p class="price">Взрослый 235 ฿ / Детский 180 ฿</p>`,
-            'Зоопарк Кхао Кхео': `<p class="price">Взрослый 350 ฿ / Детский 120 ฿</p>`,
-            'Ко Лан': `<p class="price">Паром 30 ฿ / Общие расходы ~1,500 ฿</p>`
-};
-        const priceLine = prices[a.name] || '';
-        const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
-        
-        const buttonHtml = '';
-        
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+        const icon = a.type === 'sea' ? '🏖️' : getIconForActivity(a.name);
+        const priceInfo = (a.price) ? ` <span class='price-tag'>${a.price}</span>` : '';
+        return `<div class="${cardClass}" onclick="handleCardClick('${a.name.replace('"','&quot;')}', '${a.date}', '${a.type}')">` +
+               `<div class='card-header'>${icon} ${a.name}</div>` +
+               `<div class='card-date'>${a.date}${priceInfo}</div>` +
+               `</div>`;
     }).join('');
-
-    // Загружаем температуру для всех активностей
-    list.forEach(async (activity) => {
-        const weather = await fetchWeatherData(activity.date);
-        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
-        weatherDivs.forEach(div => {
-            if (weather.airTemp || weather.waterTemp) {
-                let weatherText = '';
-                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                div.textContent = weatherText.trim();
-            }
-        });
-    });
-    bindDetailButtons();
 }
 
 function bindDetailButtons() {
@@ -829,6 +804,94 @@ function autoSavePlan(input) {
             console.log(`🗑️ Удален пустой план: ${time}`);
         });
     }
+}
+
+function setStorageItem(key, value, callback = null) {
+    const data = {
+        action: 'set',
+        key: key,
+        value: value
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Saved to Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.setItem(key, value);
+        console.log('📱 Saved to localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
+}
+
+function getStorageItem(key, callback) {
+    const data = {
+        action: 'get',
+        key: key
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Loaded from Google Sheets (shared)');
+            callback(result.value || '');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        const fallbackValue = localStorage.getItem(key) || '';
+        console.log('📱 Loaded from localStorage (Sheets fallback)');
+        callback(fallbackValue);
+    });
+}
+
+function removeStorageItem(key, callback = null) {
+    const data = {
+        action: 'delete',
+        key: key
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Deleted from Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.removeItem(key);
+        console.log('📱 Deleted from localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
 }
 
 function showContactModal(contact) {
