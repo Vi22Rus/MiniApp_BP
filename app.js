@@ -783,6 +783,7 @@ function showPlaceModal(place) {
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
+
 const points = [];
 
 function renderContacts(list) {
