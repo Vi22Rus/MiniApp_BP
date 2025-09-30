@@ -1,224 +1,87 @@
-<!-- Version: 1.2.1 | Lines: 198 -->
-<!-- Last updated: 2025-09-29 -->
-<!-- Версия HTML: index.html (198 строк) - ОБНОВЛЕНО -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pattaya 2025/26</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-  <script src="app.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Путеводитель по Паттайе на январь 2026. Семейное путешествие с детьми.">
+    <title>🏝️ Путеводитель по Паттайе - Январь 2026</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app">
-    <header class="header">
-      <h1>Паттайя 2025/26</h1>
-      <div class="countdown-item">
-        <span class="countdown-text" id="countdownText">Загрузка…</span>
-        <span class="countdown-number" id="days"></span>
-        <span class="countdown-label"></span>
-      </div>
-    </header>
+    <div class="container">
+        <!-- Заголовок -->
+        <header>
+            <h1>🏝️ Путеводитель по Паттайе</h1>
+            <p class="text-center" style="color: #718096; margin-bottom: 20px;">
+                📅 Январь 2026 | 👨‍👩‍👧‍👦 Семейное путешествие
+            </p>
+        </header>
 
-    <nav class="tabs">
-      <button class="tab-button active" data-tab="calendar">Календарь</button>
-      <button class="tab-button" data-tab="tips">Советы</button>
-      <button class="tab-button" data-tab="contacts">Контакты</button>
-      <button class="tab-button" data-tab="nearby">Гео</button>
-    </nav>
+        <!-- Фильтры по типу активностей -->
+        <nav class="filter-buttons" id="filters">
+            <button onclick="setActivityFilter('all')" class="active">🌟 Все</button>
+            <button onclick="setActivityFilter('kids')">🎯 Детские</button>
+            <button onclick="setActivityFilter('sea')">🏖️ Пляжи</button>
+            <button onclick="setActivityFilter('cafe')">☕ Кафе</button>
+            <button onclick="setActivityFilter('shop')">🛍️ Магазины</button>
+        </nav>
 
-    <main>
-      <section id="calendar" class="tab-content active">
-        <div class="filters">
-          <button class="filter-btn active" data-filter="all">Все</button>
-          <button class="filter-btn" data-filter="sea">Пляжинг</button>
-          <button class="filter-btn" data-filter="sight">Экскурсии</button>
-        </div>
-        <div id="activitiesGrid" class="grid">
-          <!-- Рендеринг из JS -->
-        </div>
-      </section>
+        <!-- Гео-фильтры -->
+        <nav class="filter-buttons" id="geo-filters" style="margin-top: 10px;">
+            <button onclick="setGeoFilter('all')" class="active">📍 Все районы</button>
+            <button onclick="setGeoFilter('naklua')">Наклуа</button>
+            <button onclick="setGeoFilter('jomtien')">Джомтьен</button>
+            <button onclick="setGeoFilter('central')">Центр</button>
+        </nav>
 
-      <section id="tips" class="tab-content">
-        <div class="must-try advice-block">
-          <h2>🍽️ <strong>Обязательно попробовать!</strong></h2>
-          <ul>
-            <li><span class="icon">🍛</span><strong>Массаман карри</strong><span class="description">– нежное карри с мягким вкусом орехов и специй.</span></li>
-            <li><span class="icon">🍲</span><strong>Том ям кунг</strong><span class="description">– острый кислый суп с креветками и лимонной травой.</span></li>
-            <li><span class="icon">🥢</span><strong>Пад тай</strong><span class="description">– жареная рисовая лапша с тофу, креветками и арахисом.</span></li>
-            <li><span class="icon">🥗</span><strong>Сом там</strong><span class="description">– салат из зеленой папайи с чили и лаймом.</span></li>
-            <li><span class="icon">🌶️</span><strong>Зеленое карри</strong><span class="description">– карри с кокосовым молоком и базиликом.</span></li>
-            <li><span class="icon">🍛</span><strong>Пханин карри</strong><span class="description">– густое красное карри с арахисом.</span></li>
-            <li><span class="icon">🍜</span><strong>Као сой</strong><span class="description">– северный суп-лапша с хрустящей вермишелью.</span></li>
-            <li><span class="icon">🥥</span><strong>Том кха гай</strong><span class="description">– суп на кокосовом молоке с курицей и галангалом.</span></li>
-            <li><span class="icon">🍗</span><strong>Кай ян</strong><span class="description">– маринованная курица на гриле.</span></li>
-            <li><span class="icon">🌿</span><strong>Пат капрао</strong><span class="description">– острое блюдо из мяса с базиликом.</span></li>
-          </ul>
-        </div>
-        <div class="for-ivan advice-block">
-          <h2>👦 <strong>Для Ивана</strong></h2>
-          <ul>
-            <li><span class="icon">🍳</span><strong>Кай джио</strong><span class="description">– воздушный омлет.</span></li>
-            <li><span class="icon">🍚</span><strong>Кхао пад</strong><span class="description">– рис с овощами и яйцом.</span></li>
-            <li><span class="icon">🥢</span><strong>Пад си ю</strong><span class="description">– широкая лапша с соевым соусом.</span></li>
-            <li><span class="icon">🍢</span><strong>Ми сатай</strong><span class="description">– куриные шашлычки в арахисовом соусе.</span></li>
-            <li><span class="icon">🥭</span><strong>Као нио ма муанг</strong><span class="description">– клейкий рис с манго.</span></li>
-          </ul>
-        </div>
-        <div class="cold-drinks advice-block">
-          <h2>❄️ <strong>Холодные напитки Таиланда</strong></h2>
-          <ul>
-            <li><span class="icon">🧋</span><strong>Ча йен</strong><span class="description">– холодный чай с молоком и пряностями.</span></li>
-            <li><span class="icon">☕</span><strong>Кафе йен</strong><span class="description">– холодный кофе со сгущённым молоком.</span></li>
-            <li><span class="icon">🥥</span><strong>Свежая кокосовая вода</strong><span class="description">– прямо из зеленого кокоса.</span></li>
-            <li><span class="icon">🌾</span><strong>Сок сахарного тростника</strong><span class="description">– натурально-сладкий напиток со льдом.</span></li>
-            <li><span class="icon">🍹</span><strong>Ча манав</strong><span class="description">– чай с лаймом и кубиками льда.</span></li>
-            <li><span class="icon">🥛</span><strong>Ном йен</strong><span class="description">– розовое молоко с сиропом и льдом.</span></li>
-            <li><span class="icon">💙</span><strong>Синий чай</strong><span class="description">– butterfly pea со льдом и лимоном.</span></li>
-            <li><span class="icon">🥭</span><strong>Манговый смузи</strong><span class="description">– густой напиток из спелого манго и льда.</span></li>
-            <li><span class="icon">🍹</span><strong>Смузи из мангостина</strong><span class="description">– экзотический напиток с мангостином и льдом.</span></li>
-            <li><span class="icon">🍌</span><strong>Тропический молочный коктейль</strong><span class="description">– банан/манго/дуриан со льдом и сливочным молоком.</span></li>
-          </ul>
-        </div>
-        <div class="med-kit advice-block">
-          <h2>💊 <strong>Аптечка</strong></h2>
-          <ul>
-            <li><span class="icon">🌡️</span><strong>Парацетамол / Paracetamol / [translate:พาราเซตามอล]</strong><span class="description">– болеутоляющее и жаропонижающее средство.</span></li>
-            <li><span class="icon">🩹</span><strong>Ибупрофен / Ibuprofen / [translate:ไอบูโพรเฟน]</strong><span class="description">– противовоспалительное средство.</span></li>
-            <li><span class="icon">🚽</span><strong>Лоперамид / Loperamide / [translate:โลเปอราไมด์]</strong><span class="description">– средство от диареи.</span></li>
-            <li><span class="icon">💧</span><strong>Средство для регидратации (Oreda) / ORS / [translate:เกลือแร่]</strong><span class="description">– для восстановления водно-солевого баланса.</span></li>
-            <li><span class="icon">🤧</span><strong>Цетиризин / Cetirizine / [translate:เซทิริซิน]</strong><span class="description">– антигистаминное средство от аллергии.</span></li>
-            <li><span class="icon">🧴</span><strong>Хлоргексидин / Chlorhexidine / [translate:คลอร์เฮกซิดีน]</strong><span class="description">– антисептик для обработки ран.</span></li>
-            <li><span class="icon">🧪</span><strong>Неомициновая мазь / Neomycin ointment / [translate:นีโอมัยซิน]</strong><span class="description">– антибактериальная мазь.</span></li>
-            <li><span class="icon">🤢</span><strong>Антацидный гель (Almagel) / Antacid gel / [translate:ยาลดกรด]</strong><span class="description">– средство от изжоги.</span></li>
-            <li><span class="icon">🤢</span><strong>Дименгидринат / Dimenhydrinate / [translate:ไดเมนไฮดริเนต]</strong><span class="description">– средство от укачивания.</span></li>
-            <li><span class="icon">🗣️</span><strong>Спрей для горла (Kamillosan) / Throat spray / [translate:สเปรย์พ่นคอ]</strong><span class="description">– обезболивающий и антисептический спрей.</span></li>
-          </ul>
-        </div>
-      </section>
+        <!-- Календарь активностей -->
+        <section id="calendar">
+            <h2>📅 Календарь поездки</h2>
+            <div class="loading" id="loading">Загрузка данных о погоде</div>
+            <div id="activities-list" class="calendar-grid"></div>
+        </section>
 
-      <section id="contacts" class="tab-content">
-        <ul class="contacts-list">
-          <li><a href="tel:1155"><strong>Туристическая полиция:</strong> 1155</a></li>
-          <li><a href="tel:1669"><strong>Скорая помощь:</strong> 1669</a></li>
-          <li><a href="tel:191"><strong>Полиция:</strong> 191</a></li>
-          <li><a href="tel:199"><strong>Пожарная служба:</strong> 199</a></li>
-          <li><a href="tel:+66-2-234-98-24"><strong>Консульство РФ:</strong> +66-2-234-98-24</a></li>
-        </ul>
-        <div class="contacts-col" id="contactsGrid">
-          <!-- Теперь пустой, так как MO Play Kidz перенесен в детские площадки -->
-        </div>
-      </section>
+        <!-- Места для посещения -->
+        <section id="places">
+            <h2>📍 Интересные места</h2>
+            <div id="places-grid" class="activity-grid"></div>
+        </section>
 
-      <section id="nearby" class="tab-content">
-        <button class="locate-button" id="locateBtn">Получить местоположение</button>
-        <div class="nearby-block">
-          <h3 class="nearby-header">📍 Рядом</h3>
-          <div class="nearby-items" id="nearbyItems">
-            <div class="empty-state">Нажмите "Получить местоположение" чтобы увидеть ближайшие места</div>
-          </div>
-        </div>
-        <div class="geo-filters">
-            <button class="geo-filter-btn active" data-filter="naklua">Наклуа</button>
-            <button class="geo-filter-btn" data-filter="pratamnak">Пратамнак</button>
-            <button class="geo-filter-btn" data-filter="jomtien">Джомтьен</button>
-        </div>
-        <div class="cafe-block">
-            <h2>☕ Кафе</h2>
-            <div class="cafe-sub-block naklua" data-subblock-name="naklua">
-                <h3>Наклуа</h3>
-                <button class="geo-item-btn" data-type="cafe" data-id="0"><span class="rating">5*</span> <strong>Pad Thai Shop</strong> - Пад тай мокашница</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="1"><span class="rating">5*</span> <strong>Indian food</strong> - Индийская кухня</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="2"><span class="rating">4,5*</span> <strong>Tony seafood</strong> - тай сифуд</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="3"><span class="rating">4,5*</span> <strong>SIAM</strong> - тай рус</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="4"><span class="rating">4,3*</span> <strong>Тайское кафе</strong> - тай недорого</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="5"><span class="rating">5*</span> <strong>COFFEE CORNER</strong> - тай недорого</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="6"><span class="rating">4,9*</span> <strong>Coconut restaurant</strong> - тай</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="7"><span class="rating">5*</span> <strong>Рыбный рынок</strong> - сифуд доставка</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="8"><span class="rating">4,6*</span> <strong>3 Tolstyaka</strong> - русская кухня</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="9"><span class="rating">4,3*</span> <strong>Thai on beach</strong> - тай пляжное</button>
-            </div>
-            <div class="cafe-sub-block pratamnak" data-subblock-name="pratamnak">
-                <h3>Пратамнак</h3>
-                <button class="geo-item-btn" data-type="cafe" data-id="10"><span class="rating">4,9*</span> <strong>макашница</strong> - тай</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="11"><span class="rating">5*</span> <strong>BAR MANGAL B-B-Q</strong> - Шашлюля</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="12"><span class="rating">5*</span> <strong>kruatabird</strong> - сифуд</button>
-                <button class="geo-item-btn" data-type="cafe" data-id="13"><span class="rating">5*</span> <strong>CHAO DOI COFFEE</strong> - Кофейня</button>
-            </div>
-            <div class="cafe-sub-block jomtien" data-subblock-name="jomtien">
-                <h3>Джомтьен</h3>
-                <button class="geo-item-btn" data-type="cafe" data-id="14"><span class="rating">4,7*</span> <strong>Tum Yum Bar</strong> - тай</button>
-            </div>
-        </div>
-        
-        <div class="geo-block geo-temples">
-            <h3>⛩️ Храмы</h3>
-            <div class="geo-items-container">
-                <button class="geo-item-btn" data-type="temple" data-id="15"><span class="icon">⛩️</span> <strong>Wat Chai Mongkhon</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="16"><span class="icon">⛩️</span> <strong>[translate:เมรุ วัดชัยมงคล]</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="17"><span class="icon">⛩️</span> <strong>Wat Nong Oo</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="18"><span class="icon">⛩️</span> <strong>Wat Photi Samphan</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="19"><span class="icon">⛩️</span> <strong>Wat Sawang Fa Phruettharam</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="20"><span class="icon">⛩️</span> <strong>Wat Nong Yai</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="21"><span class="icon">⛩️</span> <strong>Большой Будда</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="22"><span class="icon">⛩️</span> <strong>[translate:วัดใหม่หาดกระทึงทอง]</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="23"><span class="icon">⛩️</span> <strong>Wat Nong Chab Tao</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="24"><span class="icon">⛩️</span> <strong>Laser Buddha Sattahip</strong></button>
-            </div>
-        </div>
-        
-        <!-- ОБНОВЛЕННЫЙ БЛОК ДЕТСКИХ ПЛОЩАДОК -->
-        <div class="geo-block geo-playgrounds">
-            <h3>🎠 Детские площадки</h3>
-            <div class="geo-items-container">
-                <button class="geo-item-btn" data-type="playground" data-id="25"><span class="icon">🎠</span><strong>5⭐ HarborLand Terminal 21</strong></button>
-                <button class="geo-item-btn" data-type="playground" data-id="26"><span class="icon">🎠</span><strong>5⭐ Kidzoona Central Festival</strong></button>
-                <button class="geo-item-btn" data-type="playground" data-id="27"><span class="icon">🎠</span><strong>4⭐ Harbor Pattaya Mega Fun</strong></button>
-                <button class="geo-item-btn" data-type="playground" data-id="28"><span class="icon">🎠</span><strong>4⭐ Pattaya Dinosaur Kingdom</strong></button>
-                <button class="geo-item-btn" data-type="playground" data-id="29"><span class="icon">🎠</span><strong>3⭐ Pipo Pony Club</strong></button>
-                <button class="geo-item-btn" data-type="playground" data-id="30"><span class="icon">🎠</span><strong>4⭐ Ramayana Kids Zone</strong></button>
-                <button class="geo-item-btn" data-type="playground" data-id="31"><span class="icon">🎠</span><strong>4⭐ MO Play Kidz</strong></button>
-            </div>
-        </div>
-        
-        <!-- ОБНОВЛЕННЫЙ БЛОК ПАРКОВ -->
-        <div class="geo-block geo-parks">
-            <h3>🌳 Парки</h3>
-            <div class="geo-items-container">
-                <button class="geo-item-btn" data-type="park" data-id="32"><span class="icon">🌳</span><strong>5⭐ Chaloem Phrakiat Park</strong></button>
-                <button class="geo-item-btn" data-type="park" data-id="33"><span class="icon">🌳</span><strong>4⭐ Pattaya Park Beach Resort</strong></button>
-                <button class="geo-item-btn" data-type="park" data-id="34"><span class="icon">🌳</span><strong>5⭐ Beach Road Promenade</strong></button>
-                <button class="geo-item-btn" data-type="park" data-id="35"><span class="icon">🌳</span><strong>4⭐ Jomtien Beach Park</strong></button>
-                <button class="geo-item-btn" data-type="park" data-id="36"><span class="icon">🌳</span><strong>5⭐ Buddha Hill Park</strong></button>
-                <button class="geo-item-btn" data-type="park" data-id="37"><span class="icon">🌳</span><strong>4⭐ Wat Khao Phra Bat Garden</strong></button>
-                <button class="geo-item-btn" data-type="park" data-id="38"><span class="icon">🌳</span><strong>3⭐ Dongtan Beach Green Zone</strong></button>
-                <button class="geo-item-btn" data-type="park" data-id="39"><span class="icon">🌳</span><strong>4⭐ Koh Larn Island Parks</strong></button>
-            </div>
-        </div>
+        <!-- Пляжи -->
+        <section id="beaches">
+            <h2>🏖️ Пляжи</h2>
+            <div id="beaches-grid" class="activity-grid"></div>
+        </section>
 
-      </section>
-    </main>
+        <!-- Кафе и рестораны -->
+        <section id="cafes">
+            <h2>☕ Кафе и рестораны</h2>
+            <div id="cafes-grid" class="activity-grid"></div>
+        </section>
 
-    <div id="modalOverlay" class="modal">
-      <div class="modal-content">
-        <button class="close-btn" id="closeModal">✖</button>
-        <div id="modalBody"></div>
-      </div>
+        <!-- Магазины -->
+        <section id="shops">
+            <h2>🛍️ Магазины</h2>
+            <div id="shops-grid" class="activity-grid"></div>
+        </section>
+
+        <!-- Футер -->
+        <footer style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; color: #718096;">
+            <p>🌤️ Данные о погоде предоставлены <a href="https://open-meteo.com" target="_blank" style="color: #667eea;">Open-Meteo</a></p>
+            <p style="margin-top: 10px;">© 2026 | Версия 1.3.5 | Обновлено: 30.09.2025</p>
+        </footer>
     </div>
 
-    <div id="dailyPlanModal" class="modal">
-      <div class="modal-content daily-plan-modal">
-        <button class="floating-close-btn" onclick="closeDailyPlanModal()">×</button>
-        <div id="dailyPlanModalBody">
-          <h3>📝 Планы на день</h3>
-          <div class="daily-plan-grid" id="dailyPlanGrid">
-            <!-- Динамически заполняется JS -->
-          </div>
+    <!-- Модальное окно для деталей -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title"></h2>
+            <div id="modal-content"></div>
         </div>
-      </div>
     </div>
-  </div>
+
+    <!-- Основной скрипт приложения -->
+    <script src="app.js"></script>
 </body>
 </html>

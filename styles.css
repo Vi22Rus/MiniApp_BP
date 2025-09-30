@@ -1,0 +1,453 @@
+/* ============================================
+   Pattaya Travel Guide - Styles
+   Version: 1.3.5
+   Last updated: 2025-09-30
+   ============================================ */
+
+/* ========== ОСНОВНЫЕ СТИЛИ ========== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #2d3748;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== ЗАГОЛОВКИ ========== */
+
+h1 {
+    text-align: center;
+    color: #667eea;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+h2 {
+    color: #4a5568;
+    font-size: 1.8rem;
+    margin: 30px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #667eea;
+}
+
+h3 {
+    color: #2d3748;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+/* ========== КАРТОЧКИ АКТИВНОСТЕЙ ========== */
+
+.activity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.activity-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.activity-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    border-color: #667eea;
+}
+
+.activity-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 1.2rem;
+}
+
+.activity-card p {
+    color: #718096;
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.activity-date {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.activity-price {
+    background: #48bb78;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+/* ========== БЛОК ПОГОДЫ ========== */
+
+.weather-info {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f6f8fb 0%, #e9f0f7 100%);
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin: 12px 0;
+    border: 2px solid #e2e8f0;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.temp-air,
+.temp-water {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.temp-air {
+    color: #e53e3e;
+    background: rgba(229, 62, 62, 0.1);
+}
+
+.temp-air:hover {
+    background: rgba(229, 62, 62, 0.2);
+}
+
+.temp-water {
+    color: #3182ce;
+    background: rgba(49, 130, 206, 0.1);
+}
+
+.temp-water:hover {
+    background: rgba(49, 130, 206, 0.2);
+}
+
+/* ========== КНОПКИ ========== */
+
+button {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 5px;
+}
+
+button:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.details {
+    background: #48bb78;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+}
+
+.details:hover {
+    background: #38a169;
+}
+
+/* ========== ФИЛЬТРЫ ========== */
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0;
+    justify-content: center;
+}
+
+.filter-buttons button {
+    background: #edf2f7;
+    color: #4a5568;
+    padding: 10px 20px;
+}
+
+.filter-buttons button.active {
+    background: #667eea;
+    color: white;
+}
+
+/* ========== КАЛЕНДАРЬ ========== */
+
+#calendar {
+    margin: 30px 0;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.day-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.day-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(118, 75, 162, 0.3);
+    border-color: #764ba2;
+}
+
+.beach-day {
+    background: linear-gradient(135deg, #fef5e7 0%, #fdebd0 100%);
+    border-color: #f39c12;
+}
+
+.trip-day {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-color: #4caf50;
+}
+
+/* ========== РАССТОЯНИЯ ========== */
+
+.distance {
+    color: #718096;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.distance::before {
+    content: "📍";
+}
+
+/* ========== МОДАЛЬНОЕ ОКНО ========== */
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close:hover {
+    color: #000;
+}
+
+/* ========== АДАПТИВНОСТЬ ========== */
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    h2 {
+        font-size: 1.4rem;
+    }
+
+    .activity-grid,
+    .calendar-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .weather-info {
+        flex-direction: row;
+        gap: 10px;
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .temp-air,
+    .temp-water {
+        padding: 5px 8px;
+        font-size: 0.85rem;
+    }
+
+    .filter-buttons {
+        justify-content: center;
+    }
+
+    button {
+        padding: 10px 18px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .weather-info {
+        font-size: 12px;
+    }
+
+    .temp-air,
+    .temp-water {
+        gap: 4px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ========== АНИМАЦИИ ========== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.activity-card,
+.day-card {
+    animation: fadeIn 0.5s ease;
+}
+
+/* ========== УТИЛИТЫ ========== */
+
+.text-center {
+    text-align: center;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* ========== ЗАГРУЗКА ========== */
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% {
+        content: '.';
+    }
+    40% {
+        content: '..';
+    }
+    60%, 100% {
+        content: '...';
+    }
+}
+
+/* ========== ФУТЕР ========== */
+
+footer a {
+    color: #667eea;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+footer a:hover {
+    color: #5a67d8;
+    text-decoration: underline;
+}
