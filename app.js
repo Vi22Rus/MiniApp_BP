@@ -699,7 +699,12 @@ function handleCardClick(activityName, date, type) {
     if (type === 'sea') {
         openDailyPlanModal(activityName, date);
     } else if (type === 'sight') {
-        showPlaceModal(activityName);
+        const activity = activities.find(a => a.name === activityName && a.date === date);
+        if (activity) {
+            showPlaceModal(activity);
+        } else {
+            console.error('Активность не найдена:', activityName, date);
+        }
     }
 }
 
@@ -760,19 +765,24 @@ function bindDetailButtons() {
 function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
-    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-    const to = `${place.coords.lat},${place.coords.lng}`;
-    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-    if (userCoords) {
-        const userFrom = `${userCoords[0]},${userCoords[1]}`;
-        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
-        const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
-        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+
+    if (place.coords) {
+        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+        const to = `${place.coords.lat},${place.coords.lng}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+        if (userCoords) {
+            const userFrom = `${userCoords[0]},${userCoords[1]}`;
+            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+            const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
+            content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+        }
+    } else {
+        content += `<p>📍 Координаты не указаны</p>`;
     }
+
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
-
 const points = [];
 
 function renderContacts(list) {
