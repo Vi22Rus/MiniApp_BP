@@ -691,6 +691,14 @@ const kidsLeisure = [
         tips: 'Однодневная поездка на Коралловый остров - жемчужину Сиамского залива! Кристально чистая вода, белоснежные пляжи Таваен и Самае, мелководье идеально для детей. Выезд в 07:30 с пирса Бали Хай, паром 45 минут (30฿). На острове: пляжный отдых, снорклинг, обед из морепродуктов. Возвращение в 16:00. Взять: солнцезащитный крем SPF50+, панамки, нарукавники для ребенка, питьевую воду. Общие расходы: ~1,500฿ на семью. Незабываемые впечатления гарантированы!',
         type: 'sight'
     }
+,
+    { 
+        name: '🧪 ТЕСТ API', 
+        date: '02.10.2025', 
+        coords: null, 
+        tips: 'Тестовый блок для проверки Weather API и Firebase. Температура должна загрузиться автоматически. Кликни "Подробнее" чтобы открыть ежедневник и протестировать сохранение в Firebase.', 
+        type: 'sea' 
+    }
 ];
 
 // ОБНОВЛЕННАЯ функция generateBeachDays - исключаем 14.01.2026 для Ко Лана
@@ -768,21 +776,23 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><p>${a.date}</p><h3>${icon}${a.name}</h3>${priceLine}<div class="weather" data-date="${a.date}"></div>${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загрузка температуры для ВСЕХ активностей
+    // Загрузка погоды для активностей
     list.forEach(async (activity) => {
-        const weather = await fetchWeatherData(activity.date);
-        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
-        weatherDivs.forEach(div => {
-            if (weather.airTemp || weather.waterTemp) {
-                let weatherText = '';
-                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                div.textContent = weatherText.trim();
-            }
-        });
+        if (activity.type === 'sea' || activity.type === 'pool') {
+            const weather = await fetchWeatherData(activity.date);
+            const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
+            weatherDivs.forEach(div => {
+                if (weather.airTemp || weather.waterTemp) {
+                    let weatherText = '';
+                    if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
+                    if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
+                    div.textContent = weatherText.trim();
+                }
+            });
+        }
     });
     bindDetailButtons();
 }
@@ -989,7 +999,6 @@ function setStorageItem(key, value, callback = null) {
         value: value
     };
     
-    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1019,7 +1028,6 @@ function getStorageItem(key, callback) {
         key: key
     };
     
-    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1049,7 +1057,6 @@ function removeStorageItem(key, callback = null) {
         key: key
     };
     
-    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
