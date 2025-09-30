@@ -1,4 +1,4 @@
-// Version: 1.7.3 | Lines: 1090
+// Version: 1.7.3 | Lines: 1070
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -42,73 +42,28 @@ function formatDateForAPI(dateStr) {
 
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
-
-  // Проверка кэша
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
     return weatherCache[apiDate];
   }
-
   try {
-    // Open-Meteo API для температуры воздуха
     const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-
-    // Marine Weather API для температуры воды
     const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-
-    const [airResponse, waterResponse] = await Promise.all([
-      fetch(airTempUrl),
-      fetch(waterTempUrl)
-    ]);
-
+    const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
-
-    let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
-    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
-
-    // Фолбэк на климатические нормы для Паттайи (декабрь-январь)
-    if (!airTemp || !waterTemp) {
-      console.log(`⚠️ API не вернул данные для ${apiDate}, используются климатические нормы`);
-      const [day, month] = date.split('.');
-      const monthNum = parseInt(month);
-
-      // Климатические нормы для Паттайи по месяцам
-      if (monthNum === 12 || monthNum === 1) {
-        // Декабрь-январь: высокий сезон
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
-      } else if (monthNum >= 2 && monthNum <= 4) {
-        // Февраль-апрель: жаркий сезон
-        airTemp = airTemp || 32;
-        waterTemp = waterTemp || 29;
-      } else if (monthNum >= 5 && monthNum <= 10) {
-        // Май-октябрь: сезон дождей
-        airTemp = airTemp || 29;
-        waterTemp = waterTemp || 29;
-      } else {
-        // Ноябрь
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
-      }
-    }
-
-    const result = {
-      airTemp: airTemp ? Math.round(airTemp) : null,
-      waterTemp: waterTemp ? Math.round(waterTemp) : null
-    };
-
-    // Сохранение в кэш
+    const airTemp = airData.daily?.temperature_2m_max?.[0] || null;
+    const waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
+    const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
     weatherCache[apiDate] = result;
-    console.log(`✓ Погода для ${apiDate}:`, result);
-
+    console.log(`✓ Погода получена для ${apiDate}:`, result);
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
-    // Фолбэк на стандартные значения при ошибке
-    return { airTemp: 30, waterTemp: 28 };
+    return { airTemp: null, waterTemp: null };
   }
 }
+
 
 
 async function setStorageItem(key, value) {
@@ -696,7 +651,7 @@ const kidsLeisure = [
         name: '🧪 ТЕСТ API', 
         date: '02.10.2025', 
         coords: null, 
-        tips: 'Тестовый блок для проверки Weather API и Firebase. Температура должна загрузиться автоматически. Кликни "Подробнее" чтобы открыть ежедневник и протестировать сохранение в Firebase.', 
+        tips: 'Тестовый блок для проверки Weather API и Firebase. Кликни "Подробнее" для ежедневника.', 
         type: 'sea' 
     }
 ];
@@ -776,23 +731,21 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><p>${a.date}</p><h3>${icon}${a.name}</h3>${priceLine}<div class="weather" data-date="${a.date}"></div>${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загрузка погоды для активностей
+    // Загрузка температуры для ВСЕХ активностей
     list.forEach(async (activity) => {
-        if (activity.type === 'sea' || activity.type === 'pool') {
-            const weather = await fetchWeatherData(activity.date);
-            const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
-            weatherDivs.forEach(div => {
-                if (weather.airTemp || weather.waterTemp) {
-                    let weatherText = '';
-                    if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                    if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                    div.textContent = weatherText.trim();
-                }
-            });
-        }
+        const weather = await fetchWeatherData(activity.date);
+        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
+        weatherDivs.forEach(div => {
+            if (weather.airTemp || weather.waterTemp) {
+                let weatherText = '';
+                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
+                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
+                div.textContent = weatherText.trim();
+            }
+        });
     });
     bindDetailButtons();
 }
@@ -993,91 +946,12 @@ function autoSavePlan(input) {
 }
 
 function setStorageItem(key, value, callback = null) {
-    const data = {
-        action: 'set',
-        key: key,
-        value: value
-    };
-    
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Saved to Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        localStorage.setItem(key, value);
-        console.log('📱 Saved to localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
 }
 
 function getStorageItem(key, callback) {
-    const data = {
-        action: 'get',
-        key: key
-    };
-    
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Loaded from Google Sheets (shared)');
-            callback(result.value || '');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        const fallbackValue = localStorage.getItem(key) || '';
-        console.log('📱 Loaded from localStorage (Sheets fallback)');
-        callback(fallbackValue);
-    });
 }
 
 function removeStorageItem(key, callback = null) {
-    const data = {
-        action: 'delete',
-        key: key
-    };
-    
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Deleted from Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        localStorage.removeItem(key);
-        console.log('📱 Deleted from localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
 }
 
 function showContactModal(contact) {
