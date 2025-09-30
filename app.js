@@ -1,4 +1,4 @@
-// Version: 1.7.1 | Lines: 1095
+// Version: 1.7.2 | Lines: 1095
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -78,17 +78,22 @@ async function fetchWeatherData(date) {
 
 
 
-async function setStorageItem(key, value) {
+async 
+async function setStorageItem(key, value, callback = null) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).set(value);
-            console.log('✓ Firebase: сохранено', key);
-            return;
+            console.log('✅ Firebase: сохранено', key);
+            if (callback) callback();
         } catch (error) {
             console.error('✗ Firebase save error:', error);
+            localStorage.setItem(key, value);
+            if (callback) callback();
         }
+    } else {
+        localStorage.setItem(key, value);
+        if (callback) callback();
     }
-    localStorage.setItem(key, value);
 }
 
 async function getStorageItem(key) {
@@ -96,7 +101,7 @@ async function getStorageItem(key) {
         try {
             const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
             if (snapshot.exists()) {
-                console.log('✓ Firebase: загружено', key);
+                console.log('✅ Firebase: загружено', key);
                 return snapshot.val();
             }
         } catch (error) {
@@ -106,17 +111,21 @@ async function getStorageItem(key) {
     return localStorage.getItem(key);
 }
 
-async function removeStorageItem(key) {
+async function removeStorageItem(key, callback = null) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).remove();
-            console.log('✓ Firebase: удалено', key);
-            return;
+            console.log('✅ Firebase: удалено', key);
+            if (callback) callback();
         } catch (error) {
             console.error('✗ Firebase delete error:', error);
+            localStorage.removeItem(key);
+            if (callback) callback();
         }
+    } else {
+        localStorage.removeItem(key);
+        if (callback) callback();
     }
-    localStorage.removeItem(key);
 }
 // ===== END FIREBASE =====
 
@@ -959,6 +968,7 @@ function setStorageItem(key, value, callback = null) {
         value: value
     };
     
+    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -988,6 +998,7 @@ function getStorageItem(key, callback) {
         key: key
     };
     
+    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1017,6 +1028,7 @@ function removeStorageItem(key, callback = null) {
         key: key
     };
     
+    fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
