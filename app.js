@@ -1,25 +1,4 @@
-// ПОГОДА API
-let weatherData = {};
-async function loadWeatherData() {
-    try {
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=12.9236&longitude=100.8825&daily=temperature_2m_max,temperature_2m_min&timezone=Asia/Bangkok&start_date=2025-12-29&end_date=2026-01-26';
-        const response = await fetch(url);
-        const data = await response.json();
-        if (data.daily && data.daily.time) {
-            data.daily.time.forEach((date, index) => {
-                const dateStr = date.split('-').reverse().join('.');
-                const maxTemp = Math.round(data.daily.temperature_2m_max[index]);
-                const minTemp = Math.round(data.daily.temperature_2m_min[index]);
-                weatherData[dateStr] = {air: Math.round((maxTemp + minTemp) / 2), water: 27};
-            });
-        }
-    } catch (error) {
-        weatherData={'29.12.2025':{air:29,water:28},'30.12.2025':{air:30,water:28},'31.12.2025':{air:30,water:28},'01.01.2026':{air:30,water:28},'02.01.2026':{air:29,water:28},'03.01.2026':{air:30,water:28},'04.01.2026':{air:30,water:28},'05.01.2026':{air:31,water:28},'06.01.2026':{air:30,water:28},'07.01.2026':{air:30,water:28},'08.01.2026':{air:30,water:28},'09.01.2026':{air:30,water:28},'10.01.2026':{air:30,water:27},'11.01.2026':{air:29,water:27},'12.01.2026':{air:28,water:27},'13.01.2026':{air:29,water:27},'14.01.2026':{air:30,water:27},'15.01.2026':{air:31,water:27},'16.01.2026':{air:30,water:27},'17.01.2026':{air:30,water:26},'18.01.2026':{air:31,water:26},'19.01.2026':{air:30,water:26},'20.01.2026':{air:30,water:27},'21.01.2026':{air:30,water:26},'22.01.2026':{air:29,water:26},'23.01.2026':{air:30,water:26},'24.01.2026':{air:30,water:26},'25.01.2026':{air:30,water:27},'26.01.2026':{air:30,water:27}};
-    }
-}
-function getWeatherHTML(date){if(!weatherData[date])return '';const w=weatherData[date];return `<div style="margin:8px 0;font-size:13px;color:#666;display:flex;gap:10px;"><span>🌡️${w.air}°C</span><span>🌊${w.water}°C</span></div>`;}
-
-// Version: 1.3.1 | Lines: 670
+// ПОГОДА APIlet weatherData = {};async function loadWeatherData() {    try {        const url = 'https://api.open-meteo.com/v1/forecast?latitude=12.9236&longitude=100.8825&daily=temperature_2m_max,temperature_2m_min&timezone=Asia/Bangkok&start_date=2025-12-29&end_date=2026-01-26';        const response = await fetch(url);        const data = await response.json();        if (data.daily && data.daily.time) {            data.daily.time.forEach((date, index) => {                const dateStr = date.split('-').reverse().join('.');                const maxTemp = Math.round(data.daily.temperature_2m_max[index]);                const minTemp = Math.round(data.daily.temperature_2m_min[index]);                weatherData[dateStr] = {air: Math.round((maxTemp + minTemp) / 2), water: 27};            });        }    } catch (error) {        weatherData={'29.12.2025':{air:29,water:28},'30.12.2025':{air:30,water:28},'31.12.2025':{air:30,water:28},'01.01.2026':{air:30,water:28},'02.01.2026':{air:29,water:28},'03.01.2026':{air:30,water:28},'04.01.2026':{air:30,water:28},'05.01.2026':{air:31,water:28},'06.01.2026':{air:30,water:28},'07.01.2026':{air:30,water:28},'08.01.2026':{air:30,water:28},'09.01.2026':{air:30,water:28},'10.01.2026':{air:30,water:27},'11.01.2026':{air:29,water:27},'12.01.2026':{air:28,water:27},'13.01.2026':{air:29,water:27},'14.01.2026':{air:30,water:27},'15.01.2026':{air:31,water:27},'16.01.2026':{air:30,water:27},'17.01.2026':{air:30,water:26},'18.01.2026':{air:31,water:26},'19.01.2026':{air:30,water:26},'20.01.2026':{air:30,water:27},'21.01.2026':{air:30,water:26},'22.01.2026':{air:29,water:26},'23.01.2026':{air:30,water:26},'24.01.2026':{air:30,water:26},'25.01.2026':{air:30,water:27},'26.01.2026':{air:30,water:27}};    }}function getWeatherHTML(date){if(!weatherData[date])return '';const w=weatherData[date];return `<div style="margin:8px 0;font-size:13px;color:#666;display:flex;gap:10px;"><span>🌡️${w.air}°C</span><span>🌊${w.water}°C</span></div>`;}// Version: 1.3.1 | Lines: 670
 // Last updated: 2025-09-29
 // Версия скрипта: app.js (670 строк) - С ПОЕЗДКОЙ НА КО ЛАН
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
