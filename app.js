@@ -1,21 +1,6 @@
-// Version: 2.2.0 | Lines: 920
-// Исправлено: Добавлены недостающие переменные homeCoords, activeGeoFilter, allGeoData
-// 2025-09-30
-
-// Version: 2.1.0 | Lines: 910
-// Исправлено: Firebase key sanitization - замена точек на дефисы
-// 2025-09-30
-
-// Version: 2.0.0 | Lines: 902
-// Исправлено: Валидация диапазона дат для Weather API (максимум 16 дней)
-// 2025-09-30
-
-// Version: 1.9.1 | Lines: 940
-// Исправлено: async для fetchWeatherData() (требуется для await) 2025-09-30
-// Version: 1.8.0 | Lines: 1095
-// Last updated: 2025-09-30
-// Версия скрипта: app.js (1000 строк) - Все изменения применены
-
+// Version: 2.4.0 | Lines: 940
+// Исправлено: Загрузка данных ежедневника через async/await
+// 2025-10-01
 // ===== FIREBASE CONFIGURATION =====
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
@@ -951,16 +936,19 @@ function openDailyPlanModal(activityName, date) {
     }
     
     grid.innerHTML = timeSlots;
-    modal.classList.add('active');
-    
-    timeSlotData.forEach(slot => {
-        getStorageItem(slot.key, (savedPlan) => {
-            const input = document.querySelector(`input[data-time="${slot.startTime}"][data-date="${slot.date}"]`);
-            if (input && savedPlan) {
-                input.value = savedPlan;
-            }
-        });
-    });
+modal.classList.add('active');
+
+// ИСПРАВЛЕНО: Используем async/await для загрузки данных
+(async () => {
+    for (const slot of timeSlotData) {
+        const savedPlan = await getStorageItem(slot.key);
+        const input = document.querySelector(`input[data-time="${slot.startTime}"][data-date="${slot.date}"]`);
+        if (input && savedPlan) {
+            input.value = savedPlan;
+            console.log(`✅ Загружено из хранилища: ${slot.startTime} - ${savedPlan}`);
+        }
+    }
+})();
     
     document.querySelectorAll('.plan-input').forEach(input => {
         let touchStartTime = 0;
