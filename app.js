@@ -1,4 +1,4 @@
-// ПОГОДА С API
+// ПОГОДА API
 let weatherData = {};
 async function loadWeatherData() {
     try {
@@ -13,10 +13,8 @@ async function loadWeatherData() {
                 const avgTemp = Math.round((maxTemp + minTemp) / 2);
                 weatherData[dateStr] = {air: avgTemp, water: 27};
             });
-            console.log('✅ Погода:', Object.keys(weatherData).length, 'дней');
         }
     } catch (error) {
-        console.error('❌ Ошибка:', error);
         weatherData={'29.12.2025':{air:29,water:28},'30.12.2025':{air:30,water:28},'31.12.2025':{air:30,water:28},'01.01.2026':{air:30,water:28},'02.01.2026':{air:29,water:28},'03.01.2026':{air:30,water:28},'04.01.2026':{air:30,water:28},'05.01.2026':{air:31,water:28},'06.01.2026':{air:30,water:28},'07.01.2026':{air:30,water:28},'08.01.2026':{air:30,water:28},'09.01.2026':{air:30,water:28},'10.01.2026':{air:30,water:27},'11.01.2026':{air:29,water:27},'12.01.2026':{air:28,water:27},'13.01.2026':{air:29,water:27},'14.01.2026':{air:30,water:27},'15.01.2026':{air:31,water:27},'16.01.2026':{air:30,water:27},'17.01.2026':{air:30,water:26},'18.01.2026':{air:31,water:26},'19.01.2026':{air:30,water:26},'20.01.2026':{air:30,water:27},'21.01.2026':{air:30,water:26},'22.01.2026':{air:29,water:26},'23.01.2026':{air:30,water:26},'24.01.2026':{air:30,water:26},'25.01.2026':{air:30,water:27},'26.01.2026':{air:30,water:27}};
     }
 }
