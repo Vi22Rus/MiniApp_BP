@@ -1,7 +1,8 @@
-// Version: 1.8.4 | Lines: 939 (after edit)
-// Изменения: полностью удалён устаревший блок setStorageItem (Google Sheets) 2025-09-30
+// Version: 1.8.6 | Lines: 939
+// Исправлено: ReferenceError для userCoords 2025-09-30
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
+
 // ===== FIREBASE CONFIGURATION =====
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
@@ -828,6 +829,94 @@ function autoSavePlan(input) {
             console.log(`🗑️ Удален пустой план: ${time}`);
         });
     }
+}
+
+function setStorageItem(key, value, callback = null) {
+    const data = {
+        action: 'set',
+        key: key,
+        value: value
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Saved to Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.setItem(key, value);
+        console.log('📱 Saved to localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
+}
+
+function getStorageItem(key, callback) {
+    const data = {
+        action: 'get',
+        key: key
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Loaded from Google Sheets (shared)');
+            callback(result.value || '');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        const fallbackValue = localStorage.getItem(key) || '';
+        console.log('📱 Loaded from localStorage (Sheets fallback)');
+        callback(fallbackValue);
+    });
+}
+
+function removeStorageItem(key, callback = null) {
+    const data = {
+        action: 'delete',
+        key: key
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Deleted from Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.removeItem(key);
+        console.log('📱 Deleted from localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
 }
 
 function showContactModal(contact) {
