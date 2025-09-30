@@ -1,4 +1,4 @@
-// Version: 1.7.1 | Lines: 1090
+// Version: 1.7.1 | Lines: 1095
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -42,73 +42,40 @@ function formatDateForAPI(dateStr) {
 
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
-
-  // Проверка кэша
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
     return weatherCache[apiDate];
   }
-
   try {
-    // Open-Meteo API для температуры воздуха
     const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-
-    // Marine Weather API для температуры воды
     const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-
-    const [airResponse, waterResponse] = await Promise.all([
-      fetch(airTempUrl),
-      fetch(waterTempUrl)
-    ]);
-
+    const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
-
     let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
     let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
-
-    // Фолбэк на климатические нормы для Паттайи (декабрь-январь)
     if (!airTemp || !waterTemp) {
-      console.log(`⚠️ API не вернул данные для ${apiDate}, используются климатические нормы`);
       const [day, month] = date.split('.');
       const monthNum = parseInt(month);
-
-      // Климатические нормы для Паттайи по месяцам
       if (monthNum === 12 || monthNum === 1) {
-        // Декабрь-январь: высокий сезон
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
+        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
       } else if (monthNum >= 2 && monthNum <= 4) {
-        // Февраль-апрель: жаркий сезон
-        airTemp = airTemp || 32;
-        waterTemp = waterTemp || 29;
+        airTemp = airTemp || 32; waterTemp = waterTemp || 29;
       } else if (monthNum >= 5 && monthNum <= 10) {
-        // Май-октябрь: сезон дождей
-        airTemp = airTemp || 29;
-        waterTemp = waterTemp || 29;
+        airTemp = airTemp || 29; waterTemp = waterTemp || 29;
       } else {
-        // Ноябрь
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
+        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
       }
     }
-
-    const result = {
-      airTemp: airTemp ? Math.round(airTemp) : null,
-      waterTemp: waterTemp ? Math.round(waterTemp) : null
-    };
-
-    // Сохранение в кэш
+    const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
     weatherCache[apiDate] = result;
-    console.log(`✓ Погода для ${apiDate}:`, result);
-
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
-    // Фолбэк на стандартные значения при ошибке
     return { airTemp: 30, waterTemp: 28 };
   }
 }
+
 
 
 async function setStorageItem(key, value) {
@@ -691,14 +658,6 @@ const kidsLeisure = [
         tips: 'Однодневная поездка на Коралловый остров - жемчужину Сиамского залива! Кристально чистая вода, белоснежные пляжи Таваен и Самае, мелководье идеально для детей. Выезд в 07:30 с пирса Бали Хай, паром 45 минут (30฿). На острове: пляжный отдых, снорклинг, обед из морепродуктов. Возвращение в 16:00. Взять: солнцезащитный крем SPF50+, панамки, нарукавники для ребенка, питьевую воду. Общие расходы: ~1,500฿ на семью. Незабываемые впечатления гарантированы!',
         type: 'sight'
     }
-,
-    { 
-        name: '🧪 ТЕСТ API', 
-        date: '02.10.2025', 
-        coords: null, 
-        tips: 'Тестовый блок для проверки Weather API и Firebase. Температура должна загрузиться автоматически. Кликни "Подробнее" чтобы открыть ежедневник и протестировать сохранение в Firebase.', 
-        type: 'sea' 
-    }
 ];
 
 // ОБНОВЛЕННАЯ функция generateBeachDays - исключаем 14.01.2026 для Ко Лана
@@ -752,7 +711,8 @@ function handleCardClick(activityName, date, type) {
     if (type === 'sea') {
         openDailyPlanModal(activityName, date);
     } else if (type === 'sight') {
-        showPlaceModal(activityName);
+        const activity = activities.find(a => a.name === activityName && a.date === date);
+        if (activity) { showPlaceModal(activity); } else { console.error('Активность не найдена:', activityName, date); }
     }
 }
 
@@ -776,23 +736,21 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><p>${a.date}</p><div class="weather" data-date="${a.date}"></div>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загрузка погоды для активностей
+    // Загружаем температуру для всех активностей
     list.forEach(async (activity) => {
-        if (activity.type === 'sea' || activity.type === 'pool') {
-            const weather = await fetchWeatherData(activity.date);
-            const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
-            weatherDivs.forEach(div => {
-                if (weather.airTemp || weather.waterTemp) {
-                    let weatherText = '';
-                    if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                    if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                    div.textContent = weatherText.trim();
-                }
-            });
-        }
+        const weather = await fetchWeatherData(activity.date);
+        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
+        weatherDivs.forEach(div => {
+            if (weather.airTemp || weather.waterTemp) {
+                let weatherText = '';
+                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
+                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
+                div.textContent = weatherText.trim();
+            }
+        });
     });
     bindDetailButtons();
 }
@@ -813,8 +771,9 @@ function bindDetailButtons() {
 function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
-    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-    const to = `${place.coords.lat},${place.coords.lng}`;
+    if (place.coords) {
+        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+        const to = `${place.coords.lat},${place.coords.lng}`;
     content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
     if (userCoords) {
         const userFrom = `${userCoords[0]},${userCoords[1]}`;
@@ -822,6 +781,7 @@ function showPlaceModal(place) {
         const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
+        } else { content += `<p>📍 Координаты не указаны</p>`; }
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
