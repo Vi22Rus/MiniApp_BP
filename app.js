@@ -1,4 +1,4 @@
-// ПОГОДА API
+// ПОГОДА
 let weatherData = {};
 async function loadWeatherData() {
     try {
@@ -10,8 +10,7 @@ async function loadWeatherData() {
                 const dateStr = date.split('-').reverse().join('.');
                 const maxTemp = Math.round(data.daily.temperature_2m_max[index]);
                 const minTemp = Math.round(data.daily.temperature_2m_min[index]);
-                const avgTemp = Math.round((maxTemp + minTemp) / 2);
-                weatherData[dateStr] = {air: avgTemp, water: 27};
+                weatherData[dateStr] = {air: Math.round((maxTemp + minTemp) / 2), water: 27};
             });
         }
     } catch (error) {
@@ -617,11 +616,11 @@ function renderActivities(list) {
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
         
-        const buttonHtml = a.type === 'sea' ? 
-            `<button class="details daily-plan-btn" data-name="${a.name}" data-date="${a.date}">Планы на день</button>` :
-            (a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : '');
+        const clickHandler = a.type === 'sea' ? 
+            `onclick="openDailyPlanModal('${a.date}')" style="cursor:pointer;"` :
+            (a.tips ? `onclick="showDetails('${a.name}', '${a.tips}')" style="cursor:pointer;"` : '');
         
-        return `<div class="${cardClass}"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class="${cardClass}" ${clickHandler}><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${getWeatherHTML(a.date)}</div>`;
     }).join('');
     bindDetailButtons();
 }
