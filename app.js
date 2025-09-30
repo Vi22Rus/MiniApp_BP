@@ -1,6 +1,6 @@
-// Version: 1.8.3 | Lines: 915 (after edit)
-// Изменения: удалён Google Sheets; исправлена renderActivities (undefined place) 2025-09-30
-
+// Version: 1.8.4 | Lines: 939 (after edit)
+// Изменения: полностью удалён устаревший блок setStorageItem (Google Sheets) 2025-09-30
+// Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
 // ===== FIREBASE CONFIGURATION =====
@@ -597,13 +597,38 @@ function renderActivities(list) {
     if (!grid) return;
     grid.innerHTML = list.map(a => {
         const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
-        const icon = a.type === 'sea' ? '🏖️' : getIconForActivity(a.name);
-        const priceInfo = (a.price) ? ` <span class='price-tag'>${a.price}</span>` : '';
-        return `<div class="${cardClass}" onclick="handleCardClick('${a.name.replace('"','&quot;')}', '${a.date}', '${a.type}')">` +
-               `<div class='card-header'>${icon} ${a.name}</div>` +
-               `<div class='card-date'>${a.date}${priceInfo}</div>` +
-               `</div>`;
+        let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
+        const prices = {
+            'Mini Siam': `<p class="price">Взрослый 230 ฿ / Детский 130 ฿</p>`,
+            'Деревня слонов': `<p class="price">Взрослый 650 ฿ / Детский 500 ฿</p>`,
+            'Дельфинариум': `<p class="price">Взрослый 630 ฿ / Детский 450 ฿</p>`,
+            'Сад Нонг Нуч': `<p class="price">Взрослый 420 ฿ / Детский 320 ฿</p>`,
+            'Музей искусств 3D': `<p class="price">Взрослый 235 ฿ / Детский 180 ฿</p>`,
+            'Зоопарк Кхао Кхео': `<p class="price">Взрослый 350 ฿ / Детский 120 ฿</p>`,
+            'Ко Лан': `<p class="price">Паром 30 ฿ / Общие расходы ~1,500 ฿</p>`
+};
+        const priceLine = prices[a.name] || '';
+        const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
+        
+        const buttonHtml = '';
+        
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
+
+    // Загружаем температуру для всех активностей
+    list.forEach(async (activity) => {
+        const weather = await fetchWeatherData(activity.date);
+        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
+        weatherDivs.forEach(div => {
+            if (weather.airTemp || weather.waterTemp) {
+                let weatherText = '';
+                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
+                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
+                div.textContent = weatherText.trim();
+            }
+        });
+    });
+    bindDetailButtons();
 }
 
 function bindDetailButtons() {
