@@ -729,12 +729,12 @@ function renderActivities(list) {
     list.forEach(async (activity) => {
         if (activity.type === 'sea' || activity.type === 'pool') {
             const weather = await fetchWeatherData(activity.date);
-            const weatherDivs = document.querySelectorAll(\`.weather[data-date="\${activity.date}"]\`);
+            const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
             weatherDivs.forEach(div => {
                 if (weather.airTemp || weather.waterTemp) {
                     let weatherText = '';
-                    if (weather.airTemp) weatherText += \`🌡️ \${weather.airTemp}°C \`;
-                    if (weather.waterTemp) weatherText += \`🌊 \${weather.waterTemp}°C\`;
+                    if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
+                    if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
                     div.textContent = weatherText.trim();
                 }
             });
