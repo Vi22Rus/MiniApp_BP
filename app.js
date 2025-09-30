@@ -53,6 +53,27 @@ const allGeoData = [
     { type: 'park', link: "https://maps.app.goo.gl/UTn8gqefDwgPeZxh6", coords: [12.887654, 100.874321], name: "Dongtan Beach Green Zone", tips: "..." },
     { type: 'park', link: "https://maps.app.goo.gl/xsj9jnGkWduQ6MQV6", coords: [12.915123, 100.780456], name: "Koh Larn Island Parks", tips: "..." }
 ];
+const kidsLeisure = [
+    { name: 'Mini Siam', date: '01.01.2026', coords: { lat: 12.9554157, lng: 100.9088538 }, tips: '...', type: 'sight' },
+    { name: 'Деревня слонов', date: '04.01.2026', coords: { lat: 12.91604299, lng: 100.93883441 }, tips: '...', type: 'sight' },
+    { name: 'Дельфинариум', date: '07.01.2026', coords: { lat: 12.95222191, lng: 100.93617557 }, tips: '...', type: 'sight' },
+
+    { name: 'Аюттайя на сутки', date: '08.01.2026', type: 'sight', coords: { lat: 14.35741905, lng: 100.56757512 }, 
+      tips: 'Древняя столица Сиама, объект всемирного наследия ЮНЕСКО. Руины храмов XIV-XVIII веков. Знаменитая голова Будды в корнях дерева в Wat Mahathat. Расстояние от Паттайи: 150 км (2.5 часа езды). Планируйте полный день с рано утра. Лучше брать экскурсию с гидом. Обязательно: Wat Chaiwatthanaram, Wat Phra Si Sanphet. Удобная обувь обязательна!' 
+    },
+
+    { name: 'Возвращение в Паттайю', date: '09.01.2026', type: 'sea', coords: null, tips: 'Отдых и восстановление сил после поездки в Аюттайю.' },
+    { name: 'Сад Нонг Нуч', date: '11.01.2026', coords: { lat: 12.76575858, lng: 100.93505629 }, tips: '...', type: 'sight' },
+    { name: 'Музей искусств 3D', date: '13.01.2026', coords: { lat: 12.94832322, lng: 100.88976288 }, tips: '...', type: 'sight' },
+    { name: 'Ко Лан', date: '14.01.2026', coords: { lat: 12.915123, lng: 100.780456 }, tips: '...', type: 'sight' },
+
+    { name: 'Возвращение в Паттайю', date: '15.01.2026', type: 'sea', coords: null, tips: 'Отдых и восстановление сил.' },
+    { name: '16.01.2026 - Пляжинг', date: '16.01.2026', type: 'sea', coords: null, tips: 'Отдых на море.' },
+
+    // ... другие блоки по календарю
+    { name: 'Поездка на Ко Лан', date: '24.01.2026', type: 'sight', coords: null, tips: 'Еще одна поездка на Коралловый остров. Можно исследовать другие пляжи, например, Тиен или Нуал (обезьяний пляж).' },
+    { name: 'Возвращение в Паттайю', date: '25.01.2026', type: 'sea', coords: null, tips: 'Отдых после поездки на Ко Лан и сбор чемоданов.' },
+];
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
