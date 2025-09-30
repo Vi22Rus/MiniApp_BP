@@ -1,4 +1,4 @@
-// Version: 1.7.0 | Lines: 1070
+// Version: 1.7.1 | Lines: 1090
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -42,90 +42,116 @@ function formatDateForAPI(dateStr) {
 
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
+
+  // Проверка кэша
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
     return weatherCache[apiDate];
   }
+
   try {
+    // Open-Meteo API для температуры воздуха
     const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
+
+    // Marine Weather API для температуры воды
     const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-    const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
+
+    const [airResponse, waterResponse] = await Promise.all([
+      fetch(airTempUrl),
+      fetch(waterTempUrl)
+    ]);
+
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
-    const airTemp = airData.daily?.temperature_2m_max?.[0] || null;
-    const waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
-    const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
+
+    let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
+    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
+
+    // Фолбэк на климатические нормы для Паттайи (декабрь-январь)
+    if (!airTemp || !waterTemp) {
+      console.log(`⚠️ API не вернул данные для ${apiDate}, используются климатические нормы`);
+      const [day, month] = date.split('.');
+      const monthNum = parseInt(month);
+
+      // Климатические нормы для Паттайи по месяцам
+      if (monthNum === 12 || monthNum === 1) {
+        // Декабрь-январь: высокий сезон
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      } else if (monthNum >= 2 && monthNum <= 4) {
+        // Февраль-апрель: жаркий сезон
+        airTemp = airTemp || 32;
+        waterTemp = waterTemp || 29;
+      } else if (monthNum >= 5 && monthNum <= 10) {
+        // Май-октябрь: сезон дождей
+        airTemp = airTemp || 29;
+        waterTemp = waterTemp || 29;
+      } else {
+        // Ноябрь
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      }
+    }
+
+    const result = {
+      airTemp: airTemp ? Math.round(airTemp) : null,
+      waterTemp: waterTemp ? Math.round(waterTemp) : null
+    };
+
+    // Сохранение в кэш
     weatherCache[apiDate] = result;
-    console.log(`✓ Погода получена для ${apiDate}:`, result);
+    console.log(`✓ Погода для ${apiDate}:`, result);
+
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
-    return { airTemp: null, waterTemp: null };
+    // Фолбэк на стандартные значения при ошибке
+    return { airTemp: 30, waterTemp: 28 };
   }
 }
 
 
-
-async function setStorageItem(key, value, callback) {
+async function setStorageItem(key, value) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).set(value);
-            console.log('✅ Firebase: сохранено', key);
-            if (callback) callback();
+            console.log('✓ Firebase: сохранено', key);
+            return;
         } catch (error) {
-            console.error('✗ Firebase ошибка сохранения:', error);
-            localStorage.setItem(key, value);
-            console.log('✅ localStorage: сохранено', key);
-            if (callback) callback();
+            console.error('✗ Firebase save error:', error);
         }
-    } else {
-        localStorage.setItem(key, value);
-        console.log('✅ localStorage: сохранено', key);
-        if (callback) callback();
     }
+    localStorage.setItem(key, value);
 }
-async function getStorageItem(key, callback) {
+
+async function getStorageItem(key) {
     if (firebaseDatabase) {
         try {
             const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
-            const value = snapshot.val();
-            if (value) {
-                console.log('✅ Firebase: загружено', key);
-                if (callback) callback(value);
-                return value;
-            } else {
-                const localValue = localStorage.getItem(key);
-                if (localValue && callback) callback(localValue);
-                return localValue;
+            if (snapshot.exists()) {
+                console.log('✓ Firebase: загружено', key);
+                return snapshot.val();
             }
         } catch (error) {
-            console.error('✗ Firebase ошибка загрузки:', error);
-            const localValue = localStorage.getItem(key);
-            if (localValue && callback) callback(localValue);
-            return localValue;
+            console.error('✗ Firebase load error:', error);
         }
-    } else {
-        const value = localStorage.getItem(key);
-        if (value && callback) callback(value);
-        return value;
     }
+    return localStorage.getItem(key);
 }
-async function removeStorageItem(key, callback) {
+
+async function removeStorageItem(key) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).remove();
-            console.log('✅ Firebase: удалено', key);
-            if (callback) callback();
+            console.log('✓ Firebase: удалено', key);
+            return;
         } catch (error) {
-            console.error('✗ Firebase ошибка удаления:', error);
-            localStorage.removeItem(key);
-            if (callback) callback();
+            console.error('✗ Firebase delete error:', error);
         }
-    } else {
-        localStorage.removeItem(key);
-        if (callback) callback();
     }
-}// ===== END FIREBASE =====
+    localStorage.removeItem(key);
+}
+// ===== END FIREBASE =====
 
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
