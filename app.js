@@ -1,4 +1,4 @@
-// Version: 1.7.4 | Lines: 1070
+// Version: 1.7.5 | Lines: 1095
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -52,15 +52,33 @@ async function fetchWeatherData(date) {
     const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
-    const airTemp = airData.daily?.temperature_2m_max?.[0] || null;
-    const waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
+    let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
+    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
+
+    // Фолбэк на климатические нормы
+    if (!airTemp || !waterTemp) {
+      const [day, month] = date.split('.');
+      const monthNum = parseInt(month);
+      if (monthNum === 12 || monthNum === 1) {
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      } else if (monthNum >= 2 && monthNum <= 4) {
+        airTemp = airTemp || 32;
+        waterTemp = waterTemp || 29;
+      } else if (monthNum >= 5 && monthNum <= 10) {
+        airTemp = airTemp || 29;
+        waterTemp = waterTemp || 29;
+      } else {
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      }
+    }
     const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
     weatherCache[apiDate] = result;
-    console.log(`✓ Погода получена для ${apiDate}:`, result);
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
-    return { airTemp: null, waterTemp: null };
+    return { airTemp: 30, waterTemp: 28 };
   }
 }
 
@@ -646,6 +664,8 @@ const kidsLeisure = [
         tips: 'Однодневная поездка на Коралловый остров - жемчужину Сиамского залива! Кристально чистая вода, белоснежные пляжи Таваен и Самае, мелководье идеально для детей. Выезд в 07:30 с пирса Бали Хай, паром 45 минут (30฿). На острове: пляжный отдых, снорклинг, обед из морепродуктов. Возвращение в 16:00. Взять: солнцезащитный крем SPF50+, панамки, нарукавники для ребенка, питьевую воду. Общие расходы: ~1,500฿ на семью. Незабываемые впечатления гарантированы!',
         type: 'sight'
     }
+,
+    { name: '🧪 ТЕСТ API', date: '02.10.2025', coords: null, tips: 'Тестовый блок Weather API + Firebase', type: 'sea' }
 ];
 
 // ОБНОВЛЕННАЯ функция generateBeachDays - исключаем 14.01.2026 для Ко Лана
@@ -699,7 +719,12 @@ function handleCardClick(activityName, date, type) {
     if (type === 'sea') {
         openDailyPlanModal(activityName, date);
     } else if (type === 'sight') {
-        showPlaceModal(activityName);
+        const activity = activities.find(a => a.name === activityName && a.date === date);
+        if (activity) {
+            showPlaceModal(activity);
+        } else {
+            console.error('Активность не найдена:', activityName, date);
+        }
     }
 }
 
@@ -723,10 +748,10 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><p>${a.date}</p><h3>${icon}${a.name}</h3>${priceLine}<div class="weather" data-date="${a.date}"></div>${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загрузка температуры для ВСЕХ активностей
+    // Загружаем температуру для всех активностей
     list.forEach(async (activity) => {
         const weather = await fetchWeatherData(activity.date);
         const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
@@ -758,14 +783,19 @@ function bindDetailButtons() {
 function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
-    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-    const to = `${place.coords.lat},${place.coords.lng}`;
+
+    if (place.coords) {
+        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+        const to = `${place.coords.lat},${place.coords.lng}`;
     content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
     if (userCoords) {
         const userFrom = `${userCoords[0]},${userCoords[1]}`;
         content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
         const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+    }
+        } else {
+        content += `<p>📍 Координаты не указаны</p>`;
     }
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
@@ -938,98 +968,10 @@ function autoSavePlan(input) {
 }
 
 function setStorageItem(key, value, callback = null) {
-    const data = {
-        action: 'set',
-        key: key,
-        value: value
     };
     
-    fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Saved to Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        localStorage.setItem(key, value);
-        console.log('📱 Saved to localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
-}
-
-function getStorageItem(key, callback) {
-    const data = {
-        action: 'get',
         key: key
     };
-    
-    fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Loaded from Google Sheets (shared)');
-            callback(result.value || '');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        const fallbackValue = localStorage.getItem(key) || '';
-        console.log('📱 Loaded from localStorage (Sheets fallback)');
-        callback(fallbackValue);
-    });
-}
-
-function removeStorageItem(key, callback = null) {
-    const data = {
-        action: 'delete',
-        key: key
-    };
-    
-    fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Deleted from Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        localStorage.removeItem(key);
-        console.log('📱 Deleted from localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
-}
-
-function showContactModal(contact) {
-    let content = `<h3>${contact.icon} ${contact.name}</h3>`;
     
     if (contact.coords) {
         const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
