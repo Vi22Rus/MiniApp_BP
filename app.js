@@ -158,7 +158,6 @@ function getDistance([lat1, lon1], [lat2, lon2]) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadWeatherData();
     try {
         initApp();
     } catch (e) {
@@ -469,49 +468,21 @@ function showParkModal(park) {
 }
 
 // ОБНОВЛЕННЫЙ массив kidsLeisure с поездкой на Ко Лан
-
 // ==================== ПОГОДА ====================
-let weatherData = {};
-
-async function loadWeatherData() {
-    try {
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=12.9236&longitude=100.8825&daily=temperature_2m_max,temperature_2m_min&timezone=Asia/Bangkok&start_date=2026-01-01&end_date=2026-01-31';
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.daily && data.daily.time) {
-            data.daily.time.forEach((date, index) => {
-                const dateStr = date.split('-').reverse().join('.');
-                const maxTemp = Math.round(data.daily.temperature_2m_max[index]);
-                const minTemp = Math.round(data.daily.temperature_2m_min[index]);
-                const avgTemp = Math.round((maxTemp + minTemp) / 2);
-
-                weatherData[dateStr] = { air: avgTemp, water: 27 };
-            });
-        }
-    } catch (error) {
-        // Fallback данные
-        weatherData = {
-            '01.01.2026':{air:30,water:28},'02.01.2026':{air:29,water:28},'03.01.2026':{air:30,water:28},
-            '04.01.2026':{air:30,water:28},'05.01.2026':{air:31,water:28},'06.01.2026':{air:30,water:28},
-            '07.01.2026':{air:30,water:28},'08.01.2026':{air:30,water:28},'09.01.2026':{air:30,water:28},
-            '10.01.2026':{air:30,water:27},'11.01.2026':{air:29,water:27},'12.01.2026':{air:28,water:27},
-            '13.01.2026':{air:29,water:27},'14.01.2026':{air:30,water:27},'15.01.2026':{air:31,water:27},
-            '16.01.2026':{air:30,water:27},'17.01.2026':{air:30,water:26},'18.01.2026':{air:31,water:26},
-            '19.01.2026':{air:30,water:26},'20.01.2026':{air:30,water:27},'21.01.2026':{air:30,water:26},
-            '22.01.2026':{air:29,water:26},'23.01.2026':{air:30,water:26},'24.01.2026':{air:30,water:26},
-            '25.01.2026':{air:30,water:27},'26.01.2026':{air:30,water:27},'27.01.2026':{air:31,water:27},
-            '28.01.2026':{air:30,water:27},'29.01.2026':{air:30,water:26},'30.01.2026':{air:30,water:26},
-            '31.01.2026':{air:30,water:27}
-        };
-    }
-}
-
-function getWeatherHTML(date) {
-    if (!weatherData[date]) return '';
-    const w = weatherData[date];
-    return `<div style="display:flex;gap:10px;margin:8px 0;font-size:13px;color:#666;"><span>🌡️ ${w.air}°C</span><span>🌊 ${w.water}°C</span></div>`;
-}
+let weatherData = {
+'01.01.2026':{air:30,water:28},'02.01.2026':{air:29,water:28},'03.01.2026':{air:30,water:28},
+'04.01.2026':{air:30,water:28},'05.01.2026':{air:31,water:28},'06.01.2026':{air:30,water:28},
+'07.01.2026':{air:30,water:28},'08.01.2026':{air:30,water:28},'09.01.2026':{air:30,water:28},
+'10.01.2026':{air:30,water:27},'11.01.2026':{air:29,water:27},'12.01.2026':{air:28,water:27},
+'13.01.2026':{air:29,water:27},'14.01.2026':{air:30,water:27},'15.01.2026':{air:31,water:27},
+'16.01.2026':{air:30,water:27},'17.01.2026':{air:30,water:26},'18.01.2026':{air:31,water:26},
+'19.01.2026':{air:30,water:26},'20.01.2026':{air:30,water:27},'21.01.2026':{air:30,water:26},
+'22.01.2026':{air:29,water:26},'23.01.2026':{air:30,water:26},'24.01.2026':{air:30,water:26},
+'25.01.2026':{air:30,water:27},'26.01.2026':{air:30,water:27},'27.01.2026':{air:31,water:27},
+'28.01.2026':{air:30,water:27},'29.01.2026':{air:30,water:26},'30.01.2026':{air:30,water:26},
+'31.01.2026':{air:30,water:27}
+};
+function getWeatherHTML(date){if(!weatherData[date])return '';const w=weatherData[date];return `<div style="display:flex;gap:10px;margin:8px 0;font-size:13px;color:#666;"><span>🌡️ ${w.air}°C</span><span>🌊 ${w.water}°C</span></div>`;}
 // ==================== КОНЕЦ ПОГОДЫ ====================
 
 const kidsLeisure = [
@@ -644,8 +615,8 @@ function renderActivities(list) {
             `<button class="details daily-plan-btn" data-name="${a.name}" data-date="${a.date}">Планы на день</button>` :
             (a.coords ? `<button class="details" data-name="${a.name}" data-date="${a.date}">Подробнее</button>` : '');
         
-        return `<div class="${cardClass}"><h3>${icon}${a.name}</h3><p>${a.date}</p>
-                    ${getWeatherHTML(a.date)}${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class="${cardClass}"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${buttonHtml}
+                ${getWeatherHTML(a.date)}</div>`;
     }).join('');
     bindDetailButtons();
 }
