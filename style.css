@@ -1,5 +1,5 @@
 /* Version: 1.1.2 | Lines: 315 + 70 */
-/* Last updated: 2025-09-26 */
+/* Last updated: 2025-09-30 */
 /* Версия CSS: style.css (385 строк) */
 
 :root {
@@ -165,6 +165,14 @@ body {
 .price-label {
   color: #d81b60;
 }
+
+.price {
+  color: #d81b60;
+  font-weight: 600;
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
 
 .distance-tag {
   font-size: 0.85rem;
