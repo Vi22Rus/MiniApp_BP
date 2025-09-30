@@ -1,4 +1,4 @@
-// Version: 1.7.0 | Lines: 1070
+// Version: 1.7.1 | Lines: 1090
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -42,28 +42,73 @@ function formatDateForAPI(dateStr) {
 
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
+
+  // Проверка кэша
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
     return weatherCache[apiDate];
   }
+
   try {
+    // Open-Meteo API для температуры воздуха
     const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
+
+    // Marine Weather API для температуры воды
     const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-    const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
+
+    const [airResponse, waterResponse] = await Promise.all([
+      fetch(airTempUrl),
+      fetch(waterTempUrl)
+    ]);
+
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
-    const airTemp = airData.daily?.temperature_2m_max?.[0] || null;
-    const waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
-    const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
+
+    let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
+    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
+
+    // Фолбэк на климатические нормы для Паттайи (декабрь-январь)
+    if (!airTemp || !waterTemp) {
+      console.log(`⚠️ API не вернул данные для ${apiDate}, используются климатические нормы`);
+      const [day, month] = date.split('.');
+      const monthNum = parseInt(month);
+
+      // Климатические нормы для Паттайи по месяцам
+      if (monthNum === 12 || monthNum === 1) {
+        // Декабрь-январь: высокий сезон
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      } else if (monthNum >= 2 && monthNum <= 4) {
+        // Февраль-апрель: жаркий сезон
+        airTemp = airTemp || 32;
+        waterTemp = waterTemp || 29;
+      } else if (monthNum >= 5 && monthNum <= 10) {
+        // Май-октябрь: сезон дождей
+        airTemp = airTemp || 29;
+        waterTemp = waterTemp || 29;
+      } else {
+        // Ноябрь
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      }
+    }
+
+    const result = {
+      airTemp: airTemp ? Math.round(airTemp) : null,
+      waterTemp: waterTemp ? Math.round(waterTemp) : null
+    };
+
+    // Сохранение в кэш
     weatherCache[apiDate] = result;
-    console.log(`✓ Погода получена для ${apiDate}:`, result);
+    console.log(`✓ Погода для ${apiDate}:`, result);
+
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
-    return { airTemp: null, waterTemp: null };
+    // Фолбэк на стандартные значения при ошибке
+    return { airTemp: 30, waterTemp: 28 };
   }
 }
-
 
 
 async function setStorageItem(key, value) {
@@ -699,12 +744,7 @@ function handleCardClick(activityName, date, type) {
     if (type === 'sea') {
         openDailyPlanModal(activityName, date);
     } else if (type === 'sight') {
-        const activity = activities.find(a => a.name === activityName && a.date === date);
-        if (activity) {
-            showPlaceModal(activity);
-        } else {
-            console.error('Активность не найдена:', activityName, date);
-        }
+        showPlaceModal(activityName);
     }
 }
 
@@ -731,6 +771,7 @@ function renderActivities(list) {
         return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
+    // Загрузка погоды для активностей
     list.forEach(async (activity) => {
         if (activity.type === 'sea' || activity.type === 'pool') {
             const weather = await fetchWeatherData(activity.date);
@@ -764,10 +805,8 @@ function bindDetailButtons() {
 function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
-
-    if (place.coords) {
-        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-        const to = `${place.coords.lat},${place.coords.lng}`;
+    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+    const to = `${place.coords.lat},${place.coords.lng}`;
     content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
     if (userCoords) {
         const userFrom = `${userCoords[0]},${userCoords[1]}`;
@@ -775,10 +814,7 @@ function showPlaceModal(place) {
         const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-    } else {
-        content += `<p>📍 Координаты не указаны</p>`;
-    }
-        document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
 
