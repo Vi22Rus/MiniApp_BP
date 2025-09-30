@@ -2,7 +2,7 @@
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
-// ===== FIREBASE CONFIGURATION =====
+// ===== FIREBASE CONFIGURAT ION =====
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
   authDomain: "pattaya-plans-app.firebaseapp.com",
