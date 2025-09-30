@@ -1,5 +1,5 @@
-// Version: 1.9.0 | Lines: 805
-// Удалены все storage-функции, внефункциональный async 2025-09-30
+// Version: 1.9.1 | Lines: 940
+// Исправлено: async для fetchWeatherData() (требуется для await) 2025-09-30
 // Version: 1.8.0 | Lines: 1095
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
@@ -41,7 +41,8 @@ function formatDateForAPI(dateStr) {
   const [day, month, year] = dateStr.split('.');
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
- function fetchWeatherData(date) {
+
+async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
@@ -82,9 +83,58 @@ function formatDateForAPI(dateStr) {
     return { airTemp: 30, waterTemp: 28 };
   }
 }
- 
- 
- 
+
+
+
+async function setStorageItem(key, value, callback = null) {
+    if (firebaseDatabase) {
+        try {
+            await firebaseDatabase.ref('dailyPlans/' + key).set(value);
+            console.log('✅ Firebase: сохранено', key);
+            if (callback) callback();
+        } catch (error) {
+            console.error('✗ Firebase save error:', error);
+            localStorage.setItem(key, value);
+            if (callback) callback();
+        }
+    } else {
+        localStorage.setItem(key, value);
+        if (callback) callback();
+    }
+}
+
+async function getStorageItem(key) {
+    if (firebaseDatabase) {
+        try {
+            const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
+            if (snapshot.exists()) {
+                console.log('✅ Firebase: загружено', key);
+                return snapshot.val();
+            }
+        } catch (error) {
+            console.error('✗ Firebase load error:', error);
+        }
+    }
+    return localStorage.getItem(key);
+}
+
+async function removeStorageItem(key, callback = null) {
+    if (firebaseDatabase) {
+        try {
+            await firebaseDatabase.ref('dailyPlans/' + key).remove();
+            console.log('✅ Firebase: удалено', key);
+            if (callback) callback();
+        } catch (error) {
+            console.error('✗ Firebase delete error:', error);
+            localStorage.removeItem(key);
+            if (callback) callback();
+        }
+    } else {
+        localStorage.removeItem(key);
+        if (callback) callback();
+    }
+}
+
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
@@ -782,8 +832,93 @@ function autoSavePlan(input) {
     }
 }
 
+function setStorageItem(key, value, callback = null) {
+    const data = {
+        action: 'set',
+        key: key,
+        value: value
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Saved to Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.setItem(key, value);
+        console.log('📱 Saved to localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
+}
 
+function getStorageItem(key, callback) {
+    const data = {
+        action: 'get',
+        key: key
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Loaded from Google Sheets (shared)');
+            callback(result.value || '');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        const fallbackValue = localStorage.getItem(key) || '';
+        console.log('📱 Loaded from localStorage (Sheets fallback)');
+        callback(fallbackValue);
+    });
+}
 
+function removeStorageItem(key, callback = null) {
+    const data = {
+        action: 'delete',
+        key: key
+    };
+    
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Deleted from Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.removeItem(key);
+        console.log('📱 Deleted from localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
+}
 
 function showContactModal(contact) {
     let content = `<h3>${contact.icon} ${contact.name}</h3>`;
