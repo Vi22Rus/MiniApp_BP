@@ -1,5 +1,7 @@
-// Version: 1.9.0 | Lines: 1102 | Last updated: 2025-09-30
-// Pattaya planner — core logic (Firebase-only persistence)
+// Version: 1.8.2 | Lines: 851 (after edit)
+// Изменения: удалён устаревший код интеграции с Google Sheets (set/get/removeStorageItem) 2025-09-30
+// Last updated: 2025-09-30
+// Версия скрипта: app.js (1000 строк) - Все изменения применены
 
 // ===== FIREBASE CONFIGURATION =====
 const firebaseConfig = {
@@ -7,7 +9,7 @@ const firebaseConfig = {
   authDomain: "pattaya-plans-app.firebaseapp.com",
   databaseURL: "https://pattaya-plans-app-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "pattaya-plans-app",
-  storageBucket: "pattaya-plans-app.appspot.com",
+  storageBucket: "pattaya-plans-app.firebasestorage.app",
   messagingSenderId: "152286016885",
   appId: "1:152286016885:web:dd389c8294b7c744d04f3c"
 };
@@ -16,17 +18,17 @@ let firebaseApp;
 let firebaseDatabase;
 
 function initFirebase() {
-  try {
-    if (typeof firebase !== "undefined") {
-      firebaseApp = firebase.initializeApp(firebaseConfig);
-      firebaseDatabase = firebase.database();
-      console.log("✓ Firebase инициализирован");
-    } else {
-      console.warn("⚠ Firebase SDK не загружен → fallback на localStorage");
+    try {
+        if (typeof firebase !== 'undefined') {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+            firebaseDatabase = firebase.database();
+            console.log('✓ Firebase инициализирован');
+        } else {
+            console.warn('⚠ Firebase SDK не загружен');
+        }
+    } catch (error) {
+        console.error('✗ Ошибка Firebase:', error);
     }
-  } catch (error) {
-    console.error("✗ Ошибка инициализации Firebase:", error);
-  }
 }
 
 // ===== WEATHER API CONFIGURATION =====
@@ -35,102 +37,103 @@ const PATTAYA_LON = 100.8825;
 let weatherCache = {};
 
 function formatDateForAPI(dateStr) {
-  const [day, month, year] = dateStr.split(".");
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  const [day, month, year] = dateStr.split('.');
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
-  if (weatherCache[apiDate]) return weatherCache[apiDate];
-
+  if (weatherCache[apiDate]) {
+    console.log(`✓ Погода взята из кэша для ${apiDate}`);
+    return weatherCache[apiDate];
+  }
   try {
-    const airUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-    const waterUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-    const [airRes, waterRes] = await Promise.all([fetch(airUrl), fetch(waterUrl)]);
-    const airData = await airRes.json();
-    const waterData = await waterRes.json();
+    const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
+    const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
+    const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
+    const airData = await airResponse.json();
+    const waterData = await waterResponse.json();
+    let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
+    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
 
-    let airTemp = airData.daily?.temperature_2m_max?.[0] ?? null;
-    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] ?? null;
-
-    // Fallback на климатические нормы
+    // Фолбэк на климатические нормы
     if (!airTemp || !waterTemp) {
-      const month = +date.split(".")[1];
-      if (month === 12 || month === 1) { airTemp ??= 30; waterTemp ??= 28; }
-      else if (month >= 2 && month <= 4) { airTemp ??= 32; waterTemp ??= 29; }
-      else if (month >= 5 && month <= 10) { airTemp ??= 29; waterTemp ??= 29; }
-      else { airTemp ??= 30; waterTemp ??= 28; }
+      const [day, month] = date.split('.');
+      const monthNum = parseInt(month);
+      if (monthNum === 12 || monthNum === 1) {
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      } else if (monthNum >= 2 && monthNum <= 4) {
+        airTemp = airTemp || 32;
+        waterTemp = waterTemp || 29;
+      } else if (monthNum >= 5 && monthNum <= 10) {
+        airTemp = airTemp || 29;
+        waterTemp = waterTemp || 29;
+      } else {
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
+      }
     }
-
-    const result = { airTemp: Math.round(airTemp), waterTemp: Math.round(waterTemp) };
+    const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
     weatherCache[apiDate] = result;
     return result;
-  } catch (e) {
-    console.error("✗ Ошибка получения погоды:", e);
+  } catch (error) {
+    console.error('✗ Ошибка получения погоды:', error);
     return { airTemp: 30, waterTemp: 28 };
   }
 }
 
-// ===== PERSISTENCE HELPERS (Firebase → localStorage) =====
-async function setStorageItem(key, value, cb = null) {
-  try {
+
+
+async function setStorageItem(key, value, callback = null) {
     if (firebaseDatabase) {
-      await firebaseDatabase.ref("dailyPlans/" + key).set(value);
-      console.log("✅ Firebase сохранено:", key);
+        try {
+            await firebaseDatabase.ref('dailyPlans/' + key).set(value);
+            console.log('✅ Firebase: сохранено', key);
+            if (callback) callback();
+        } catch (error) {
+            console.error('✗ Firebase save error:', error);
+            localStorage.setItem(key, value);
+            if (callback) callback();
+        }
     } else {
-      localStorage.setItem(key, value);
-      console.log("⚠ Firebase недоступен → saved local:", key);
+        localStorage.setItem(key, value);
+        if (callback) callback();
     }
-  } catch (e) {
-    console.error("✗ Firebase save error:", e);
-    localStorage.setItem(key, value);
-  } finally {
-    if (cb) cb();
-  }
 }
 
 async function getStorageItem(key) {
-  try {
     if (firebaseDatabase) {
-      const snap = await firebaseDatabase.ref("dailyPlans/" + key).once("value");
-      if (snap.exists()) return snap.val();
+        try {
+            const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
+            if (snapshot.exists()) {
+                console.log('✅ Firebase: загружено', key);
+                return snapshot.val();
+            }
+        } catch (error) {
+            console.error('✗ Firebase load error:', error);
+        }
     }
-  } catch (e) {
-    console.error("✗ Firebase load error:", e);
-  }
-  return localStorage.getItem(key);
+    return localStorage.getItem(key);
 }
 
-async function removeStorageItem(key, cb = null) {
-  try {
+async function removeStorageItem(key, callback = null) {
     if (firebaseDatabase) {
-      await firebaseDatabase.ref("dailyPlans/" + key).remove();
-      console.log("✅ Firebase удалено:", key);
+        try {
+            await firebaseDatabase.ref('dailyPlans/' + key).remove();
+            console.log('✅ Firebase: удалено', key);
+            if (callback) callback();
+        } catch (error) {
+            console.error('✗ Firebase delete error:', error);
+            localStorage.removeItem(key);
+            if (callback) callback();
+        }
     } else {
-      localStorage.removeItem(key);
+        localStorage.removeItem(key);
+        if (callback) callback();
     }
-  } catch (e) {
-    console.error("✗ Firebase delete error:", e);
-    localStorage.removeItem(key);
-  } finally {
-    if (cb) cb();
-  }
 }
 
-// ===== GEO UTIL =====
-function getDistance([lat1, lon1], [lat2, lon2]) {
-  const toRad = d => d * Math.PI / 180;
-  const R = 6_371;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return (R * c).toFixed(1);
-}
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
@@ -826,94 +829,6 @@ function autoSavePlan(input) {
             console.log(`🗑️ Удален пустой план: ${time}`);
         });
     }
-}
-
-function setStorageItem(key, value, callback = null) {
-    const data = {
-        action: 'set',
-        key: key,
-        value: value
-    };
-    
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Saved to Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        localStorage.setItem(key, value);
-        console.log('📱 Saved to localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
-}
-
-function getStorageItem(key, callback) {
-    const data = {
-        action: 'get',
-        key: key
-    };
-    
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Loaded from Google Sheets (shared)');
-            callback(result.value || '');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        const fallbackValue = localStorage.getItem(key) || '';
-        console.log('📱 Loaded from localStorage (Sheets fallback)');
-        callback(fallbackValue);
-    });
-}
-
-function removeStorageItem(key, callback = null) {
-    const data = {
-        action: 'delete',
-        key: key
-    };
-    
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            console.log('✅ Deleted from Google Sheets (shared)');
-        } else {
-            throw new Error('Google Sheets error');
-        }
-        if (callback) callback();
-    })
-    .catch(error => {
-        console.error('Google Sheets error:', error);
-        localStorage.removeItem(key);
-        console.log('📱 Deleted from localStorage (Sheets fallback)');
-        if (callback) callback();
-    });
 }
 
 function showContactModal(contact) {
