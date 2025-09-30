@@ -1,4 +1,4 @@
-// Version: 1.3.2 | Lines: 912 // Last updated: 2025-09-30 // Версия скрипта: app.js (912 строк) - С ОБНОВЛЕННЫМИ ДАТАМИ: 08.01 Аюттайя, 24.01 Ко Лан, добавлены переезды в Паттайю 09.01/15.01/25.01
+// Version: 1.3.1 | Lines: 670
 // Last updated: 2025-09-29
 // Версия скрипта: app.js (670 строк) - С ПОЕЗДКОЙ НА КО ЛАН
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
@@ -540,10 +540,12 @@ function generateBeachDays() {
     const used = kidsLeisure.map(x => x.date);
     const days = [];
     const start = new Date('2025-12-29'), end = new Date('2026-01-26');
+    const returnDates = ['09.01.2026', '15.01.2026', '25.01.2026'];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const date = d.toLocaleDateString('ru-RU');
         if (!used.includes(date)) {
-            days.push({ type: 'sea', name: 'Пляжинг', date, coords: null, tips: 'Отдых на море.' });
+            const name = returnDates.includes(date) ? 'В Паттайю' : 'Пляжинг';
+            days.push({ type: 'sea', name: name, date, coords: null, tips: 'Отдых на море.' });
         }
     }
     return days;
