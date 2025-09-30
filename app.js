@@ -25,7 +25,10 @@ function initFirebase() {
         } else {
             console.warn('⚠ Firebase SDK не загружен');
         }
-
+    } catch (error) {
+        console.error('✗ Ошибка Firebase:', error);
+    }
+}
 
 // ===== WEATHER API CONFIGURATION =====
 const PATTAYA_LAT = 12.9236;
@@ -61,10 +64,7 @@ async function fetchWeatherData(date) {
   }
 }
 
-    } catch (error) {
-        console.error('✗ Ошибка Firebase:', error);
-    }
-}
+
 
 async function setStorageItem(key, value) {
     if (firebaseDatabase) {
@@ -726,6 +726,7 @@ function renderActivities(list) {
         return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
+    // Загрузка погоды для активностей
     list.forEach(async (activity) => {
         if (activity.type === 'sea' || activity.type === 'pool') {
             const weather = await fetchWeatherData(activity.date);
