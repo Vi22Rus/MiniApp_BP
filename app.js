@@ -1,3 +1,7 @@
+// Version: 2.2.0 | Lines: 920
+// Исправлено: Добавлены недостающие переменные homeCoords, activeGeoFilter, allGeoData
+// 2025-09-30
+
 // Version: 2.1.0 | Lines: 910
 // Исправлено: Firebase key sanitization - замена точек на дефисы
 // 2025-09-30
@@ -5,6 +9,12 @@
 // Version: 2.0.0 | Lines: 902
 // Исправлено: Валидация диапазона дат для Weather API (максимум 16 дней)
 // 2025-09-30
+
+// Version: 1.9.1 | Lines: 940
+// Исправлено: async для fetchWeatherData() (требуется для await) 2025-09-30
+// Version: 1.8.0 | Lines: 1095
+// Last updated: 2025-09-30
+// Версия скрипта: app.js (1000 строк) - Все изменения применены
 
 // ===== FIREBASE CONFIGURATION =====
 const firebaseConfig = {
@@ -39,6 +49,40 @@ function initFirebase() {
 const PATTAYA_LAT = 12.9236;
 const PATTAYA_LON = 100.8825;
 let weatherCache = {};
+
+// ===== GEO COORDINATES & DATA =====
+const homeCoords = { lat: 12.9236, lng: 100.8825 }; // Координаты дома в Паттайе
+let activeGeoFilter = 'naklua'; // Активный фильтр геолокации по умолчанию
+const allGeoData = {}; // Объект с данными о местах (заполняется из HTML при инициализации)
+
+
+// Функция для инициализации allGeoData из HTML элементов
+function initAllGeoData() {
+    document.querySelectorAll('.geo-item-btn').forEach(button => {
+        const id = parseInt(button.dataset.id, 10);
+        if (isNaN(id)) return;
+
+        // Извлекаем данные из атрибутов кнопки
+        const name = button.querySelector('strong')?.textContent || 'Unknown';
+        const icon = button.querySelector('.icon')?.textContent || '📍';
+        const link = button.dataset.link || '#';
+        const type = button.dataset.type || 'unknown';
+
+        // Пытаемся извлечь координаты из data-атрибутов или других источников
+        const lat = parseFloat(button.dataset.lat);
+        const lng = parseFloat(button.dataset.lng);
+
+        allGeoData[id] = {
+            name: name,
+            icon: icon,
+            link: link,
+            type: type,
+            coords: !isNaN(lat) && !isNaN(lng) ? [lat, lng] : [12.9236, 100.8825]
+        };
+    });
+    console.log('✓ allGeoData инициализирован:', Object.keys(allGeoData).length, 'мест');
+}
+
 
 function formatDateForAPI(dateStr) {
   const [day, month, year] = dateStr.split('.');
@@ -252,6 +296,7 @@ function initCalendarFilters() {
 }
 
 function initGeoFeatures() {
+    initAllGeoData(); // Инициализация данных о местах
     document.getElementById('locateBtn').addEventListener('click', () => {
         if (!navigator.geolocation) {
             alert('Геолокация не поддерживается.');
