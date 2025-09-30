@@ -1,4 +1,4 @@
-/* Version: 1.1.2 | Lines: 315 + 70 */
+/* Version: 1.2.0 | Lines: 395 */
 /* Last updated: 2025-09-30 */
 /* Версия CSS: style.css (385 строк) */
 
@@ -665,4 +665,13 @@ body {
     height: 40px;
     font-size: 20px;
   }
+}
+
+
+/* Weather display in activity cards */
+.weather {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 4px;
+  font-weight: 500;
 }
