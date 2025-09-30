@@ -771,20 +771,18 @@ function renderActivities(list) {
         return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загрузка погоды для активностей
+    // Загрузка температуры для ВСЕХ активностей
     list.forEach(async (activity) => {
-        if (activity.type === 'sea' || activity.type === 'pool') {
-            const weather = await fetchWeatherData(activity.date);
-            const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
-            weatherDivs.forEach(div => {
-                if (weather.airTemp || weather.waterTemp) {
-                    let weatherText = '';
-                    if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                    if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                    div.textContent = weatherText.trim();
-                }
-            });
-        }
+        const weather = await fetchWeatherData(activity.date);
+        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
+        weatherDivs.forEach(div => {
+            if (weather.airTemp || weather.waterTemp) {
+                let weatherText = '';
+                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
+                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
+                div.textContent = weatherText.trim();
+            }
+        });
     });
     bindDetailButtons();
 }
@@ -985,15 +983,94 @@ function autoSavePlan(input) {
 }
 
 function setStorageItem(key, value, callback = null) {
+    const data = {
+        action: 'set',
+        key: key,
+        value: value
+    };
     
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Saved to Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.setItem(key, value);
+        console.log('📱 Saved to localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
 }
 
 function getStorageItem(key, callback) {
+    const data = {
+        action: 'get',
+        key: key
+    };
     
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Loaded from Google Sheets (shared)');
+            callback(result.value || '');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        const fallbackValue = localStorage.getItem(key) || '';
+        console.log('📱 Loaded from localStorage (Sheets fallback)');
+        callback(fallbackValue);
+    });
 }
 
 function removeStorageItem(key, callback = null) {
+    const data = {
+        action: 'delete',
+        key: key
+    };
     
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('✅ Deleted from Google Sheets (shared)');
+        } else {
+            throw new Error('Google Sheets error');
+        }
+        if (callback) callback();
+    })
+    .catch(error => {
+        console.error('Google Sheets error:', error);
+        localStorage.removeItem(key);
+        console.log('📱 Deleted from localStorage (Sheets fallback)');
+        if (callback) callback();
+    });
 }
 
 function showContactModal(contact) {
