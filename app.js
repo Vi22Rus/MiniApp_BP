@@ -54,23 +54,17 @@ async function fetchWeatherData(date) {
     const waterData = await waterResponse.json();
     let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
     let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
-
-    // Фолбэк на климатические нормы
     if (!airTemp || !waterTemp) {
       const [day, month] = date.split('.');
       const monthNum = parseInt(month);
       if (monthNum === 12 || monthNum === 1) {
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
+        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
       } else if (monthNum >= 2 && monthNum <= 4) {
-        airTemp = airTemp || 32;
-        waterTemp = waterTemp || 29;
+        airTemp = airTemp || 32; waterTemp = waterTemp || 29;
       } else if (monthNum >= 5 && monthNum <= 10) {
-        airTemp = airTemp || 29;
-        waterTemp = waterTemp || 29;
+        airTemp = airTemp || 29; waterTemp = waterTemp || 29;
       } else {
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
+        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
       }
     }
     const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
@@ -718,11 +712,7 @@ function handleCardClick(activityName, date, type) {
         openDailyPlanModal(activityName, date);
     } else if (type === 'sight') {
         const activity = activities.find(a => a.name === activityName && a.date === date);
-        if (activity) {
-            showPlaceModal(activity);
-        } else {
-            console.error('Активность не найдена:', activityName, date);
-        }
+        if (activity) { showPlaceModal(activity); } else { console.error('Активность не найдена:', activityName, date); }
     }
 }
 
@@ -746,7 +736,7 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><p>${a.date}</p><div class="weather" data-date="${a.date}"></div>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
     // Загружаем температуру для всех активностей
@@ -781,7 +771,6 @@ function bindDetailButtons() {
 function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
-
     if (place.coords) {
         const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
         const to = `${place.coords.lat},${place.coords.lng}`;
@@ -792,9 +781,7 @@ function showPlaceModal(place) {
         const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-        } else {
-        content += `<p>📍 Координаты не указаны</p>`;
-    }
+        } else { content += `<p>📍 Координаты не указаны</p>`; }
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
