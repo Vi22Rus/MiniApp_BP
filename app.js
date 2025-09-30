@@ -1,3 +1,7 @@
+// Version: 2.0.0 | Lines: 902
+// Исправлено: Валидация диапазона дат для Weather API (максимум 16 дней)
+// 2025-09-30
+
 // Version: 1.9.1 | Lines: 940
 // Исправлено: async для fetchWeatherData() (требуется для await) 2025-09-30
 // Version: 1.8.0 | Lines: 1095
@@ -45,16 +49,54 @@ function formatDateForAPI(dateStr) {
 
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
+
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
     return weatherCache[apiDate];
   }
+
+  // НОВАЯ ВАЛИДАЦИЯ: Проверяем дату в пределах диапазона прогноза (16 дней)
+  const requestDate = new Date(apiDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const maxForecastDate = new Date(today);
+  maxForecastDate.setDate(today.getDate() + 16);
+
+  // Если дата за пределами диапазона API - возвращаем климатические нормы
+  if (requestDate > maxForecastDate) {
+    console.warn(`⚠ Дата ${apiDate} выходит за пределы прогноза API (макс. 16 дней). Используются климатические нормы.`);
+    const [day, month] = date.split('.');
+    const monthNum = parseInt(month);
+
+    let airTemp, waterTemp;
+    if (monthNum === 12 || monthNum === 1) {
+      airTemp = 30;
+      waterTemp = 28;
+    } else if (monthNum >= 2 && monthNum <= 4) {
+      airTemp = 32;
+      waterTemp = 29;
+    } else if (monthNum >= 5 && monthNum <= 10) {
+      airTemp = 29;
+      waterTemp = 29;
+    } else {
+      airTemp = 30;
+      waterTemp = 28;
+    }
+
+    const result = { airTemp, waterTemp };
+    weatherCache[apiDate] = result;
+    return result;
+  }
+
   try {
     const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
     const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
+
     const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
+
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
+
     let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
     let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
 
@@ -62,6 +104,7 @@ async function fetchWeatherData(date) {
     if (!airTemp || !waterTemp) {
       const [day, month] = date.split('.');
       const monthNum = parseInt(month);
+
       if (monthNum === 12 || monthNum === 1) {
         airTemp = airTemp || 30;
         waterTemp = waterTemp || 28;
@@ -76,16 +119,20 @@ async function fetchWeatherData(date) {
         waterTemp = waterTemp || 28;
       }
     }
-    const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
+
+    const result = {
+      airTemp: airTemp ? Math.round(airTemp) : null,
+      waterTemp: waterTemp ? Math.round(waterTemp) : null
+    };
+
     weatherCache[apiDate] = result;
     return result;
+
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
     return { airTemp: 30, waterTemp: 28 };
   }
 }
-
-
 
 async function setStorageItem(key, value, callback = null) {
     if (firebaseDatabase) {
