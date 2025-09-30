@@ -15,6 +15,7 @@ const firebaseConfig = {
   appId: "1:152286016885:web:dd389c8294b7c744d04f3c"
 };
 
+let userCoords = null;
 let firebaseApp;
 let firebaseDatabase;
 
