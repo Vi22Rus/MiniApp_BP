@@ -1,11 +1,88 @@
-// Version: 1.4.0 | Lines: 926
+// Version: 1.5.0 | Lines: 1004
 // Last updated: 2025-09-30
-// Версия скрипта: app.js (926 строк) - ОБНОВЛЕНО: изменены даты активностей
+// Версия скрипта: app.js (1004 строк) - Firebase Realtime Database + изменения дат
+
+// ===== FIREBASE CONFIGURATION =====
+// Подключение Firebase SDK через CDN (будет загружено из index.html)
+// Firebase конфигурация
+const firebaseConfig = {
+  apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
+  authDomain: "pattaya-plans-app.firebaseapp.com",
+  databaseURL: "https://pattaya-plans-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pattaya-plans-app",
+  storageBucket: "pattaya-plans-app.firebasestorage.app",
+  messagingSenderId: "152286016885",
+  appId: "1:152286016885:web:dd389c8294b7c744d04f3c"
+};
+
+// Инициализация Firebase (выполняется автоматически при загрузке)
+let firebaseApp;
+let firebaseDatabase;
+
+function initFirebase() {
+    try {
+        if (typeof firebase !== 'undefined') {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+            firebaseDatabase = firebase.database();
+            console.log('✓ Firebase инициализирован успешно');
+        } else {
+            console.warn('⚠ Firebase SDK не загружен');
+        }
+    } catch (error) {
+        console.error('✗ Ошибка инициализации Firebase:', error);
+    }
+}
+
+// Функции работы с Firebase
+async function setStorageItem(key, value) {
+    if (firebaseDatabase) {
+        try {
+            await firebaseDatabase.ref('dailyPlans/' + key).set(value);
+            console.log('✓ Firebase: сохранено', key);
+            return;
+        } catch (error) {
+            console.error('✗ Firebase: ошибка сохранения', error);
+        }
+    }
+    // Fallback to localStorage
+    localStorage.setItem(key, value);
+}
+
+async function getStorageItem(key) {
+    if (firebaseDatabase) {
+        try {
+            const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
+            if (snapshot.exists()) {
+                console.log('✓ Firebase: загружено', key);
+                return snapshot.val();
+            }
+        } catch (error) {
+            console.error('✗ Firebase: ошибка чтения', error);
+        }
+    }
+    // Fallback to localStorage
+    return localStorage.getItem(key);
+}
+
+async function removeStorageItem(key) {
+    if (firebaseDatabase) {
+        try {
+            await firebaseDatabase.ref('dailyPlans/' + key).remove();
+            console.log('✓ Firebase: удалено', key);
+            return;
+        } catch (error) {
+            console.error('✗ Firebase: ошибка удаления', error);
+        }
+    }
+    // Fallback to localStorage
+    localStorage.removeItem(key);
+}
+// ===== END FIREBASE CONFIGURATION =====
+
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
 let activeGeoFilter = 'naklua';
 
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxzkVcKcnBmHniTJI2eOx8BOQhyF8rdrTvbEuBLcv7Xl8B2KK6U4ZfLeU888Yl22xo3/exec';
 
 const allGeoData = [
     // Кафе (0-14) - БЕЗ ИЗМЕНЕНИЙ
@@ -166,6 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
+    initFirebase();
+
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
@@ -547,7 +626,6 @@ function generateBeachDays() {
     const days = [];
     const start = new Date('2025-12-29'), end = new Date('2026-01-26');
 
-    // Специальные даты "В Паттайю"
     const transferDates = ['09.01.2026', '15.01.2026', '25.01.2026'];
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
