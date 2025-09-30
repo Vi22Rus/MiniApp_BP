@@ -25,11 +25,6 @@ function initFirebase() {
         } else {
             console.warn('⚠ Firebase SDK не загружен');
         }
-    } catch (error) {
-        console.error('✗ Ошибка Firebase:', error);
-    }
-}
-
 
 
 // ===== WEATHER API CONFIGURATION =====
@@ -37,54 +32,38 @@ const PATTAYA_LAT = 12.9236;
 const PATTAYA_LON = 100.8825;
 let weatherCache = {};
 
-// Функция форматирования даты для API (YYYY-MM-DD)
 function formatDateForAPI(dateStr) {
   const [day, month, year] = dateStr.split('.');
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
-// Функция получения погоды через Open-Meteo API
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
-
-  // Проверка кэша
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
     return weatherCache[apiDate];
   }
-
   try {
-    // Open-Meteo API для температуры воздуха
     const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-
-    // Marine Weather API для температуры воды
     const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-
-    const [airResponse, waterResponse] = await Promise.all([
-      fetch(airTempUrl),
-      fetch(waterTempUrl)
-    ]);
-
+    const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
-
     const airTemp = airData.daily?.temperature_2m_max?.[0] || null;
     const waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
-
-    const result = {
-      airTemp: airTemp ? Math.round(airTemp) : null,
-      waterTemp: waterTemp ? Math.round(waterTemp) : null
-    };
-
-    // Сохранение в кэш
+    const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
     weatherCache[apiDate] = result;
     console.log(`✓ Погода получена для ${apiDate}:`, result);
-
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
     return { airTemp: null, waterTemp: null };
   }
+}
+
+    } catch (error) {
+        console.error('✗ Ошибка Firebase:', error);
+    }
 }
 
 async function setStorageItem(key, value) {
@@ -744,20 +723,21 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загрузка погоды для каждой активности
     list.forEach(async (activity) => {
-        const weatherDiv = document.getElementById(`weather-${activity.date}`);
-        if (weatherDiv && (activity.type === 'sea' || activity.type === 'pool')) {
+        if (activity.type === 'sea' || activity.type === 'pool') {
             const weather = await fetchWeatherData(activity.date);
-            if (weather.airTemp || weather.waterTemp) {
-                let weatherText = '';
-                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                weatherDiv.textContent = weatherText.trim();
-            }
+            const weatherDivs = document.querySelectorAll(\`.weather[data-date="\${activity.date}"]\`);
+            weatherDivs.forEach(div => {
+                if (weather.airTemp || weather.waterTemp) {
+                    let weatherText = '';
+                    if (weather.airTemp) weatherText += \`🌡️ \${weather.airTemp}°C \`;
+                    if (weather.waterTemp) weatherText += \`🌊 \${weather.waterTemp}°C\`;
+                    div.textContent = weatherText.trim();
+                }
+            });
         }
     });
     bindDetailButtons();
