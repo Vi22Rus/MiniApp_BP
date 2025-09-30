@@ -1,12 +1,10 @@
+// Version: 2.1.0 | Lines: 910
+// Исправлено: Firebase key sanitization - замена точек на дефисы
+// 2025-09-30
+
 // Version: 2.0.0 | Lines: 902
 // Исправлено: Валидация диапазона дат для Weather API (максимум 16 дней)
 // 2025-09-30
-
-// Version: 1.9.1 | Lines: 940
-// Исправлено: async для fetchWeatherData() (требуется для await) 2025-09-30
-// Version: 1.8.0 | Lines: 1095
-// Last updated: 2025-09-30
-// Версия скрипта: app.js (1000 строк) - Все изменения применены
 
 // ===== FIREBASE CONFIGURATION =====
 const firebaseConfig = {
@@ -134,11 +132,18 @@ async function fetchWeatherData(date) {
   }
 }
 
+// ИСПРАВЛЕНИЕ: Замена точек на дефисы для совместимости с Firebase
+function sanitizeKeyForFirebase(key) {
+  // Заменяем точки на дефисы
+  return key.replace(/\./g, '-');
+}
+
 async function setStorageItem(key, value, callback = null) {
+    const sanitizedKey = sanitizeKeyForFirebase(key);
     if (firebaseDatabase) {
         try {
-            await firebaseDatabase.ref('dailyPlans/' + key).set(value);
-            console.log('✅ Firebase: сохранено', key);
+            await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).set(value);
+            console.log('✅ Firebase: сохранено', sanitizedKey);
             if (callback) callback();
         } catch (error) {
             console.error('✗ Firebase save error:', error);
@@ -152,11 +157,12 @@ async function setStorageItem(key, value, callback = null) {
 }
 
 async function getStorageItem(key) {
+    const sanitizedKey = sanitizeKeyForFirebase(key);
     if (firebaseDatabase) {
         try {
-            const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
+            const snapshot = await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).once('value');
             if (snapshot.exists()) {
-                console.log('✅ Firebase: загружено', key);
+                console.log('✅ Firebase: загружено', sanitizedKey);
                 return snapshot.val();
             }
         } catch (error) {
@@ -167,10 +173,11 @@ async function getStorageItem(key) {
 }
 
 async function removeStorageItem(key, callback = null) {
+    const sanitizedKey = sanitizeKeyForFirebase(key);
     if (firebaseDatabase) {
         try {
-            await firebaseDatabase.ref('dailyPlans/' + key).remove();
-            console.log('✅ Firebase: удалено', key);
+            await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).remove();
+            console.log('✅ Firebase: удалено', sanitizedKey);
             if (callback) callback();
         } catch (error) {
             console.error('✗ Firebase delete error:', error);
@@ -182,7 +189,6 @@ async function removeStorageItem(key, callback = null) {
         if (callback) callback();
     }
 }
-
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
