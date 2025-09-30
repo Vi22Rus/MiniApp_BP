@@ -1,10 +1,8 @@
-// Version: 1.5.0 | Lines: 1004
+// Version: 1.5.0 | Lines: 993
 // Last updated: 2025-09-30
-// Версия скрипта: app.js (1004 строк) - Firebase Realtime Database + изменения дат
+// Версия скрипта: app.js (993 строк) - Firebase + изменения дат
 
 // ===== FIREBASE CONFIGURATION =====
-// Подключение Firebase SDK через CDN (будет загружено из index.html)
-// Firebase конфигурация
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
   authDomain: "pattaya-plans-app.firebaseapp.com",
@@ -15,7 +13,6 @@ const firebaseConfig = {
   appId: "1:152286016885:web:dd389c8294b7c744d04f3c"
 };
 
-// Инициализация Firebase (выполняется автоматически при загрузке)
 let firebaseApp;
 let firebaseDatabase;
 
@@ -24,16 +21,15 @@ function initFirebase() {
         if (typeof firebase !== 'undefined') {
             firebaseApp = firebase.initializeApp(firebaseConfig);
             firebaseDatabase = firebase.database();
-            console.log('✓ Firebase инициализирован успешно');
+            console.log('✓ Firebase инициализирован');
         } else {
             console.warn('⚠ Firebase SDK не загружен');
         }
     } catch (error) {
-        console.error('✗ Ошибка инициализации Firebase:', error);
+        console.error('✗ Ошибка Firebase:', error);
     }
 }
 
-// Функции работы с Firebase
 async function setStorageItem(key, value) {
     if (firebaseDatabase) {
         try {
@@ -41,10 +37,9 @@ async function setStorageItem(key, value) {
             console.log('✓ Firebase: сохранено', key);
             return;
         } catch (error) {
-            console.error('✗ Firebase: ошибка сохранения', error);
+            console.error('✗ Firebase save error:', error);
         }
     }
-    // Fallback to localStorage
     localStorage.setItem(key, value);
 }
 
@@ -57,10 +52,9 @@ async function getStorageItem(key) {
                 return snapshot.val();
             }
         } catch (error) {
-            console.error('✗ Firebase: ошибка чтения', error);
+            console.error('✗ Firebase load error:', error);
         }
     }
-    // Fallback to localStorage
     return localStorage.getItem(key);
 }
 
@@ -71,13 +65,12 @@ async function removeStorageItem(key) {
             console.log('✓ Firebase: удалено', key);
             return;
         } catch (error) {
-            console.error('✗ Firebase: ошибка удаления', error);
+            console.error('✗ Firebase delete error:', error);
         }
     }
-    // Fallback to localStorage
     localStorage.removeItem(key);
 }
-// ===== END FIREBASE CONFIGURATION =====
+// ===== END FIREBASE =====
 
 const homeCoords = { lat: 12.96933724471163, lng: 100.88800963156544 };
 let userCoords = null;
@@ -244,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initApp() {
     initFirebase();
-
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
@@ -625,12 +617,9 @@ function generateBeachDays() {
     const used = kidsLeisure.map(x => x.date);
     const days = [];
     const start = new Date('2025-12-29'), end = new Date('2026-01-26');
-
     const transferDates = ['09.01.2026', '15.01.2026', '25.01.2026'];
-
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const date = d.toLocaleDateString('ru-RU');
-
         if (!used.includes(date)) {
             if (transferDates.includes(date)) {
                 days.push({ type: 'sea', name: '🚀 В Паттайю', date, coords: null, tips: 'Отдых на море.' });
