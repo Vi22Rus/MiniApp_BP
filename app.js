@@ -1,4 +1,4 @@
-// Version: 1.7.2 | Lines: 1095
+// Version: 1.7.1 | Lines: 1095
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
 
@@ -40,7 +40,7 @@ function formatDateForAPI(dateStr) {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
-async function fetchWeatherData(date) {
+async async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
@@ -54,17 +54,23 @@ async function fetchWeatherData(date) {
     const waterData = await waterResponse.json();
     let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
     let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
+
+    // Фолбэк на климатические нормы
     if (!airTemp || !waterTemp) {
       const [day, month] = date.split('.');
       const monthNum = parseInt(month);
       if (monthNum === 12 || monthNum === 1) {
-        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
       } else if (monthNum >= 2 && monthNum <= 4) {
-        airTemp = airTemp || 32; waterTemp = waterTemp || 29;
+        airTemp = airTemp || 32;
+        waterTemp = waterTemp || 29;
       } else if (monthNum >= 5 && monthNum <= 10) {
-        airTemp = airTemp || 29; waterTemp = waterTemp || 29;
+        airTemp = airTemp || 29;
+        waterTemp = waterTemp || 29;
       } else {
-        airTemp = airTemp || 30; waterTemp = waterTemp || 28;
+        airTemp = airTemp || 30;
+        waterTemp = waterTemp || 28;
       }
     }
     const result = { airTemp: airTemp ? Math.round(airTemp) : null, waterTemp: waterTemp ? Math.round(waterTemp) : null };
@@ -78,22 +84,17 @@ async function fetchWeatherData(date) {
 
 
 
-async 
-async function setStorageItem(key, value, callback = null) {
+async function setStorageItem(key, value) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).set(value);
-            console.log('✅ Firebase: сохранено', key);
-            if (callback) callback();
+            console.log('✓ Firebase: сохранено', key);
+            return;
         } catch (error) {
             console.error('✗ Firebase save error:', error);
-            localStorage.setItem(key, value);
-            if (callback) callback();
         }
-    } else {
-        localStorage.setItem(key, value);
-        if (callback) callback();
     }
+    localStorage.setItem(key, value);
 }
 
 async function getStorageItem(key) {
@@ -101,7 +102,7 @@ async function getStorageItem(key) {
         try {
             const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
             if (snapshot.exists()) {
-                console.log('✅ Firebase: загружено', key);
+                console.log('✓ Firebase: загружено', key);
                 return snapshot.val();
             }
         } catch (error) {
@@ -111,21 +112,17 @@ async function getStorageItem(key) {
     return localStorage.getItem(key);
 }
 
-async function removeStorageItem(key, callback = null) {
+async function removeStorageItem(key) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).remove();
-            console.log('✅ Firebase: удалено', key);
-            if (callback) callback();
+            console.log('✓ Firebase: удалено', key);
+            return;
         } catch (error) {
             console.error('✗ Firebase delete error:', error);
-            localStorage.removeItem(key);
-            if (callback) callback();
         }
-    } else {
-        localStorage.removeItem(key);
-        if (callback) callback();
     }
+    localStorage.removeItem(key);
 }
 // ===== END FIREBASE =====
 
@@ -721,7 +718,11 @@ function handleCardClick(activityName, date, type) {
         openDailyPlanModal(activityName, date);
     } else if (type === 'sight') {
         const activity = activities.find(a => a.name === activityName && a.date === date);
-        if (activity) { showPlaceModal(activity); } else { console.error('Активность не найдена:', activityName, date); }
+        if (activity) {
+            showPlaceModal(activity);
+        } else {
+            console.error('Активность не найдена:', activityName, date);
+        }
     }
 }
 
@@ -745,7 +746,7 @@ function renderActivities(list) {
         
         const buttonHtml = '';
         
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><p>${a.date}</p><div class="weather" data-date="${a.date}"></div>${priceLine}${dist}${buttonHtml}</div>`;
+        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
     // Загружаем температуру для всех активностей
@@ -780,6 +781,7 @@ function bindDetailButtons() {
 function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
+
     if (place.coords) {
         const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
         const to = `${place.coords.lat},${place.coords.lng}`;
@@ -790,7 +792,9 @@ function showPlaceModal(place) {
         const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-        } else { content += `<p>📍 Координаты не указаны</p>`; }
+        } else {
+        content += `<p>📍 Координаты не указаны</p>`;
+    }
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
