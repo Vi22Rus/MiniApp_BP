@@ -1,5 +1,5 @@
-// Version: 1.8.7 | Lines: 940
-// Удалены все блоки set/get/removeStorageItem для Google Sheets (2025-09-30)
+// Version: 1.8.9 | Lines: 809
+// Удалены ВСЕ реализации функций setStorageItem, getStorageItem, removeStorageItem 2025-09-30
 // Version: 1.8.0 | Lines: 1095
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
@@ -86,55 +86,9 @@ async function fetchWeatherData(date) {
 
 
 
-async function setStorageItem(key, value, callback = null) {
-    if (firebaseDatabase) {
-        try {
-            await firebaseDatabase.ref('dailyPlans/' + key).set(value);
-            console.log('✅ Firebase: сохранено', key);
-            if (callback) callback();
-        } catch (error) {
-            console.error('✗ Firebase save error:', error);
-            localStorage.setItem(key, value);
-            if (callback) callback();
-        }
-    } else {
-        localStorage.setItem(key, value);
-        if (callback) callback();
-    }
-}
-
-async function getStorageItem(key) {
-    if (firebaseDatabase) {
-        try {
-            const snapshot = await firebaseDatabase.ref('dailyPlans/' + key).once('value');
-            if (snapshot.exists()) {
-                console.log('✅ Firebase: загружено', key);
-                return snapshot.val();
-            }
-        } catch (error) {
-            console.error('✗ Firebase load error:', error);
-        }
-    }
-    return localStorage.getItem(key);
-}
-
-async function removeStorageItem(key, callback = null) {
-    if (firebaseDatabase) {
-        try {
-            await firebaseDatabase.ref('dailyPlans/' + key).remove();
-            console.log('✅ Firebase: удалено', key);
-            if (callback) callback();
-        } catch (error) {
-            console.error('✗ Firebase delete error:', error);
-            localStorage.removeItem(key);
-            if (callback) callback();
-        }
-    } else {
-        localStorage.removeItem(key);
-        if (callback) callback();
-    }
-}
-
+async 
+async 
+async 
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
@@ -160,13 +114,13 @@ function initApp() {
     initCalendarFilters();
     initGeoFeatures();
     initDailyPlanModal();
-
+    
     updateCountdown();
     setInterval(updateCountdown, 3600000);
-
+    
     renderActivities(activities);
     renderContacts(points);
-
+    
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
@@ -235,7 +189,7 @@ function updateAllDistances() {
     document.querySelectorAll('.geo-item-btn').forEach(button => {
         const id = parseInt(button.dataset.id, 10);
         if (isNaN(id)) return;
-
+        
         const distance = getDistance(userCoords, allGeoData[id].coords);
         button.dataset.distance = distance;
         let distSpan = button.querySelector('.distance-tag');
@@ -324,7 +278,7 @@ function applyGeoFilter() {
         nearbyContainer.appendChild(clone);
         closestParkButton.style.display = 'none';
     }
-
+    
     if (!closestCafeButton && !closestTempleButton && !closestPlaygroundButton && !closestParkButton) {
         nearbyContainer.innerHTML = `<div class="empty-state">Нет заведений</div>`;
     }
@@ -382,7 +336,7 @@ function initGeoItemButton(button) {
         if (!isScrolling && pressTimer) {
             e.preventDefault();
             clearTimeout(pressTimer);
-
+            
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
                 showPlaygroundModal(allGeoData[id]);
             } else if (allGeoData[id] && allGeoData[id].type === 'park') {
@@ -418,20 +372,20 @@ function initGeoItemButton(button) {
 function showPlaygroundModal(playground) {
     let content = `<h3>🎠 ${playground.name}</h3>`;
     if (playground.tips) content += `<p>💡 ${playground.tips}</p>`;
-
+    
     const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
     const to = `${playground.coords[0]},${playground.coords[1]}`;
     content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-
+    
     if (userCoords) {
         const userFrom = `${userCoords[0]},${userCoords[1]}`;
         content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
         const distance = getDistance(userCoords, playground.coords);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-
+    
     content += `<p><a href="${playground.link}" target="_blank">🌐 Открыть в Google Maps</a></p>`;
-
+    
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
@@ -439,20 +393,20 @@ function showPlaygroundModal(playground) {
 function showParkModal(park) {
     let content = `<h3>🌳 ${park.name}</h3>`;
     if (park.tips) content += `<p>💡 ${park.tips}</p>`;
-
+    
     const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
     const to = `${park.coords[0]},${park.coords[1]}`;
     content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-
+    
     if (userCoords) {
         const userFrom = `${userCoords[0]},${userCoords[1]}`;
         content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
         const distance = getDistance(userCoords, park.coords);
         content += `<p>📏 Расстояние: ≈${distance} км</p>`;
     }
-
+    
     content += `<p><a href="${park.link}" target="_blank">🌐 Открыть в Google Maps</a></p>`;
-
+    
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
@@ -559,19 +513,19 @@ function updateCountdown() {
     const startTrip = new Date('2025-12-29');  
     const endTrip = new Date('2026-01-26');    
     const now = new Date();
-
+    
     if (now < startTrip) {
         const days = Math.ceil((startTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До поездки:';
         document.getElementById('days').textContent = days;
         document.querySelector('.countdown-label').textContent = 'дней';
-
+        
     } else if (now >= startTrip && now < endTrip) { 
         const daysToGo = Math.ceil((endTrip - now) / 864e5);
         document.getElementById('countdownText').textContent = 'До отъезда:';
         document.getElementById('days').textContent = daysToGo;
         document.querySelector('.countdown-label').textContent = 'дней';
-
+        
     } else { 
         document.getElementById('countdownText').textContent = 'Поездка завершена!';
         document.getElementById('days').textContent = '✔';
@@ -610,9 +564,9 @@ function renderActivities(list) {
 };
         const priceLine = prices[a.name] || '';
         const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
-
+        
         const buttonHtml = '';
-
+        
         return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
@@ -714,21 +668,21 @@ function initDailyPlanModal() {
 function openDailyPlanModal(activityName, date) {
     const modal = document.getElementById('dailyPlanModal');
     const grid = document.getElementById('dailyPlanGrid');
-
+    
     if (!modal || !grid) return;
-
+    
     document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
-
+    
     let timeSlots = '';
     const timeSlotData = [];
-
+    
     for (let hour = 7; hour <= 20; hour++) {
         const startTime = `${hour.toString().padStart(2, '0')}:00`;
         const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
         const key = `${date}_${startTime}`;
-
+        
         timeSlotData.push({ startTime, endTime, key, date });
-
+        
         timeSlots += `
             <div class="daily-plan-row">
                 <div class="time-slot">${startTime} - ${endTime}</div>
@@ -741,10 +695,10 @@ function openDailyPlanModal(activityName, date) {
             </div>
         `;
     }
-
+    
     grid.innerHTML = timeSlots;
     modal.classList.add('active');
-
+    
     timeSlotData.forEach(slot => {
         getStorageItem(slot.key, (savedPlan) => {
             const input = document.querySelector(`input[data-time="${slot.startTime}"][data-date="${slot.date}"]`);
@@ -753,15 +707,15 @@ function openDailyPlanModal(activityName, date) {
             }
         });
     });
-
+    
     document.querySelectorAll('.plan-input').forEach(input => {
         let touchStartTime = 0;
         let touchStartY = 0;
-
+        
         input.addEventListener('blur', () => {
             autoSavePlan(input);
         });
-
+        
         let saveTimeout;
         input.addEventListener('input', () => {
             clearTimeout(saveTimeout);
@@ -769,32 +723,32 @@ function openDailyPlanModal(activityName, date) {
                 autoSavePlan(input);
             }, 1000);
         });
-
+        
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 autoSavePlan(input);
                 input.blur();
             }
         });
-
+        
         input.addEventListener('touchstart', e => {
             touchStartTime = Date.now();
             touchStartY = e.touches[0].clientY;
         });
-
+        
         input.addEventListener('touchend', e => {
             const touchEndTime = Date.now();
             const timeDiff = touchEndTime - touchStartTime;
-
+            
             if (timeDiff > 150) {
                 setTimeout(() => input.focus(), 50);
             }
         });
-
+        
         input.addEventListener('touchmove', e => {
             const currentY = e.touches[0].clientY;
             const moveDiff = Math.abs(currentY - touchStartY);
-
+            
             if (moveDiff > 10) {
                 touchStartTime = 0;
             }
@@ -814,9 +768,9 @@ function autoSavePlan(input) {
     const time = input.dataset.time;
     const value = input.value.trim();
     const key = `${date}_${time}`;
-
+    
     console.log(`🔄 Попытка сохранения: ${key} = "${value}"`);
-
+    
     if (value) {
         setStorageItem(key, value, () => {
             input.style.backgroundColor = '#dcfce7';
@@ -832,14 +786,17 @@ function autoSavePlan(input) {
     }
 }
 
+
+
+
 function showContactModal(contact) {
     let content = `<h3>${contact.icon} ${contact.name}</h3>`;
-
+    
     if (contact.coords) {
         const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
         const to = `${contact.coords.lat},${contact.coords.lng}`;
         content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-
+        
         if (userCoords) {
             const userFrom = `${userCoords[0]},${userCoords[1]}`;
             content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
@@ -847,7 +804,7 @@ function showContactModal(contact) {
             content += `<p>📏 Расстояние: ≈${distance} км</p>`;
         }
     }
-
+    
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
