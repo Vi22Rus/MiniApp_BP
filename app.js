@@ -84,7 +84,7 @@ async function fetchWeatherData(date) {
 
 
 
-async async function setStorageItem(key, value, callback = null) {
+async function setStorageItem(key, value, callback = null) {
     if (firebaseDatabase) {
         try {
             await firebaseDatabase.ref('dailyPlans/' + key).set(value);
