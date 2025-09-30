@@ -731,7 +731,6 @@ function renderActivities(list) {
         return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
     }).join('');
 
-    // Загрузка погоды для активностей
     list.forEach(async (activity) => {
         if (activity.type === 'sea' || activity.type === 'pool') {
             const weather = await fetchWeatherData(activity.date);
@@ -769,18 +768,17 @@ function showPlaceModal(place) {
     if (place.coords) {
         const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
         const to = `${place.coords.lat},${place.coords.lng}`;
-        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-        if (userCoords) {
-            const userFrom = `${userCoords[0]},${userCoords[1]}`;
-            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
-            const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
-            content += `<p>📏 Расстояние: ≈${distance} км</p>`;
-        }
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+    if (userCoords) {
+        const userFrom = `${userCoords[0]},${userCoords[1]}`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+        const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
+        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+    }
     } else {
         content += `<p>📍 Координаты не указаны</p>`;
     }
-
-    document.getElementById('modalBody').innerHTML = content;
+        document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
 
