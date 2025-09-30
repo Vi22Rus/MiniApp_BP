@@ -1,5 +1,5 @@
-// Version: 1.8.9 | Lines: 809
-// Удалены ВСЕ реализации функций setStorageItem, getStorageItem, removeStorageItem 2025-09-30
+// Version: 1.9.0 | Lines: 805
+// Удалены все storage-функции, внефункциональный async 2025-09-30
 // Version: 1.8.0 | Lines: 1095
 // Last updated: 2025-09-30
 // Версия скрипта: app.js (1000 строк) - Все изменения применены
@@ -41,8 +41,7 @@ function formatDateForAPI(dateStr) {
   const [day, month, year] = dateStr.split('.');
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
-
-async function fetchWeatherData(date) {
+ function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
@@ -83,12 +82,9 @@ async function fetchWeatherData(date) {
     return { airTemp: 30, waterTemp: 28 };
   }
 }
-
-
-
-async 
-async 
-async 
+ 
+ 
+ 
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
