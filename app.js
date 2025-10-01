@@ -415,6 +415,8 @@ function initGeoFeatures() {
     });
 
     document.querySelectorAll('.geo-item-btn').forEach(initGeoItemButton);
+    addAddPlaceButton(); // Добавляем кнопку "Добавить место"
+
 }
 
 function updateGeoView() {
@@ -1434,9 +1436,26 @@ function renderGeoItemsWithDynamic() {
 document.addEventListener('DOMContentLoaded', async () => {
     initFirebase();
     await loadDynamicGeoData();
-    // ... остальной код инициализации
-    renderGeoItemsWithDynamic();
+    initApp(); // Вызываем основную инициализацию
 });
+
+function addAddPlaceButton() {
+    // Находим все контейнеры с кнопками
+    const containers = [
+        document.querySelector('.geo-parks .geo-items-container') // Добавляем в конец блока Парки
+    ];
+
+    containers.forEach(container => {
+        if (container && !container.querySelector('.add-place-btn')) {
+            const addBtn = document.createElement('button');
+            addBtn.className = 'geo-item-btn add-place-btn';
+            addBtn.textContent = '➕ Добавить место';
+            addBtn.onclick = openAddPlaceModal;
+            container.appendChild(addBtn);
+        }
+    });
+}
+
 
 
 
