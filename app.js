@@ -36,7 +36,7 @@ const PATTAYA_LON = 100.8825;
 let weatherCache = {};
 
 // ===== GEO COORDINATES & DATA =====
-const homeCoords = { lat: 12.9236, lng: 100.8825 }; // Координаты дома в Паттайе
+const homeCoords = { lat: 12.96914180371933, lng: 100.88807709411466 }; // Координаты дома в Паттайе
 let activeGeoFilter = 'naklua'; // Активный фильтр геолокации по умолчанию
 const allGeoData = [
     // Кафе (0-14) - БЕЗ ИЗМЕНЕНИЙ
