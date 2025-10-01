@@ -790,43 +790,33 @@ function renderActivities(list) {
     const grid = document.getElementById('activitiesGrid');
     if (!grid) return;
 
-    // Определяем сегодняшнюю дату (без времени)
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
 
-    // Разделяем список: в будущем + в прошлом
     const future = [], past = [];
     list.forEach(a => {
         const parts = a.date.split('.');
-        // Формат даты: DD.MM.YYYY → YYYY-MM-DD
         const actDate = new Date(`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`);
         actDate.setHours(0,0,0,0);
-        // Если дата < сегодня => карточка прошла
-        if (actDate < today) {
-            past.push(a);
-        } else {
-            future.push(a);
-        }
+        (actDate < today ? past : future).push(a);
     });
 
-    // Отрисовываем: сначала будущие, потом прошедшие
-    function getCardClass(a, isPast, isTransfer) {
-        // базовый тип для sea/sight
+    function getCardClass(a, isPast, isTransfer, isBordered) {
         let base = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
-        if (isTransfer) {
-            base += ' activity-transfer';
-        }
-        if (isPast) {
-            base += ' card-past';
-        }
+        if (isTransfer) base += ' activity-transfer';
+        if (isBordered) base += ' card-bordered';
+        if (isPast) base += ' card-past';
         return base;
     }
 
     function renderCard(a, isPast) {
-        const isTransfer = a.name === '🚀 В Паттайю' ||
-            (a.date === '26.01.2026' && a.type === 'sea');
-        const displayName = (a.date === '26.01.2026' && a.type === 'sea')
-            ? '🚀 В Бангкок!' : a.name;
+        const isTransfer = (
+            a.name === '🚀 В Паттайю' ||
+            (a.date === '26.01.2026' && a.type === 'sea')
+        );
+        const isBordered = !isTransfer;  // Все прочие карточки с бордером
+
+        const displayName = (a.date === '26.01.2026' && a.type === 'sea') ? 'В Бангкок!' : a.name;
         let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
         const prices = {
             'Mini Siam': `<p class="price">Взрослый 230 ฿ / Детский 130 ฿</p>`,
@@ -839,7 +829,7 @@ function renderActivities(list) {
         };
         const priceLine = prices[a.name] || '';
         const weatherDiv = `<div class="weather" data-date="${a.date}"></div>`;
-        const cardClass = getCardClass(a, isPast, isTransfer);
+        const cardClass = getCardClass(a, isPast, isTransfer, isBordered);
 
         if(a.type === 'sea') {
             return `<div class="${cardClass}" onclick="handleCardClick('${a.name}', '${a.date}', '${a.type}')">
@@ -857,12 +847,10 @@ function renderActivities(list) {
         }
     }
 
-    // Сначала будущие, затем прошлые (белые)
     grid.innerHTML =
         future.map(a => renderCard(a, false)).join('') +
         past.map(a => renderCard(a, true)).join('');
 
-    // Температура всех карт
     list.forEach(async (activity) => {
         const weather = await fetchWeatherData(activity.date);
         const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
@@ -877,9 +865,6 @@ function renderActivities(list) {
     });
     bindDetailButtons();
 }
-
-
-
 
 function bindDetailButtons() {
     document.querySelectorAll('.details').forEach(btn => {
