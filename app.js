@@ -1354,9 +1354,6 @@ function translateRussianToKey(text) {
     return text.trim();
 }
 
-// Переменная для хранения динамических мест
-let dynamicGeoData = [];
-
 async function loadDynamicGeoData() {
     const saved = await getStorageItem('dynamic_geo_data');
     if (saved) {
