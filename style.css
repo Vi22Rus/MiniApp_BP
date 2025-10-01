@@ -860,6 +860,26 @@ body {
   font-weight: normal;
   margin-top: 4px;
 }
+.cafe-line {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.cafe-rating {
+  color: #f59e0b;
+  font-weight: 600;
+  flex-shrink: 0; /* Не переносится */
+}
+
+.cafe-description {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: normal;
+  margin-top: 4px;
+}
+
 
 
 
