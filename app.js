@@ -1309,19 +1309,6 @@ async function loadGeoRatingForButton(geoId, ratingButton) {
 let dynamicGeoData = [];
 
 // Инициализация: загрузка динамических данных из Firebase
-async function loadDynamicGeoData() {
-    const saved = await getStorageItem('dynamic_geo_data');
-    if (saved) {
-        try {
-            dynamicGeoData = JSON.parse(saved);
-            console.log('✓ Загружено динамических мест:', dynamicGeoData.length);
-        } catch (e) {
-            console.error('Ошибка парсинга динамических данных:', e);
-            dynamicGeoData = [];
-        }
-    }
-}
-
 // Открыть модальное окно добавления места
 function openAddPlaceModal() {
     const modal = document.getElementById('addPlaceModal');
@@ -1365,19 +1352,6 @@ async function loadDynamicGeoData() {
             dynamicGeoData = [];
         }
     }
-}
-
-function openAddPlaceModal() {
-    const modal = document.getElementById('addPlaceModal');
-    if (modal) {
-        modal.classList.add('active');
-        document.getElementById('placeDataInput').value = '';
-    }
-}
-
-function closeAddPlaceModal() {
-    const modal = document.getElementById('addPlaceModal');
-    if (modal) modal.classList.remove('active');
 }
 
 // Добавить новое место
@@ -1468,13 +1442,6 @@ function renderGeoItemsWithDynamic() {
         initGeoItemButton(btn);
     });
 }
-
-// Обновите вызов при инициализации приложения
-document.addEventListener('DOMContentLoaded', async () => {
-    initFirebase();
-    await loadDynamicGeoData();
-    initApp(); // Вызываем основную инициализацию
-});
 
 function addAddPlaceButton() {
     // Находим все контейнеры с кнопками
