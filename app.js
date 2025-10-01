@@ -1075,7 +1075,6 @@ function showContactModal(contact) {
     document.getElementById('modalOverlay').classList.add('active');
 }
 let currentRatingGeoId = null;
-
 function initGeoItemButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
@@ -1091,48 +1090,67 @@ function initGeoItemButton(button) {
             openRatingModal(id);
         };
         // Блокируем обработчики нажатия на кнопке
-        ratingButton.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
-        ratingButton.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-        });
+        ratingButton.addEventListener('mousedown', (e) => e.stopPropagation());
+        ratingButton.addEventListener('touchstart', (e) => e.stopPropagation());
+        ratingButton.addEventListener('mousemove', (e) => e.stopPropagation());
+        ratingButton.addEventListener('touchmove', (e) => e.stopPropagation());
         button.appendChild(ratingButton);
         loadGeoRatingForButton(id, ratingButton);
     }
 
     let pressTimer = null;
-    let clickTarget = null;
+    let startX = 0, startY = 0;
+    let hasMoved = false;
 
     const handleStart = (e) => {
-        clickTarget = e.target;
-        
         // Проверяем, что клик не по кнопке со звёздами
         if (e.target.closest('.geo-item-rating-button')) {
             return;
         }
+
+        hasMoved = false;
+        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         
         pressTimer = setTimeout(() => {
-            if (!userCoords) {
-                alert('Сначала определите местоположение');
-                return;
+            if (!hasMoved) {
+                if (!userCoords) {
+                    alert('Сначала определите местоположение');
+                    return;
+                }
+                const destination = allGeoData[id].coords.join(',');
+                const origin = userCoords.join(',');
+                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
             }
-            const destination = allGeoData[id].coords.join(',');
-            const origin = userCoords.join(',');
-            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
             pressTimer = null;
         }, 800);
     };
 
+    const handleMove = (e) => {
+        if (!pressTimer) return;
+        
+        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        const diffX = Math.abs(currentX - startX);
+        const diffY = Math.abs(currentY - startY);
+
+        // Если палец/мышь сдвинулись больше чем на 10px - это движение, не клик
+        if (diffX > 10 || diffY > 10) {
+            hasMoved = true;
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+    };
+
     const handleEnd = (e) => {
         // Проверяем, что клик не по кнопке со звёздами
-        if (e.target.closest('.geo-item-rating-button') || clickTarget?.closest('.geo-item-rating-button')) {
+        if (e.target.closest('.geo-item-rating-button')) {
             clearTimeout(pressTimer);
             pressTimer = null;
             return;
         }
         
-        if (pressTimer) {
+        if (pressTimer && !hasMoved) {
             clearTimeout(pressTimer);
             // Обычный клик
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
@@ -1144,22 +1162,25 @@ function initGeoItemButton(button) {
             }
         }
         pressTimer = null;
-        clickTarget = null;
+        hasMoved = false;
     };
 
     const handleCancel = () => {
         clearTimeout(pressTimer);
         pressTimer = null;
-        clickTarget = null;
+        hasMoved = false;
     };
 
     button.addEventListener('mousedown', handleStart);
+    button.addEventListener('mousemove', handleMove);
     button.addEventListener('mouseup', handleEnd);
     button.addEventListener('mouseleave', handleCancel);
     button.addEventListener('touchstart', handleStart, { passive: true });
+    button.addEventListener('touchmove', handleMove, { passive: true });
     button.addEventListener('touchend', handleEnd);
     button.addEventListener('touchcancel', handleCancel);
 }
+
 
 
 
