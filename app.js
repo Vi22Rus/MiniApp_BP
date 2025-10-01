@@ -1410,25 +1410,6 @@ async function addNewPlace() {
     alert('Место успешно добавлено!');
 }
 
-
-
-    // Добавление в массив
-    dynamicGeoData.push(newPlace);
-    
-    // Сохранение в Firebase
-    await setStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData));
-    
-    console.log('✓ Добавлено новое место:', newPlace);
-    
-    // Закрыть модальное окно
-    closeAddPlaceModal();
-    
-    // Перезагрузить список мест
-    applyGeoFilter(activeGeoFilter);
-    
-    alert('Место успешно добавлено!');
-}
-
 // Обновите функцию renderGeoItems для включения динамических мест
 function renderGeoItemsWithDynamic() {
     const container = document.getElementById('geoGrid');
