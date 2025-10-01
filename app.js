@@ -1211,17 +1211,20 @@ async function setRating(geoId, value, starsContainer) {
     if (button) {
         const ratingButton = button.querySelector('.geo-item-rating-button');
         if (ratingButton) {
-    const stars = ratingButton.querySelectorAll('.star');
-    stars.forEach((star, index) => {
-        if (index < value) {
-            star.classList.add('filled');
-            star.textContent = '★';
-        } else {
-            star.classList.remove('filled');
-            star.textContent = '☆';
+            const stars = ratingButton.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                if (index < value) {
+                    star.classList.add('filled');
+                    star.textContent = '★';
+                } else {
+                    star.classList.remove('filled');
+                    star.textContent = '☆';
+                }
+            });
         }
-    });
+    }
 }
+
 
 
 async function resetRating() {
