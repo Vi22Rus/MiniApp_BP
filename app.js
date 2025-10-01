@@ -790,7 +790,15 @@ function renderActivities(list) {
     const grid = document.getElementById('activitiesGrid');
     if (!grid) return;
     grid.innerHTML = list.map(a => {
-        const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
+        const isTransfer = (
+            a.name === '🚀 В Паттайю' ||
+            (a.date === '26.01.2026' && a.type === 'sea')
+        );
+        // Для 26.01.2026 показываем "В Бангкок!", для остальных — фактическое name
+        const displayName = (a.date === '26.01.2026' && a.type === 'sea')
+            ? '🚀 В Бангкок!' : a.name;
+        // cardClass: sea/sight + transfer
+        const cardClass = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}${isTransfer ? ' activity-transfer' : ''}`;
         let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
         const prices = {
             'Mini Siam': `<p class="price">Взрослый 230 ฿ / Детский 130 ฿</p>`,
@@ -807,20 +815,20 @@ function renderActivities(list) {
         if(a.type === 'sea') {
             return `<div class="${cardClass}" onclick="handleCardClick('${a.name}', '${a.date}', '${a.type}')">
               <p>${a.date}</p>
-              <h3>${icon}${a.name}</h3>
+              <h3>${icon}${displayName}</h3>
               ${weatherDiv}
             </div>`;
         } else if(a.type === 'sight') {
             return `<div class="${cardClass}" onclick="handleCardClick('${a.name}', '${a.date}', '${a.type}')">
               <p>${a.date}</p>
-              <h3>${icon}${a.name}</h3>
+              <h3>${icon}${displayName}</h3>
               ${priceLine}
               ${weatherDiv}
             </div>`;
         }
     }).join('');
 
-    // Остальной код renderActivities не меняется!
+    // Температура для каждой активности
     list.forEach(async (activity) => {
         const weather = await fetchWeatherData(activity.date);
         const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
@@ -835,6 +843,7 @@ function renderActivities(list) {
     });
     bindDetailButtons();
 }
+
 
 
 function bindDetailButtons() {
