@@ -681,3 +681,9 @@ body {
   background: #e3fcec !important;
   border: 2px solid #64d488 !important;
 }
+
+.card-past {
+  background: #fff !important;
+  border: 2px solid #eee !important;
+  opacity: 0.85;
+}
