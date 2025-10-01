@@ -1,4 +1,4 @@
-// Version: 2.4.0 | Lines: 940
+// Version: 2.5.0 | Lines: 940
 // Исправлено: Загрузка данных ежедневника через async/await
 // 2025-10-01
 // ===== FIREBASE CONFIGURATION =====
