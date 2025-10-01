@@ -1304,6 +1304,7 @@ async function loadGeoRatingForButton(geoId, ratingButton) {
         }
     });
 }
+
 // Переменная для хранения динамических мест
 let dynamicGeoData = [];
 
@@ -1337,29 +1338,51 @@ function closeAddPlaceModal() {
 }
 // Словарь перевода русских названий блоков и подблоков в английские ключи
 const russianToEnglishMap = {
-    // Основные блоки
     'кафе': 'cafe',
     'парки': 'park',
     'площадки': 'playground',
-    
-    // Подблоки кафе (районы)
     'наклуа': 'naklua',
     'пратамнак': 'pratamnak',
     'джомтьен': 'jomtien'
 };
 
-// Функция транслитерации ТОЛЬКО для блоков и подблоков
 function translateRussianToKey(text) {
     const lowerText = text.toLowerCase().trim();
-    
-    // Проверяем прямое совпадение в словаре
     if (russianToEnglishMap[lowerText]) {
         return russianToEnglishMap[lowerText];
     }
-    
-    // Если нет в словаре, возвращаем как есть
     return text.trim();
 }
+
+// Переменная для хранения динамических мест
+let dynamicGeoData = [];
+
+async function loadDynamicGeoData() {
+    const saved = await getStorageItem('dynamic_geo_data');
+    if (saved) {
+        try {
+            dynamicGeoData = JSON.parse(saved);
+            console.log('✓ Загружено динамических мест:', dynamicGeoData.length);
+        } catch (e) {
+            console.error('Ошибка парсинга:', e);
+            dynamicGeoData = [];
+        }
+    }
+}
+
+function openAddPlaceModal() {
+    const modal = document.getElementById('addPlaceModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.getElementById('placeDataInput').value = '';
+    }
+}
+
+function closeAddPlaceModal() {
+    const modal = document.getElementById('addPlaceModal');
+    if (modal) modal.classList.remove('active');
+}
+
 // Добавить новое место
 async function addNewPlace() {
     const input = document.getElementById('placeDataInput');
