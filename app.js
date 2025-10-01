@@ -539,73 +539,36 @@ function initGeoItemButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
 
-    // Добавляем звёзды под название блока (если ещё не добавлены)
-    if (!button.querySelector('.geo-item-rating')) {
-        const ratingDiv = document.createElement('div');
-        ratingDiv.className = 'geo-item-rating';
-        for (let i = 1; i <= 5; i++) {
-            const star = document.createElement('span');
-            star.className = 'star';
-            star.textContent = '☆';
-            star.dataset.value = i;
-            ratingDiv.appendChild(star);
-        }
-        button.appendChild(ratingDiv);
-        loadGeoRating(id, ratingDiv);
+    // Добавляем кнопку со звёздами как последний элемент блока
+    if (!button.querySelector('.geo-item-rating-button')) {
+        const ratingButton = document.createElement('button');
+        ratingButton.className = 'geo-item-rating-button';
+        ratingButton.innerHTML = '<span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span>';
+        ratingButton.onclick = (e) => {
+            e.stopPropagation();
+            openRatingModal(id);
+        };
+        button.appendChild(ratingButton);
+        loadGeoRatingForButton(id, ratingButton);
     }
 
     let pressTimer = null;
-    let startX, startY;
-    let isScrolling = false;
-    let isSwipe = false;
-    const MOVE_THRESHOLD = 10;
 
     const handlePressStart = (e) => {
-        isScrolling = false;
-        isSwipe = false;
-        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        
         pressTimer = setTimeout(() => {
-            if (!isScrolling && !isSwipe) {
-                if (!userCoords) {
-                    alert('Сначала определите местоположение');
-                    return;
-                }
-                const destination = allGeoData[id].coords.join(',');
-                const origin = userCoords.join(',');
-                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
+            if (!userCoords) {
+                alert('Сначала определите местоположение');
+                return;
             }
-            pressTimer = null;
+            const destination = allGeoData[id].coords.join(',');
+            const origin = userCoords.join(',');
+            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
         }, 800);
     };
 
-    const handlePressMove = (e) => {
-        if (isScrolling || !pressTimer) return;
-        
-        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        const diffX = currentX - startX;
-        const diffY = Math.abs(currentY - startY);
-
-        // Свайп слева направо для рейтинга
-        if (diffX > 50 && diffY < 30) {
-            isSwipe = true;
-            clearTimeout(pressTimer);
-            pressTimer = null;
-            openRatingModal(id);
-        } else if (Math.abs(diffX) > MOVE_THRESHOLD || diffY > MOVE_THRESHOLD) {
-            isScrolling = true;
-            clearTimeout(pressTimer);
-            pressTimer = null;
-        }
-    };
-
     const handlePressEnd = (e) => {
-        if (!isScrolling && !isSwipe && pressTimer) {
-            e.preventDefault();
+        if (pressTimer) {
             clearTimeout(pressTimer);
-            // Обычный клик
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
                 showPlaygroundModal(allGeoData[id]);
             } else if (allGeoData[id] && allGeoData[id].type === 'park') {
@@ -622,21 +585,10 @@ function initGeoItemButton(button) {
         pressTimer = null;
     };
 
-    button.removeEventListener('mousedown', handlePressStart);
-    button.removeEventListener('mousemove', handlePressMove);
-    button.removeEventListener('mouseup', handlePressEnd);
-    button.removeEventListener('mouseleave', handlePressCancel);
     button.addEventListener('mousedown', handlePressStart);
-    button.addEventListener('mousemove', handlePressMove);
     button.addEventListener('mouseup', handlePressEnd);
     button.addEventListener('mouseleave', handlePressCancel);
-
-    button.removeEventListener('touchstart', handlePressStart);
-    button.removeEventListener('touchmove', handlePressMove);
-    button.removeEventListener('touchend', handlePressEnd);
-    button.removeEventListener('touchcancel', handlePressCancel);
     button.addEventListener('touchstart', handlePressStart, { passive: true });
-    button.addEventListener('touchmove', handlePressMove, { passive: true });
     button.addEventListener('touchend', handlePressEnd);
     button.addEventListener('touchcancel', handlePressCancel);
 }
@@ -1257,12 +1209,20 @@ async function setRating(geoId, value, starsContainer) {
     // Обновляем звезды в блоке
     const button = document.querySelector(`.geo-item-btn[data-id="${geoId}"]`);
     if (button) {
-        const ratingDiv = button.querySelector('.geo-item-rating');
-        if (ratingDiv) {
-            updateStarsDisplay(ratingDiv, value);
+        const ratingButton = button.querySelector('.geo-item-rating-button');
+        if (ratingButton) {
+    const stars = ratingButton.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+        if (index < value) {
+            star.classList.add('filled');
+            star.textContent = '★';
+        } else {
+            star.classList.remove('filled');
+            star.textContent = '☆';
         }
-    }
+    });
 }
+
 
 async function resetRating() {
     if (currentRatingGeoId === null) return;
@@ -1308,4 +1268,20 @@ async function loadGeoRating(geoId, ratingDiv) {
     const value = saved ? parseInt(saved) : 0;
     updateStarsDisplay(ratingDiv, value);
 }
+async function loadGeoRatingForButton(geoId, ratingButton) {
+    const key = `geo_rating_${geoId}`;
+    const saved = await getStorageItem(key);
+    const value = saved ? parseInt(saved) : 0;
+    const stars = ratingButton.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+        if (index < value) {
+            star.classList.add('filled');
+            star.textContent = '★';
+        } else {
+            star.classList.remove('filled');
+            star.textContent = '☆';
+        }
+    });
+}
+
 
