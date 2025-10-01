@@ -1080,66 +1080,36 @@ function initGeoItemButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
 
-    // Добавляем звёзды под название блока
-    if (!button.querySelector('.geo-item-rating')) {
-        const ratingDiv = document.createElement('div');
-        ratingDiv.className = 'geo-item-rating';
-        for (let i = 1; i <= 5; i++) {
-            const star = document.createElement('span');
-            star.className = 'star';
-            star.textContent = '☆';
-            star.dataset.value = i;
-            ratingDiv.appendChild(star);
-        }
-        button.appendChild(ratingDiv);
-        loadGeoRating(id, ratingDiv);
+    // Добавляем кнопку со звёздами как последний элемент блока
+    if (!button.querySelector('.geo-item-rating-button')) {
+        const ratingButton = document.createElement('button');
+        ratingButton.className = 'geo-item-rating-button';
+        ratingButton.innerHTML = '<span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span>';
+        ratingButton.onclick = (e) => {
+            e.stopPropagation();
+            openRatingModal(id);
+        };
+        button.appendChild(ratingButton);
+        loadGeoRatingForButton(id, ratingButton);
     }
 
     let pressTimer = null;
-    let startX, startY;
-    let isSwipe = false;
 
     const handleStart = (e) => {
-        isSwipe = false;
-        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        
         pressTimer = setTimeout(() => {
-            if (!isSwipe && !userCoords) {
+            if (!userCoords) {
                 alert('Сначала определите местоположение');
                 return;
             }
-            if (!isSwipe && userCoords) {
-                const destination = allGeoData[id].coords.join(',');
-                const origin = userCoords.join(',');
-                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
-            }
+            const destination = allGeoData[id].coords.join(',');
+            const origin = userCoords.join(',');
+            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
             pressTimer = null;
         }, 800);
     };
 
-    const handleMove = (e) => {
-        if (!pressTimer) return;
-        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        const diffX = currentX - startX;
-        const diffY = Math.abs(currentY - startY);
-
-        // Свайп слева направо
-        if (diffX > 50 && diffY < 30) {
-            isSwipe = true;
-            clearTimeout(pressTimer);
-            pressTimer = null;
-            openRatingModal(id);
-        } else if (Math.abs(diffX) > 10 || diffY > 10) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-        }
-    };
-
     const handleEnd = (e) => {
-        if (!isSwipe && pressTimer) {
-            e.preventDefault();
+        if (pressTimer) {
             clearTimeout(pressTimer);
             // Обычный клик
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
@@ -1159,14 +1129,13 @@ function initGeoItemButton(button) {
     };
 
     button.addEventListener('mousedown', handleStart);
-    button.addEventListener('mousemove', handleMove);
     button.addEventListener('mouseup', handleEnd);
     button.addEventListener('mouseleave', handleCancel);
     button.addEventListener('touchstart', handleStart, { passive: true });
-    button.addEventListener('touchmove', handleMove, { passive: true });
     button.addEventListener('touchend', handleEnd);
     button.addEventListener('touchcancel', handleCancel);
 }
+
 
 function openRatingModal(geoId) {
     currentRatingGeoId = geoId;
