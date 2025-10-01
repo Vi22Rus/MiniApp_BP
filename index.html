@@ -1,6 +1,6 @@
-<!-- Version: 1.3.2 | Lines: 228 -->
+<!-- Version: 1.3.3 | Lines: 228 -->
 <!-- Last updated: 2025-10-01 -->
-<!-- Версия HTML: index.html - ИСПРАВЛЕНО: добавлен класс cafe-rating -->
+<!-- Версия HTML: index.html - ИСПРАВЛЕНО: убран <br>, добавлен .cafe-line -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -85,16 +85,16 @@
         <div class="med-kit advice-block">
           <h2>💊 <strong>Аптечка</strong></h2>
           <ul>
-            <li><span class="icon">🌡️</span><strong>Парацетамол / Paracetamol / [translate:พาราเซตามอล]</strong><span class="description">– болеутоляющее и жаропонижающее средство.</span></li>
-            <li><span class="icon">🩹</span><strong>Ибупрофен / Ibuprofen / [translate:ไอบูโพรเฟน]</strong><span class="description">– противовоспалительное средство.</span></li>
-            <li><span class="icon">🚽</span><strong>Лоперамид / Loperamide / [translate:โลเปอราไมด์]</strong><span class="description">– средство от диареи.</span></li>
-            <li><span class="icon">💧</span><strong>Средство для регидратации (Oreda) / ORS / [translate:เกลือแร่]</strong><span class="description">– для восстановления водно-солевого баланса.</span></li>
-            <li><span class="icon">🤧</span><strong>Цетиризин / Cetirizine / [translate:เซทิริซิน]</strong><span class="description">– антигистаминное средство от аллергии.</span></li>
-            <li><span class="icon">🧴</span><strong>Хлоргексидин / Chlorhexidine / [translate:คลอร์เฮกซิดีน]</strong><span class="description">– антисептик для обработки ран.</span></li>
-            <li><span class="icon">🧪</span><strong>Неомициновая мазь / Neomycin ointment / [translate:นีโอมัยซิน]</strong><span class="description">– антибактериальная мазь.</span></li>
-            <li><span class="icon">🤢</span><strong>Антацидный гель (Almagel) / Antacid gel / [translate:ยาลดกรด]</strong><span class="description">– средство от изжоги.</span></li>
-            <li><span class="icon">🤢</span><strong>Дименгидринат / Dimenhydrinate / [translate:ไดเมนไฮดริเนต]</strong><span class="description">– средство от укачивания.</span></li>
-            <li><span class="icon">🗣️</span><strong>Спрей для горла (Kamillosan) / Throat spray / [translate:สเปรย์พ่นคอ]</strong><span class="description">– обезболивающий и антисептический спрей.</span></li>
+            <li><span class="icon">🌡️</span><strong>Парацетамол / Paracetamol / พาราเซตามอล</strong><span class="description">– болеутоляющее и жаропонижающее средство.</span></li>
+            <li><span class="icon">🩹</span><strong>Ибупрофен / Ibuprofen / ไอบูโพรเฟน</strong><span class="description">– противовоспалительное средство.</span></li>
+            <li><span class="icon">🚽</span><strong>Лоперамид / Loperamide / โลเปอราไมด์</strong><span class="description">– средство от диареи.</span></li>
+            <li><span class="icon">💧</span><strong>Средство для регидратации (Oreda) / ORS / เกลือแร่</strong><span class="description">– для восстановления водно-солевого баланса.</span></li>
+            <li><span class="icon">🤧</span><strong>Цетиризин / Cetirizine / เซทิริซิน</strong><span class="description">– антигистаминное средство от аллергии.</span></li>
+            <li><span class="icon">🧴</span><strong>Хлоргексидин / Chlorhexidine / คลอร์เฮกซิดีน</strong><span class="description">– антисептик для обработки ран.</span></li>
+            <li><span class="icon">🧪</span><strong>Неомициновая мазь / Neomycin ointment / นีโอมัยซิน</strong><span class="description">– антибактериальная мазь.</span></li>
+            <li><span class="icon">🤢</span><strong>Антацидный гель (Almagel) / Antacid gel / ยาลดกรด</strong><span class="description">– средство от изжоги.</span></li>
+            <li><span class="icon">🤢</span><strong>Дименгидринат / Dimenhydrinate / ไดเมนไฮดริเนต</strong><span class="description">– средство от укачивания.</span></li>
+            <li><span class="icon">🗣️</span><strong>Спрей для горла (Kamillosan) / Throat spray / สเปรย์พ่นคอ</strong><span class="description">– обезболивающий и антисептический спрей.</span></li>
           </ul>
         </div>
       </section>
@@ -110,7 +110,7 @@
 
         <div class="app-version">
           <p style="text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 16px;">
-            Версия приложения: 1.7.3
+            Версия приложения: 1.7.4
           </p>
         </div>        
         <div class="contacts-col" id="contactsGrid"></div>
@@ -133,27 +133,27 @@
             <h2>☕ Кафе</h2>
             <div class="cafe-sub-block naklua" data-subblock-name="naklua">
                 <h3>Наклуа</h3>
-                <button class="geo-item-btn" data-type="cafe" data-id="0"><span class="cafe-rating">5*</span> <strong>Pad Thai Shop</strong><br><span class="cafe-description">- Пад тай мокашница</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="1"><span class="cafe-rating">5*</span> <strong>Indian food</strong><br><span class="cafe-description">- Индийская кухня</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="2"><span class="cafe-rating">4.5*</span> <strong>Tony seafood</strong><br><span class="cafe-description">- тай сифуд</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="3"><span class="cafe-rating">4.5*</span> <strong>SIAM</strong><br><span class="cafe-description">- тай рус</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="4"><span class="cafe-rating">4.3*</span> <strong>Тайское кафе</strong><br><span class="cafe-description">- тай недорого</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="5"><span class="cafe-rating">5*</span> <strong>COFFEE CORNER</strong><br><span class="cafe-description">- тай недорого</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="6"><span class="cafe-rating">4.9*</span> <strong>Coconut restaurant</strong><br><span class="cafe-description">- тай</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="7"><span class="cafe-rating">5*</span> <strong>Рыбный рынок</strong><br><span class="cafe-description">- сифуд доставка</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="8"><span class="cafe-rating">4.6*</span> <strong>3 Tolstyaka</strong><br><span class="cafe-description">- русская кухня</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="9"><span class="cafe-rating">4.3*</span> <strong>Thai on beach</strong><br><span class="cafe-description">- тай пляжное</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="0"><div class="cafe-line"><span class="cafe-rating">5*</span><strong>Pad Thai Shop</strong></div><span class="cafe-description">- Пад тай мокашница</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="1"><div class="cafe-line"><span class="cafe-rating">5*</span><strong>Indian food</strong></div><span class="cafe-description">- Индийская кухня</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="2"><div class="cafe-line"><span class="cafe-rating">4.5*</span><strong>Tony seafood</strong></div><span class="cafe-description">- тай сифуд</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="3"><div class="cafe-line"><span class="cafe-rating">4.5*</span><strong>SIAM</strong></div><span class="cafe-description">- тай рус</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="4"><div class="cafe-line"><span class="cafe-rating">4.3*</span><strong>Тайское кафе</strong></div><span class="cafe-description">- тай недорого</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="5"><div class="cafe-line"><span class="cafe-rating">5*</span><strong>COFFEE CORNER</strong></div><span class="cafe-description">- тай недорого</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="6"><div class="cafe-line"><span class="cafe-rating">4.9*</span><strong>Coconut restaurant</strong></div><span class="cafe-description">- тай</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="7"><div class="cafe-line"><span class="cafe-rating">5*</span><strong>Рыбный рынок</strong></div><span class="cafe-description">- сифуд доставка</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="8"><div class="cafe-line"><span class="cafe-rating">4.6*</span><strong>3 Tolstyaka</strong></div><span class="cafe-description">- русская кухня</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="9"><div class="cafe-line"><span class="cafe-rating">4.3*</span><strong>Thai on beach</strong></div><span class="cafe-description">- тай пляжное</span></button>
             </div>
             <div class="cafe-sub-block pratamnak" data-subblock-name="pratamnak">
                 <h3>Пратамнак</h3>
-                <button class="geo-item-btn" data-type="cafe" data-id="10"><span class="cafe-rating">4.9*</span> <strong>макашница</strong><br><span class="cafe-description">- тай</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="11"><span class="cafe-rating">5*</span> <strong>BAR MANGAL B-B-Q</strong><br><span class="cafe-description">- Шашлюля</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="12"><span class="cafe-rating">5*</span> <strong>kruatabird</strong><br><span class="cafe-description">- сифуд</span></button>
-                <button class="geo-item-btn" data-type="cafe" data-id="13"><span class="cafe-rating">5*</span> <strong>CHAO DOI COFFEE</strong><br><span class="cafe-description">- Кофейня</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="10"><div class="cafe-line"><span class="cafe-rating">4.9*</span><strong>макашница</strong></div><span class="cafe-description">- тай</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="11"><div class="cafe-line"><span class="cafe-rating">5*</span><strong>BAR MANGAL B-B-Q</strong></div><span class="cafe-description">- Шашлюля</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="12"><div class="cafe-line"><span class="cafe-rating">5*</span><strong>kruatabird</strong></div><span class="cafe-description">- сифуд</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="13"><div class="cafe-line"><span class="cafe-rating">5*</span><strong>CHAO DOI COFFEE</strong></div><span class="cafe-description">- Кофейня</span></button>
             </div>
             <div class="cafe-sub-block jomtien" data-subblock-name="jomtien">
                 <h3>Джомтьен</h3>
-                <button class="geo-item-btn" data-type="cafe" data-id="14"><span class="cafe-rating">4.7*</span> <strong>Tum Yum Bar</strong><br><span class="cafe-description">- тай</span></button>
+                <button class="geo-item-btn" data-type="cafe" data-id="14"><div class="cafe-line"><span class="cafe-rating">4.7*</span><strong>Tum Yum Bar</strong></div><span class="cafe-description">- тай</span></button>
             </div>
         </div>
         
@@ -161,13 +161,13 @@
             <h3>⛩️ Храмы</h3>
             <div class="geo-items-container">
                 <button class="geo-item-btn" data-type="temple" data-id="15"><span class="icon">⛩️</span> <strong>Wat Chai Mongkhon</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="16"><span class="icon">⛩️</span> <strong>[translate:เมรุ วัดชัยมงคล]</strong></button>
+                <button class="geo-item-btn" data-type="temple" data-id="16"><span class="icon">⛩️</span> <strong>เมรุ วัดชัยมงคล</strong></button>
                 <button class="geo-item-btn" data-type="temple" data-id="17"><span class="icon">⛩️</span> <strong>Wat Nong Oo</strong></button>
                 <button class="geo-item-btn" data-type="temple" data-id="18"><span class="icon">⛩️</span> <strong>Wat Photi Samphan</strong></button>
                 <button class="geo-item-btn" data-type="temple" data-id="19"><span class="icon">⛩️</span> <strong>Wat Sawang Fa Phruettharam</strong></button>
                 <button class="geo-item-btn" data-type="temple" data-id="20"><span class="icon">⛩️</span> <strong>Wat Nong Yai</strong></button>
                 <button class="geo-item-btn" data-type="temple" data-id="21"><span class="icon">⛩️</span> <strong>Большой Будда</strong></button>
-                <button class="geo-item-btn" data-type="temple" data-id="22"><span class="icon">⛩️</span> <strong>[translate:วัดใหม่หาดกระทึงทอง]</strong></button>
+                <button class="geo-item-btn" data-type="temple" data-id="22"><span class="icon">⛩️</span> <strong>วัดใหม่หาดกระทึงทอง</strong></button>
                 <button class="geo-item-btn" data-type="temple" data-id="23"><span class="icon">⛩️</span> <strong>Wat Nong Chab Tao</strong></button>
                 <button class="geo-item-btn" data-type="temple" data-id="24"><span class="icon">⛩️</span> <strong>Laser Buddha Sattahip</strong></button>
             </div>
