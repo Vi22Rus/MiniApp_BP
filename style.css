@@ -799,6 +799,60 @@ body {
 .geo-item-rating-button .star.filled {
   color: #ffd700;
 }
+.add-place-modal {
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  padding: 24px;
+}
+
+.add-place-form {
+  margin-top: 16px;
+}
+
+.add-place-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.add-place-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.apply-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 auto;
+  transition: all 0.2s;
+}
+
+.apply-btn:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+.geo-item-btn.add-place-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  border: 2px dashed white;
+}
+
 
 
 
