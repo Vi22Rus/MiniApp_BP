@@ -1087,15 +1087,31 @@ function initGeoItemButton(button) {
         ratingButton.innerHTML = '<span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span>';
         ratingButton.onclick = (e) => {
             e.stopPropagation();
+            e.preventDefault();
             openRatingModal(id);
         };
+        // Блокируем обработчики нажатия на кнопке
+        ratingButton.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
+        ratingButton.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+        });
         button.appendChild(ratingButton);
         loadGeoRatingForButton(id, ratingButton);
     }
 
     let pressTimer = null;
+    let clickTarget = null;
 
     const handleStart = (e) => {
+        clickTarget = e.target;
+        
+        // Проверяем, что клик не по кнопке со звёздами
+        if (e.target.closest('.geo-item-rating-button')) {
+            return;
+        }
+        
         pressTimer = setTimeout(() => {
             if (!userCoords) {
                 alert('Сначала определите местоположение');
@@ -1109,6 +1125,13 @@ function initGeoItemButton(button) {
     };
 
     const handleEnd = (e) => {
+        // Проверяем, что клик не по кнопке со звёздами
+        if (e.target.closest('.geo-item-rating-button') || clickTarget?.closest('.geo-item-rating-button')) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+            return;
+        }
+        
         if (pressTimer) {
             clearTimeout(pressTimer);
             // Обычный клик
@@ -1121,11 +1144,13 @@ function initGeoItemButton(button) {
             }
         }
         pressTimer = null;
+        clickTarget = null;
     };
 
     const handleCancel = () => {
         clearTimeout(pressTimer);
         pressTimer = null;
+        clickTarget = null;
     };
 
     button.addEventListener('mousedown', handleStart);
@@ -1135,6 +1160,7 @@ function initGeoItemButton(button) {
     button.addEventListener('touchend', handleEnd);
     button.addEventListener('touchcancel', handleCancel);
 }
+
 
 
 function openRatingModal(geoId) {
