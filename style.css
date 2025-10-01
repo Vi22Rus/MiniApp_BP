@@ -860,6 +860,19 @@ body {
   flex-grow: 1;
   line-height: 1.4;
 }
+.cafe-rating {
+  color: #f59e0b; /* Оранжевый для рейтинга */
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.cafe-description {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: normal;
+  margin-top: 4px;
+}
 
 
 
