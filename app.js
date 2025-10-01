@@ -539,19 +539,39 @@ function initGeoItemButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
 
+    // Добавляем звёзды под название блока (если ещё не добавлены)
+    if (!button.querySelector('.geo-item-rating')) {
+        const ratingDiv = document.createElement('div');
+        ratingDiv.className = 'geo-item-rating';
+        for (let i = 1; i <= 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'star';
+            star.textContent = '☆';
+            star.dataset.value = i;
+            ratingDiv.appendChild(star);
+        }
+        button.appendChild(ratingDiv);
+        loadGeoRating(id, ratingDiv);
+    }
+
     let pressTimer = null;
     let startX, startY;
     let isScrolling = false;
+    let isSwipe = false;
     const MOVE_THRESHOLD = 10;
 
     const handlePressStart = (e) => {
         isScrolling = false;
+        isSwipe = false;
         startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-
+        
         pressTimer = setTimeout(() => {
-            if (!isScrolling) {
-                if (!userCoords) return alert('Сначала определите ваше местоположение.');
+            if (!isScrolling && !isSwipe) {
+                if (!userCoords) {
+                    alert('Сначала определите местоположение');
+                    return;
+                }
                 const destination = allGeoData[id].coords.join(',');
                 const origin = userCoords.join(',');
                 window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
@@ -562,9 +582,19 @@ function initGeoItemButton(button) {
 
     const handlePressMove = (e) => {
         if (isScrolling || !pressTimer) return;
+        
         const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        if (Math.abs(currentX - startX) > MOVE_THRESHOLD || Math.abs(currentY - startY) > MOVE_THRESHOLD) {
+        const diffX = currentX - startX;
+        const diffY = Math.abs(currentY - startY);
+
+        // Свайп слева направо для рейтинга
+        if (diffX > 50 && diffY < 30) {
+            isSwipe = true;
+            clearTimeout(pressTimer);
+            pressTimer = null;
+            openRatingModal(id);
+        } else if (Math.abs(diffX) > MOVE_THRESHOLD || diffY > MOVE_THRESHOLD) {
             isScrolling = true;
             clearTimeout(pressTimer);
             pressTimer = null;
@@ -572,10 +602,10 @@ function initGeoItemButton(button) {
     };
 
     const handlePressEnd = (e) => {
-        if (!isScrolling && pressTimer) {
+        if (!isScrolling && !isSwipe && pressTimer) {
             e.preventDefault();
             clearTimeout(pressTimer);
-            
+            // Обычный клик
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
                 showPlaygroundModal(allGeoData[id]);
             } else if (allGeoData[id] && allGeoData[id].type === 'park') {
@@ -587,7 +617,10 @@ function initGeoItemButton(button) {
         pressTimer = null;
     };
 
-    const handlePressCancel = () => { clearTimeout(pressTimer); pressTimer = null; };
+    const handlePressCancel = () => {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    };
 
     button.removeEventListener('mousedown', handlePressStart);
     button.removeEventListener('mousemove', handlePressMove);
