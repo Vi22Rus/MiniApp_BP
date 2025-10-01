@@ -700,4 +700,60 @@ body {
   box-shadow: 0 0 5px rgba(0,0,0,0.1);
   border-radius: var(--radius);
 }
+.rating-modal {
+  text-align: center;
+  padding: 24px;
+  position: relative;
+}
+
+.stars-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px 0;
+  font-size: 2.5rem;
+  user-select: none;
+}
+
+.star {
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ddd;
+}
+
+.star.filled {
+  color: #ffd700;
+}
+
+.star:hover {
+  transform: scale(1.1);
+}
+
+.reset-btn {
+  padding: 8px 16px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.geo-item-rating {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.geo-item-rating .star {
+  font-size: 1rem;
+  color: #ddd;
+}
+
+.geo-item-rating .star.filled {
+  color: #ffd700;
+}
+
 
