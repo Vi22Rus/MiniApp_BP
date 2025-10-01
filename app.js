@@ -800,16 +800,27 @@ function renderActivities(list) {
             'Музей искусств 3D': `<p class="price">Взрослый 235 ฿ / Детский 180 ฿</p>`,
             'Зоопарк Кхао Кхео': `<p class="price">Взрослый 350 ฿ / Детский 120 ฿</p>`,
             'Ко Лан': `<p class="price">Паром 30 ฿ / Общие расходы ~1,500 ฿</p>`
-};
+        };
         const priceLine = prices[a.name] || '';
-        const dist = userCoords && a.coords ? `<p class="distance-tag">≈${getDistance(userCoords, [a.coords.lat, a.coords.lng])} км</p>` : '';
-        
-        const buttonHtml = '';
-        
-        return `<div class=\"${cardClass}\" onclick=\"handleCardClick('${a.name}', '${a.date}', '${a.type}')\" style=\"cursor: pointer;\"><h3>${icon}${a.name}</h3><div class="weather" data-date="${a.date}"></div><p>${a.date}</p>${priceLine}${dist}${buttonHtml}</div>`;
+        const weatherDiv = `<div class="weather" data-date="${a.date}"></div>`;
+
+        if(a.type === 'sea') {
+            return `<div class="${cardClass}" onclick="handleCardClick('${a.name}', '${a.date}', '${a.type}')">
+              <p>${a.date}</p>
+              <h3>${icon}${a.name}</h3>
+              ${weatherDiv}
+            </div>`;
+        } else if(a.type === 'sight') {
+            return `<div class="${cardClass}" onclick="handleCardClick('${a.name}', '${a.date}', '${a.type}')">
+              <p>${a.date}</p>
+              <h3>${icon}${a.name}</h3>
+              ${priceLine}
+              ${weatherDiv}
+            </div>`;
+        }
     }).join('');
 
-    // Загружаем температуру для всех активностей
+    // Остальной код renderActivities не меняется!
     list.forEach(async (activity) => {
         const weather = await fetchWeatherData(activity.date);
         const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
@@ -824,6 +835,7 @@ function renderActivities(list) {
     });
     bindDetailButtons();
 }
+
 
 function bindDetailButtons() {
     document.querySelectorAll('.details').forEach(btn => {
