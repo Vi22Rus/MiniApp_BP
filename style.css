@@ -695,3 +695,9 @@ body {
   border: 2px solid #eee !important;
   opacity: 0.85;
 }
+.card-bordered {
+  border: 2px solid #888888;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  border-radius: var(--radius);
+}
+
