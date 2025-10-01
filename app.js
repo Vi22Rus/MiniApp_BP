@@ -1335,7 +1335,31 @@ function closeAddPlaceModal() {
     const modal = document.getElementById('addPlaceModal');
     if (modal) modal.classList.remove('active');
 }
+// Словарь перевода русских названий блоков и подблоков в английские ключи
+const russianToEnglishMap = {
+    // Основные блоки
+    'кафе': 'cafe',
+    'парки': 'park',
+    'площадки': 'playground',
+    
+    // Подблоки кафе (районы)
+    'наклуа': 'naklua',
+    'пратамнак': 'pratamnak',
+    'джомтьен': 'jomtien'
+};
 
+// Функция транслитерации ТОЛЬКО для блоков и подблоков
+function translateRussianToKey(text) {
+    const lowerText = text.toLowerCase().trim();
+    
+    // Проверяем прямое совпадение в словаре
+    if (russianToEnglishMap[lowerText]) {
+        return russianToEnglishMap[lowerText];
+    }
+    
+    // Если нет в словаре, возвращаем как есть
+    return text.trim();
+}
 // Добавить новое место
 async function addNewPlace() {
     const input = document.getElementById('placeDataInput');
@@ -1346,17 +1370,19 @@ async function addNewPlace() {
         return;
     }
 
-    // Парсинг данных
     const parts = data.split(',').map(s => s.trim());
     
     if (parts.length < 6) {
-        alert('Недостаточно данных. Нужно минимум 6 значений через запятую.');
+        alert('Недостаточно данных. Формат:\nБлок, Подблок, Название, Описание, Ссылка, Широта, Долгота');
         return;
     }
 
-    const [blockType, subBlock, name, description, link, lat, lon, ...rest] = parts;
+    const [blockType, subBlock, name, description, link, lat, lon] = parts;
     
-    // Проверка координат
+    // ТОЛЬКО блок и подблок переводим из русского в английский
+    const translatedBlockType = translateRussianToKey(blockType);
+    const translatedSubBlock = subBlock ? translateRussianToKey(subBlock) : null;
+    
     const latitude = parseFloat(lat);
     const longitude = parseFloat(lon);
     
@@ -1365,16 +1391,26 @@ async function addNewPlace() {
         return;
     }
 
-    // Создание нового объекта места
     const newPlace = {
-        id: Date.now(), // Уникальный ID
-        type: blockType.toLowerCase(),
-        subBlock: subBlock || null,
+        id: Date.now(),
+        type: translatedBlockType,
+        subBlock: translatedSubBlock,
         name: name,
         description: description || '',
         link: link,
         coords: [latitude, longitude]
     };
+
+    dynamicGeoData.push(newPlace);
+    await setStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData));
+    
+    console.log('✓ Добавлено новое место:', newPlace);
+    closeAddPlaceModal();
+    renderGeoItemsWithDynamic();
+    alert('Место успешно добавлено!');
+}
+
+
 
     // Добавление в массив
     dynamicGeoData.push(newPlace);
