@@ -751,6 +751,20 @@ body {
   font-size: 1rem;
   color: #ddd;
 }
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
 
 .geo-item-rating .star.filled {
   color: #ffd700;
