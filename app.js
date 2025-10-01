@@ -1302,5 +1302,141 @@ async function loadGeoRatingForButton(geoId, ratingButton) {
         }
     });
 }
+// Переменная для хранения динамических мест
+let dynamicGeoData = [];
+
+// Инициализация: загрузка динамических данных из Firebase
+async function loadDynamicGeoData() {
+    const saved = await getStorageItem('dynamic_geo_data');
+    if (saved) {
+        try {
+            dynamicGeoData = JSON.parse(saved);
+            console.log('✓ Загружено динамических мест:', dynamicGeoData.length);
+        } catch (e) {
+            console.error('Ошибка парсинга динамических данных:', e);
+            dynamicGeoData = [];
+        }
+    }
+}
+
+// Открыть модальное окно добавления места
+function openAddPlaceModal() {
+    const modal = document.getElementById('addPlaceModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.getElementById('placeDataInput').value = '';
+    }
+}
+
+// Закрыть модальное окно
+function closeAddPlaceModal() {
+    const modal = document.getElementById('addPlaceModal');
+    if (modal) modal.classList.remove('active');
+}
+
+// Добавить новое место
+async function addNewPlace() {
+    const input = document.getElementById('placeDataInput');
+    const data = input.value.trim();
+    
+    if (!data) {
+        alert('Пожалуйста, введите данные');
+        return;
+    }
+
+    // Парсинг данных
+    const parts = data.split(',').map(s => s.trim());
+    
+    if (parts.length < 6) {
+        alert('Недостаточно данных. Нужно минимум 6 значений через запятую.');
+        return;
+    }
+
+    const [blockType, subBlock, name, description, link, lat, lon, ...rest] = parts;
+    
+    // Проверка координат
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lon);
+    
+    if (isNaN(latitude) || isNaN(longitude)) {
+        alert('Неверный формат координат');
+        return;
+    }
+
+    // Создание нового объекта места
+    const newPlace = {
+        id: Date.now(), // Уникальный ID
+        type: blockType.toLowerCase(),
+        subBlock: subBlock || null,
+        name: name,
+        description: description || '',
+        link: link,
+        coords: [latitude, longitude]
+    };
+
+    // Добавление в массив
+    dynamicGeoData.push(newPlace);
+    
+    // Сохранение в Firebase
+    await setStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData));
+    
+    console.log('✓ Добавлено новое место:', newPlace);
+    
+    // Закрыть модальное окно
+    closeAddPlaceModal();
+    
+    // Перезагрузить список мест
+    applyGeoFilter(activeGeoFilter);
+    
+    alert('Место успешно добавлено!');
+}
+
+// Обновите функцию renderGeoItems для включения динамических мест
+function renderGeoItemsWithDynamic() {
+    const container = document.getElementById('geoGrid');
+    if (!container) return;
+
+    // Объединяем статические и динамические данные
+    const allData = [...allGeoData, ...dynamicGeoData];
+    
+    // Фильтруем по активному фильтру
+    let filtered = allData;
+    if (activeGeoFilter && activeGeoFilter !== 'all') {
+        filtered = allData.filter(item => {
+            if (item.type === 'cafe' && item.subBlock) {
+                return item.subBlock === activeGeoFilter;
+            }
+            return item.type === activeGeoFilter;
+        });
+    }
+
+    // Генерируем HTML
+    let html = '';
+    filtered.forEach((item, index) => {
+        const btnClass = `geo-item-btn ${item.type === 'cafe' ? 'cafe-item' : ''}`;
+        const displayName = item.name || `Место ${index + 1}`;
+        
+        html += `<button class="${btnClass}" data-id="${item.id || index}">${displayName}</button>`;
+    });
+
+    // Добавляем кнопку "Добавить место" в конец
+    html += `<button class="geo-item-btn add-place-btn" onclick="openAddPlaceModal()">➕ Добавить место</button>`;
+
+    container.innerHTML = html;
+
+    // Инициализируем обработчики для всех кнопок
+    container.querySelectorAll('.geo-item-btn:not(.add-place-btn)').forEach(btn => {
+        initGeoItemButton(btn);
+    });
+}
+
+// Обновите вызов при инициализации приложения
+document.addEventListener('DOMContentLoaded', async () => {
+    initFirebase();
+    await loadDynamicGeoData();
+    // ... остальной код инициализации
+    renderGeoItemsWithDynamic();
+});
+
 
 
