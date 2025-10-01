@@ -966,7 +966,8 @@ function openDailyPlanModal(activityName, date) {
     
     if (!modal || !grid) return;
     
-    document.querySelector('#dailyPlanModalBody h3').textContent = `📝 Планы на день - ${activityName}`;
+    document.querySelector('#dailyPlanModalBody h3').textContent = `${date}`;
+
     
     let timeSlots = '';
     const timeSlotData = [];
