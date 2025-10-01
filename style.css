@@ -465,18 +465,20 @@ body {
 }
 
 .geo-item-btn {
-    display: flex;
-    flex-direction: column;  /* ✅ Вертикальное расположение */
-    justify-content: space-between;  /* ✅ Распределяем контент */
-    align-items: stretch;  /* ✅ Растягиваем по ширине */
-    padding: 12px;
-    background: var(--surface);
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.2s;
-    min-height: 80px;  /* ✅ Минимальная высота блока */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 12px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  min-height: 80px;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 
@@ -853,11 +855,10 @@ body {
 }
 /* Контейнер с текстом блока */
 .geo-item-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: block; /* Изменили с flex на block */
   margin-bottom: 8px;
   flex-grow: 1;
+  line-height: 1.4;
 }
 
 
