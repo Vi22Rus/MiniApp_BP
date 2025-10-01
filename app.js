@@ -755,15 +755,15 @@ function updateCountdown() {
     
     if (now < startTrip) {
         const days = Math.ceil((startTrip - now) / 864e5);
-        document.getElementById('countdownText').textContent = 'До поездки:';
+        document.getElementById('countdownText').textContent = '✈️ До поездки:';
         document.getElementById('days').textContent = days;
         document.querySelector('.countdown-label').textContent = 'дней';
         
     } else if (now >= startTrip && now < endTrip) { 
         const daysToGo = Math.ceil((endTrip - now) / 864e5);
-        document.getElementById('countdownText').textContent = 'До отъезда:';
+        document.getElementById('countdownText').textContent = '⛱️ Наслаждаемся:';
         document.getElementById('days').textContent = daysToGo;
-        document.querySelector('.countdown-label').textContent = 'дней';
+        document.querySelector('.countdown-label').textContent = 'дней ⛱️';
         
     } else { 
         document.getElementById('countdownText').textContent = 'Поездка завершена!';
