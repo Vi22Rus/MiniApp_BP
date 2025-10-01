@@ -112,9 +112,13 @@ body {
   color: #fff;
 }
 
-.grid {
-  display: grid;
+#activitiesGrid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   gap: var(--gap);
+  padding: 0;
+  margin: 0;
 }
 
 @media (min-width: 400px) {
@@ -124,6 +128,10 @@ body {
 }
 
 .card {
+  width: 100% !important;
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 100%;
   background: var(--surface);
   border-radius: var(--radius);
   padding: var(--gap);
