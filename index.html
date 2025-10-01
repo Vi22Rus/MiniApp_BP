@@ -243,5 +243,20 @@
     <button class="reset-btn" onclick="resetRating()">Сбросить</button>
   </div>
 </div>
+  <!-- Add Place Modal -->
+<div id="addPlaceModal" class="modal-overlay">
+  <div class="modal-content add-place-modal">
+    <button class="close-btn" onclick="closeAddPlaceModal()">✕</button>
+    <h3>Добавить новое место</h3>
+    <div class="add-place-form">
+      <textarea id="placeDataInput" placeholder="Введите данные через запятую:
+Блок, Подблок (если кафе), Название, Описание, Ссылка на Google Maps, Широта, Долгота
+
+Пример:
+cafe, naklua, Кофейня ABC, Уютное место, https://maps.app.goo.gl/abc123, 12.9236, 100.8825" rows="8"></textarea>
+      <button id="applyPlaceBtn" class="apply-btn" onclick="addNewPlace()">✓ Применить</button>
+    </div>
+  </div>
+</div>
     </body>
 </html>
