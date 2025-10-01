@@ -228,5 +228,20 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <!-- Rating Modal -->
+<div id="ratingModal" class="modal-overlay">
+  <div class="modal-content rating-modal">
+    <button class="close-btn" onclick="closeRatingModal()">✕</button>
+    <h3 id="ratingPlaceName"></h3>
+    <div class="stars-container" id="starsContainer">
+      <span class="star" data-value="1">☆</span>
+      <span class="star" data-value="2">☆</span>
+      <span class="star" data-value="3">☆</span>
+      <span class="star" data-value="4">☆</span>
+      <span class="star" data-value="5">☆</span>
+    </div>
+    <button class="reset-btn" onclick="resetRating()">Сбросить</button>
+  </div>
+</div>
     </body>
 </html>
