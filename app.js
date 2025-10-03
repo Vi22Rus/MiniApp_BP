@@ -5,6 +5,24 @@ if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    
+    // ✅ Задержка для Telegram Desktop (старый Chromium медленнее)
+    if (tg.platform === 'tdesktop') {
+        console.log('✓ Telegram Desktop - добавлена задержка инициализации');
+        setTimeout(() => {
+            document.addEventListener('DOMContentLoaded', initApp);
+        }, 500);
+    } else {
+        document.addEventListener('DOMContentLoaded', initApp);
+    }
+} else {
+    document.addEventListener('DOMContentLoaded', initApp);
+}
+
+if (window.Telegram && window.Telegram.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
     console.log('✓ Telegram WebApp готов');
     console.log('Платформа:', tg.platform);
 } else {
@@ -349,26 +367,12 @@ function getDistance([lat1, lon1], [lat2, lon2]) {
     return (R * c).toFixed(1);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        initApp();
-    } catch (e) {
-        console.error("Критическая ошибка при инициализации:", e);
-    }
-});
-
-function initApp() {
+async function initApp() {
     initFirebase();
     
-    // ✅ Используем Promise вместо async/await для совместимости
-    loadDynamicGeoData()
-        .then(function() {
-            renderDynamicPlaces();
-            console.log('✓ Динамические данные загружены');
-        })
-        .catch(function(error) {
-            console.error('❌ Ошибка загрузки динамических данных:', error);
-        });
+    // ✅ ОСТАВЛЯЕМ async/await - это работает в Telegram Desktop
+    await loadDynamicGeoData();
+    renderDynamicPlaces();
     
     initTabs();
     initCalendarFilters();
@@ -381,18 +385,12 @@ function initApp() {
     renderActivities(activities);
     renderContacts(points);
     
-    var closeModalBtn = document.getElementById('closeModal');
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', closeModal);
-    }
-    
-    var modalOverlay = document.getElementById('modalOverlay');
-    if (modalOverlay) {
-        modalOverlay.addEventListener('click', function(e) {
-            if (e.target.id === 'modalOverlay') closeModal();
-        });
-    }
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+        if (e.target.id === 'modalOverlay') closeModal();
+    });
 }
+
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -1383,42 +1381,36 @@ async function loadDynamicGeoData() {
 }
 
 // Добавить новое место
-function addNewPlace() {
-    var input = document.getElementById('placeDataInput');
-    var data = input.value.trim();
+async function addNewPlace() {
+    const input = document.getElementById('placeDataInput');
+    const data = input.value.trim();
     
     if (!data) {
         alert('Пожалуйста, введите данные');
         return;
     }
 
-    var parts = data.split(',').map(function(s) { return s.trim(); });
+    const parts = data.split(',').map(s => s.trim());
     
     if (parts.length < 7) {
         alert('Недостаточно данных. Формат:\nБлок, Подблок, Название, Описание, Ссылка, Широта, Долгота');
         return;
     }
 
-    var blockType = parts[0];
-    var subBlock = parts[1];
-    var name = parts[2];
-    var description = parts[3];
-    var link = parts[4];
-    var lat = parts[5];
-    var lon = parts[6];
+    const [blockType, subBlock, name, description, link, lat, lon] = parts;
     
-    var translatedBlockType = translateRussianToKey(blockType);
-    var translatedSubBlock = subBlock ? translateRussianToKey(subBlock) : null;
+    const translatedBlockType = translateRussianToKey(blockType);
+    const translatedSubBlock = subBlock ? translateRussianToKey(subBlock) : null;
     
-    var latitude = parseFloat(lat);
-    var longitude = parseFloat(lon);
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lon);
     
     if (isNaN(latitude) || isNaN(longitude)) {
         alert('Неверный формат координат');
         return;
     }
 
-    var newPlace = {
+    const newPlace = {
         id: Date.now(),
         type: translatedBlockType,
         subBlock: translatedSubBlock,
@@ -1429,70 +1421,63 @@ function addNewPlace() {
     };
 
     dynamicGeoData.push(newPlace);
+    await setStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData));
     
-    setStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData))
-        .then(function() {
-            console.log('✓ Добавлено новое место:', newPlace);
-            
-            allGeoData.push(newPlace);
-            var newId = allGeoData.length - 1;
-            var container = null;
-            
-            if (translatedBlockType === 'cafe' && translatedSubBlock) {
-                container = document.querySelector('.cafe-sub-block[data-subblock-name="' + translatedSubBlock + '"]');
-            } else if (translatedBlockType === 'temple') {
-                container = document.querySelector('.geo-temples .geo-items-container');
-            } else if (translatedBlockType === 'playground') {
-                container = document.querySelector('.geo-playgrounds .geo-items-container');
-            } else if (translatedBlockType === 'park') {
-                container = document.querySelector('.geo-parks .geo-items-container');
-            }
-            
-            if (!container) {
-                alert('❌ Контейнер не найден для типа: ' + blockType);
-                console.error('Не найден контейнер для:', translatedBlockType, translatedSubBlock);
-                return;
-            }
-            
-            var button = document.createElement('button');
-            button.className = 'geo-item-btn';
-            button.dataset.type = translatedBlockType;
-            button.dataset.id = newId;
-            
-            if (translatedBlockType === 'cafe') {
-                button.innerHTML = 
-                    '<div class="cafe-line">' +
-                        '<span class="cafe-rating">⭐</span>' +
-                        '<strong>' + name + '</strong>' +
-                    '</div>' +
-                    '<span class="cafe-description">- ' + description + '</span>';
-            } else {
-                var icon = getIconForType(translatedBlockType);
-                button.innerHTML = '<span class="icon">' + icon + '</span><strong>' + name + '</strong>';
-            }
-            
-            var addBtn = container.querySelector('.add-place-btn');
-            if (addBtn) {
-                container.insertBefore(button, addBtn);
-            } else {
-                container.appendChild(button);
-            }
-            
-            if (typeof initGeoItemButton === 'function') {
-                initGeoItemButton(button);
-            }
-            
-            closeAddPlaceModal();
-            alert('✅ Место успешно добавлено!');
-            input.value = '';
-        })
-        .catch(function(error) {
-            console.error('❌ Ошибка сохранения:', error);
-            alert('Ошибка при сохранении места');
-        });
+    console.log('✓ Добавлено новое место:', newPlace);
+    
+    allGeoData.push(newPlace);
+    const newId = allGeoData.length - 1;
+    let container = null;
+    
+    if (translatedBlockType === 'cafe' && translatedSubBlock) {
+        container = document.querySelector(`.cafe-sub-block[data-subblock-name="${translatedSubBlock}"]`);
+    } else if (translatedBlockType === 'temple') {
+        container = document.querySelector('.geo-temples .geo-items-container');
+    } else if (translatedBlockType === 'playground') {
+        container = document.querySelector('.geo-playgrounds .geo-items-container');
+    } else if (translatedBlockType === 'park') {
+        container = document.querySelector('.geo-parks .geo-items-container');
+    }
+    
+    if (!container) {
+        alert('❌ Контейнер не найден для типа: ' + blockType);
+        console.error('Не найден контейнер для:', translatedBlockType, translatedSubBlock);
+        return;
+    }
+    
+    const button = document.createElement('button');
+    button.className = 'geo-item-btn';
+    button.dataset.type = translatedBlockType;
+    button.dataset.id = newId;
+    
+    if (translatedBlockType === 'cafe') {
+        button.innerHTML = `
+            <div class="cafe-line">
+                <span class="cafe-rating">⭐</span>
+                <strong>${name}</strong>
+            </div>
+            <span class="cafe-description">- ${description}</span>
+        `;
+    } else {
+        const icon = getIconForType(translatedBlockType);
+        button.innerHTML = `<span class="icon">${icon}</span><strong>${name}</strong>`;
+    }
+    
+    const addBtn = container.querySelector('.add-place-btn');
+    if (addBtn) {
+        container.insertBefore(button, addBtn);
+    } else {
+        container.appendChild(button);
+    }
+    
+    if (typeof initGeoItemButton === 'function') {
+        initGeoItemButton(button);
+    }
+    
+    closeAddPlaceModal();
+    alert('✅ Место успешно добавлено!');
+    input.value = '';
 }
-
-
 // Рендеринг динамических мест при загрузке страницы
 function renderDynamicPlaces() {
     if (!dynamicGeoData || dynamicGeoData.length === 0) {
@@ -1502,21 +1487,19 @@ function renderDynamicPlaces() {
     
     console.log('✓ Загружено динамических мест:', dynamicGeoData.length);
     
-    dynamicGeoData.forEach(function(place) {
-        // Проверка массива
+    dynamicGeoData.forEach((place) => {
         if (!allGeoData) {
             console.error('❌ allGeoData не инициализирован');
             return;
         }
         
         allGeoData.push(place);
-        var newId = allGeoData.length - 1;
+        const newId = allGeoData.length - 1;
         
-        var container = null;
+        let container = null;
         
-        // Определяем контейнер
         if (place.type === 'cafe' && place.subBlock) {
-            container = document.querySelector('.cafe-sub-block[data-subblock-name="' + place.subBlock + '"]');
+            container = document.querySelector(`.cafe-sub-block[data-subblock-name="${place.subBlock}"]`);
         } else if (place.type === 'temple') {
             container = document.querySelector('.geo-temples .geo-items-container');
         } else if (place.type === 'playground') {
@@ -1530,43 +1513,38 @@ function renderDynamicPlaces() {
             return;
         }
         
-        // Создаём кнопку
-        var button = document.createElement('button');
+        const button = document.createElement('button');
         button.className = 'geo-item-btn';
         button.dataset.type = place.type;
         button.dataset.id = newId;
         
-        // Формируем HTML
         if (place.type === 'cafe') {
-            button.innerHTML = 
-                '<div class="cafe-line">' +
-                    '<span class="cafe-rating">☕</span>' +
-                    '<strong>' + place.name + '</strong>' +
-                '</div>' +
-                '<span class="cafe-description">- ' + place.description + '</span>';
+            button.innerHTML = `
+                <div class="cafe-line">
+                    <span class="cafe-rating">⭐</span>
+                    <strong>${place.name}</strong>
+                </div>
+                <span class="cafe-description">- ${place.description}</span>
+            `;
         } else {
-            var icon = getIconForType(place.type);
-            button.innerHTML = '<span class="icon">' + icon + '</span><strong>' + place.name + '</strong>';
+            const icon = getIconForType(place.type);
+            button.innerHTML = `<span class="icon">${icon}</span><strong>${place.name}</strong>`;
         }
         
-        // Добавляем в контейнер
-        var addBtn = container.querySelector('.add-place-btn');
+        const addBtn = container.querySelector('.add-place-btn');
         if (addBtn) {
             container.insertBefore(button, addBtn);
         } else {
             container.appendChild(button);
         }
         
-        // Инициализируем обработчики
         if (typeof initGeoItemButton === 'function') {
             initGeoItemButton(button);
         }
         
-        console.log('✅ Отрендерено: ' + place.name);
+        console.log(`✅ Отрендерено: ${place.name}`);
     });
 }
-
-
 // Вспомогательная функция для иконок
 function getIconForType(type) {
     const icons = {
