@@ -109,7 +109,7 @@ const allGeoData = [
         link: "https://maps.app.goo.gl/yt7ifzd85dPxYjkQ7", // ✅ ПРАВИЛЬНАЯ ССЫЛКА
         coords: [12.750080798690147, 100.96188921474689], // ✅ ПРАВИЛЬНЫЕ КООРДИНАТЫ
         name: "Ramayana Kids Zone", 
-        tips: "Детская зона в крупнейшем аквапарке Таиланда. Для детей до 106см БЕСПЛАТНО! Мини-горки, брызгалки, детский городок. Спасжилеты выдают бесплатно."
+        tips: "Детская зона в крупнейшем аквапарке Таиланда. Для детей до 106см БЕСПЛАТНО! Мини-горки, брызгалки, детский городок. Спасжилеты выд бесплатно."
     },
     { 
         type: 'playground', 
@@ -877,23 +877,27 @@ function showPlaceModal(place) {
     let content = `<h3>${getIconForActivity(place.name)} ${place.name}</h3>`;
     if (place.tips) content += `<p>💡 ${place.tips}</p>`;
 
+    // ✅ ДОБАВЛЕНО: Специальная ссылка на маршрут для Аюттайи
+    if (place.name === 'Аюттайя') {
+        content += `<p><a href="https://surl.li/mniuio" target="_blank">🗺️ Маршрут</a></p>`;
+    }
+
     if (place.coords) {
         const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
         const to = `${place.coords.lat},${place.coords.lng}`;
-    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-    if (userCoords) {
-        const userFrom = `${userCoords[0]},${userCoords[1]}`;
-        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
-        const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
-        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
-    }
-        } else {
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
+        if (userCoords) {
+            const userFrom = `${userCoords[0]},${userCoords[1]}`;
+            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
+            const distance = getDistance(userCoords, [place.coords.lat, place.coords.lng]);
+            content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+        }
+    } else {
         content += `<p>📍 Координаты не указаны</p>`;
     }
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
-
 const points = [];
 
 function renderContacts(list) {
