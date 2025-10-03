@@ -18,17 +18,6 @@ if (window.Telegram && window.Telegram.WebApp) {
 } else {
     document.addEventListener('DOMContentLoaded', initApp);
 }
-
-if (window.Telegram && window.Telegram.WebApp) {
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-    console.log('✓ Telegram WebApp готов');
-    console.log('Платформа:', tg.platform);
-} else {
-    console.log('✓ Запуск в обычном браузере');
-}
-
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
   authDomain: "pattaya-plans-app.firebaseapp.com",
@@ -46,18 +35,18 @@ let firebaseDatabase;
 function initFirebase() {
     try {
         if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+            firebaseApp = firebase.initializeApp(firebaseConfig);
             console.log('✓ Firebase инициализирован');
         } else {
+            firebaseApp = firebase.apps[0];
             console.log('✓ Firebase уже инициализирован');
         }
-        window.db = firebase.database();
+        firebaseDatabase = firebase.database();
+        window.db = firebaseDatabase;
     } catch (error) {
         console.error('❌ Ошибка Firebase:', error);
     }
 }
-
-
 // ===== WEATHER API CONFIGURATION =====
 const PATTAYA_LAT = 12.9236;
 const PATTAYA_LON = 100.8825;
@@ -355,6 +344,34 @@ async function removeStorageItem(key, callback = null) {
         localStorage.removeItem(key);
         if (callback) callback();
     }
+}
+async function setGeoStorageItem(key, value) {
+    if (firebaseDatabase) {
+        try {
+            await firebaseDatabase.ref('geo_data/' + key).set(value);
+            console.log('✅ Firebase Geo: сохранено', key);
+        } catch (error) {
+            console.error('✗ Firebase geo save error:', error);
+            localStorage.setItem(key, value);
+        }
+    } else {
+        localStorage.setItem(key, value);
+    }
+}
+
+async function getGeoStorageItem(key) {
+    if (firebaseDatabase) {
+        try {
+            const snapshot = await firebaseDatabase.ref('geo_data/' + key).once('value');
+            if (snapshot.exists()) {
+                console.log('✅ Firebase Geo: загружено', key);
+                return snapshot.val();
+            }
+        } catch (error) {
+            console.error('✗ Firebase geo load error:', error);
+        }
+    }
+    return localStorage.getItem(key);
 }
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
@@ -1368,7 +1385,7 @@ function translateRussianToKey(text) {
 }
 
 async function loadDynamicGeoData() {
-    const saved = await getStorageItem('dynamic_geo_data');
+    const saved = await getGeoStorageItem('dynamic_geo_data');
     if (saved) {
         try {
             dynamicGeoData = JSON.parse(saved);
@@ -1379,7 +1396,6 @@ async function loadDynamicGeoData() {
         }
     }
 }
-
 // Добавить новое место
 async function addNewPlace() {
     const input = document.getElementById('placeDataInput');
@@ -1421,7 +1437,7 @@ async function addNewPlace() {
     };
 
     dynamicGeoData.push(newPlace);
-    await setStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData));
+    await setGeoStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData));
     
     console.log('✓ Добавлено новое место:', newPlace);
     
