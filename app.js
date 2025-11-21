@@ -2,17 +2,27 @@
 // Исправлено: Загрузка данных ежедневника через async/await
 // 2025-10-01
 // ===== FIREBASE CONFIGURATION =====
-// НОВОЕ: валюты, кэш и состояние курса
-const FX_BASES = ['THB', 'USD', 'CNY']; // базовые валюты
-const FX_TARGET = 'RUB';                // фиксированная цель
+// ===== КОНФИГ ВАЛЮТ И СОСТОЯНИЕ КУРСА =====
+
+// Базовые валюты, которые можно выбрать в UI
+const FX_BASES = ['THB', 'USD', 'CNY'];
+// Целевая валюта фиксирована
+const FX_TARGET = 'RUB';
+
+// Текущее состояние курса
 let fxState = {
-  base: 'THB',
-  rate: null,        // курс 1 base -> RUB
-  inverse: null,     // курс 1 RUB -> base
-  updatedAt: null,   // timestamp
+  base: 'THB',        // активная базовая валюта
+  rate: null,         // курс base -> RUB
+  inverse: null,      // курс RUB -> base
+  updatedAt: null,    // локальное время последнего удачного запроса (ms)
+  nextUpdateAt: null, // время следующего обновления от провайдера (UTC в ms)
 };
-let fxCache = {};     // кэш по ключу base: { rate, inverse, ts }
-const FX_TTL_MS = 30 * 60 * 1000; // 30 минут
+
+// Кэш курсов по базовой валюте
+let fxCache = {};      // ключ: base, значение: { rate, inverse, ts, updatedAt, nextUpdateAt }
+
+// TTL кэша (30 минут)
+const FX_TTL_MS = 30 * 60 * 1000;
 
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
@@ -1732,92 +1742,77 @@ function addAddPlaceButton() {
         }
     });
 }
-// НОВОЕ: загрузка курса base->RUB через exchangerate.host
-// ЗАМЕНИТЬ: прямой курс base -> RUB без EUR
-// ЗАМЕНИТЬ: fetchFxRate — только THB/USD/CNY -> RUB, без ключей и без EUR
+// ===== ЗАГРУЗКА КУРСА И ВРЕМЕНИ СЛЕДУЮЩЕГО ОБНОВЛЕНИЯ =====
+// Используется формат API наподобие https://open.er-api.com/v6/latest/THB
+// В ответе есть поля time_next_update_utc и time_last_update_utc (UTC-строки).
 async function fetchFxRate(base) {
   const now = Date.now();
   const cache = fxCache[base];
+
+  // Используем кэш, если он не устарел
   if (cache && (now - cache.ts) < FX_TTL_MS) {
-    return { rate: cache.rate, inverse: cache.inverse, updatedAt: cache.ts };
+    return {
+      rate: cache.rate,
+      inverse: cache.inverse,
+      updatedAt: cache.updatedAt,
+      nextUpdateAt: cache.nextUpdateAt,
+    };
   }
-  if (!FX_BASES.includes(base)) throw new Error(`Unsupported base ${base}`);
-  if (base === 'RUB') throw new Error('Base cannot be RUB');
 
-  // Провайдер A: open.er-api.com (бесплатный)
-  const tryOpenErApi = async () => {
-    const u = `https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`;
-    const r = await fetch(u);
-    if (!r.ok) throw new Error(`erapi ${r.status}`);
-    const d = await r.json();
-    if (d?.result === 'error') throw new Error(`erapi ${d?.error_type || 'api error'}`);
-    const v = d?.rates?.RUB;
-    if (!Number.isFinite(v)) throw new Error('erapi RUB missing');
-    const ts = (d?.time_last_update_unix ? d.time_last_update_unix * 1000 : now);
-    return { rate: v, ts };
-  };
+  if (!FX_BASES.includes(base)) {
+    throw new Error(`Unsupported base ${base}`);
+  }
+  if (base === 'RUB') {
+    throw new Error('Base cannot be RUB');
+  }
 
-  // Провайдер B: api.exchangerate-api.com (бесплатный)
-  const tryExchangerateApiCom = async () => {
-    const u = `https://api.exchangerate-api.com/v4/latest/${encodeURIComponent(base)}`;
-    const r = await fetch(u);
-    if (!r.ok) throw new Error(`exrateapi ${r.status}`);
-    const d = await r.json();
-    const v = d?.rates?.RUB;
-    if (!Number.isFinite(v)) throw new Error('exrateapi RUB missing');
-    const ts = (d?.time_last_updated ? d.time_last_updated * 1000 : now);
-    return { rate: v, ts };
-  };
+  // Пример: https://open.er-api.com/v6/latest/THB
+  const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`;
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`FX ${resp.status}`);
+  }
 
-  // Провайдер C: exchangerate.host (бесплатный, но у вас RUB бывает пуст)
-  const tryExchangerateHost = async () => {
-    // сначала direct
-    const u1 = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=RUB`;
-    try {
-      const r1 = await fetch(u1);
-      if (r1.ok) {
-        const d1 = await r1.json();
-        const v1 = d1?.rates?.RUB;
-        if (Number.isFinite(v1)) {
-          const ts1 = (d1?.date ? Date.parse(d1.date) : now);
-          return { rate: v1, ts: ts1 };
-        }
-      }
-    } catch {}
-    // затем table
-    const u2 = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}`;
-    const r2 = await fetch(u2);
-    if (!r2.ok) throw new Error(`host ${r2.status}`);
-    const d2 = await r2.json();
-    const v2 = d2?.rates?.RUB;
-    if (!Number.isFinite(v2)) throw new Error('host RUB missing');
-    const ts2 = (d2?.date ? Date.parse(d2.date) : now);
-    return { rate: v2, ts: ts2 };
-  };
+  const data = await resp.json();
 
-  let result = null;
-  const attempts = [tryOpenErApi, tryExchangerateApiCom, tryExchangerateHost];
-  const errors = [];
-  for (const fn of attempts) {
-    try {
-      result = await fn();
-      break;
-    } catch (e) {
-      errors.push(e.message || String(e));
+  // У open.er-api поле result === 'success' при успехе
+  if (data?.result && data.result !== 'success') {
+    throw new Error(`FX error: ${data?.error_type || 'unknown'}`);
+  }
+
+  // Курс base -> RUB может быть либо в rates.RUB, либо в conversion_rates.RUB
+  const rawRate = data?.rates?.RUB ?? data?.conversion_rates?.RUB;
+  if (!Number.isFinite(rawRate)) {
+    throw new Error('FX RUB missing');
+  }
+
+  const rate = rawRate;
+  const inverse = rate > 0 ? (1 / rate) : null;
+
+  // Время следующего обновления от провайдера (UTC строка)
+  // Пример: "Sat, 22 Nov 2025 00:21:01 +0000"
+  let nextUpdateAt = null;
+  if (typeof data.time_next_update_utc === 'string') {
+    const ts = Date.parse(data.time_next_update_utc);
+    if (!Number.isNaN(ts)) {
+      nextUpdateAt = ts; // сохраняем как ms
     }
   }
-  if (!result) {
-    throw new Error(`FX rate missing (no-key providers): ${errors.join(' | ')}`);
-  }
 
-  const rate = result.rate;
-  const updatedAt = result.ts;
-  const inverse = rate > 0 ? (1 / rate) : null;
-  fxCache[base] = { rate, inverse, ts: updatedAt };
-  return { rate, inverse, updatedAt };
+  // Локальное время успешного запроса (для "когда мы в последний раз обновили")
+  const updatedAt = now;
+
+  // Сохраняем всё в кэш
+  fxCache[base] = {
+    rate,
+    inverse,
+    ts: now,
+    updatedAt,
+    nextUpdateAt,
+  };
+
+  return { rate, inverse, updatedAt, nextUpdateAt };
 }
-
-
 // НОВОЕ: форматирование чисел
 function fmtAmount(x, digits = 2) {
   if (x == null || !Number.isFinite(x)) return '—';
@@ -1832,7 +1827,35 @@ function fmtUpdated(ts) {
   return `Обновлено ${diffMin} мин назад`;
 }
 
-// НОВОЕ: пересчёт результата в RUB
+// ===== ФОРМАТИРОВАНИЕ ВРЕМЕНИ СЛЕДУЮЩЕГО ОБНОВЛЕНИЯ =====
+function fmtNextUpdate(ts) {
+  if (!ts) {
+    return 'Время следующего обновления неизвестно';
+  }
+
+  const now = Date.now();
+  const diffMs = ts - now;
+  const date = new Date(ts); // автоматически конвертируется в локальный часовой пояс
+
+  const timeStr = date.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  if (diffMs <= 0) {
+    return `Курс скоро обновится (ориентировочно в ${timeStr})`;
+  }
+
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 60) {
+    return `Следующее обновление в ${timeStr} (через ${diffMin} мин)`;
+  }
+
+  const diffHours = Math.round(diffMin / 60);
+  return `Следующее обновление в ${timeStr} (через ~${diffHours} ч)`;
+}
+
+// ===== ПЕРЕРАСЧЁТ КУРСА И ОБНОВЛЕНИЕ UI =====
 function recalcFxUI() {
   const amountEl = document.getElementById('rateAmount');
   const resultEl = document.getElementById('rateResultValue');
@@ -1840,22 +1863,32 @@ function recalcFxUI() {
   const statusEl = document.getElementById('rateStatusText');
   const baseBadge = document.getElementById('rateBaseBadge');
 
-  if (!amountEl || !resultEl) return;
+  if (!amountEl || !resultEl || !detailsEl || !statusEl || !baseBadge) {
+    return;
+  }
 
-  const amount = parseFloat(amountEl.value.replace(',', '.')) || 0;
+  const raw = (amountEl.value || '').toString().replace(',', '.');
+  const amount = parseFloat(raw) || 0;
+
   baseBadge.textContent = fxState.base;
 
   if (fxState.rate != null) {
     const rub = amount * fxState.rate;
     resultEl.textContent = fmtAmount(rub, 2);
-    detailsEl.textContent = `1 ${fxState.base} = ${fmtAmount(fxState.rate, 4)} RUB • 1 RUB = ${fmtAmount(fxState.inverse, 6)} ${fxState.base}`;
-    statusEl.textContent = fmtUpdated(fxState.updatedAt);
+
+    detailsEl.textContent =
+      `1 ${fxState.base} = ${fmtAmount(fxState.rate, 4)} RUB • ` +
+      `1 RUB = ${fmtAmount(fxState.inverse, 6)} ${fxState.base}`;
+
+    // Вместо "Обновлено N мин назад" показываем информацию о следующем обновлении
+    statusEl.textContent = fmtNextUpdate(fxState.nextUpdateAt);
   } else {
     resultEl.textContent = '—';
     detailsEl.textContent = 'Курс не загружен';
-    statusEl.textContent = '—';
+    statusEl.textContent = 'Время следующего обновления неизвестно';
   }
 }
+
 
 // НОВОЕ: инициализация UI конвертера
 function initFxUI() {
@@ -1919,19 +1952,27 @@ function initFxUI() {
   }
 }
 
-// правка: метка времени всегда по локальному времени запроса
+// ===== ОБЕСПЕЧИТЬ НАЛИЧИЕ КУРСА ДЛЯ ТЕКУЩЕЙ БАЗЫ =====
 async function ensureFxLoaded(force = false) {
   try {
-    if (force) delete fxCache[fxState.base];
-    const { rate, inverse } = await fetchFxRate(fxState.base);
+    if (force) {
+      delete fxCache[fxState.base];
+    }
+
+    const { rate, inverse, updatedAt, nextUpdateAt } = await fetchFxRate(fxState.base);
+
     fxState.rate = rate;
     fxState.inverse = inverse;
-    fxState.updatedAt = Date.now(); // <- берем "сейчас", а не дату с сервера
+    // Локальное время нашего удачного запроса
+    fxState.updatedAt = updatedAt || Date.now();
+    // Время следующего обновления по данным провайдера (UTC -> ms)
+    fxState.nextUpdateAt = nextUpdateAt || null;
   } catch (err) {
     console.error('FX error:', err);
-    // при ошибке fxState не трогаем, оставляем прошлый курс
+    // При ошибке не трогаем старый fxState, чтобы не ломать отображение
   }
 }
+
 
 // ИНИЦИАЛИЗАЦИЯ КОНВЕРТЕРА ПОСЛЕ ЗАГРУЗКИ DOM
 document.addEventListener('DOMContentLoaded', () => {
