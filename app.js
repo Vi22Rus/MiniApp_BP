@@ -1742,14 +1742,61 @@ function addAddPlaceButton() {
         }
     });
 }
-// ===== ЗАГРУЗКА КУРСА И ВРЕМЕНИ СЛЕДУЮЩЕГО ОБНОВЛЕНИЯ =====
-// Используется формат API наподобие https://open.er-api.com/v6/latest/THB
-// В ответе есть поля time_next_update_utc и time_last_update_utc (UTC-строки).
+
+// ===== ВРЕМЯ СЛЕДУЮЩЕГО ОБНОВЛЕНИЯ КУРСОВ ЦБ РФ =====
+// ЦБ РФ публикует официальные курсы один раз в рабочий день;
+// считаем, что обновление происходит в 17:31 по Москве (UTC+3). [web:231][web:238]
+const MSK_OFFSET_MS = 3 * 60 * 60 * 1000; // Москва постоянно в UTC+3. [web:237]
+
+function calcNextCbrUpdate(nowMs = Date.now()) {
+  const nowUtc = nowMs;
+
+  // Текущее "московское" время (через сдвиг UTC+3)
+  const nowMsk = new Date(nowUtc + MSK_OFFSET_MS); [web:237]
+
+  const year = nowMsk.getUTCFullYear();
+  const month = nowMsk.getUTCMonth();     // 0-11
+  const day = nowMsk.getUTCDate();        // 1-31
+  const dow = nowMsk.getUTCDay();         // 0=вс, 1=пн, ..., 6=сб
+
+  // 17:31 МСК -> 14:31 UTC для текущего дня
+  const todayUpdateUtc = Date.UTC(year, month, day, 14, 31, 0); [web:237]
+
+  const isWorkDay = dow >= 1 && dow <= 5; // пн–пт [web:231]
+
+  // Если сегодня рабочий день и 17:31 МСК ещё не наступило —
+  // следующее обновление считаем сегодня в 17:31 МСК.
+  if (isWorkDay && nowUtc < todayUpdateUtc) {
+    return todayUpdateUtc;
+  }
+
+  // Иначе ищем следующий рабочий день (пропускаем сб/вс) и ставим там 17:31 МСК.
+  let nextDate = new Date(Date.UTC(year, month, day, 0, 0, 0));
+  while (true) {
+    nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+    const d = nextDate.getUTCDay(); // 0–6
+    if (d >= 1 && d <= 5) {
+      return Date.UTC(
+        nextDate.getUTCFullYear(),
+        nextDate.getUTCMonth(),
+        nextDate.getUTCDate(),
+        14,
+        31,
+        0
+      );
+    }
+  }
+}
+
+// ===== КУРСЫ ЦБ РФ: THB / USD / CNY -> RUB =====
+// Берём официальный ежедневный курс из https://www.cbr-xml-daily.ru/daily_json.js. [web:226]
+// Для каждой валюты:  Value = сколько RUB за Nominal единиц валюты. [web:226]
+// Нам нужен курс 1 base -> RUB: rate = Value / Nominal. [web:226]
 async function fetchFxRate(base) {
   const now = Date.now();
   const cache = fxCache[base];
 
-  // Используем кэш, если он не устарел
+  // Кэш по базе с TTL 30 минут (можно увеличить до суток при желании).
   if (cache && (now - cache.ts) < FX_TTL_MS) {
     return {
       rate: cache.rate,
@@ -1766,43 +1813,45 @@ async function fetchFxRate(base) {
     throw new Error('Base cannot be RUB');
   }
 
-  // Пример: https://open.er-api.com/v6/latest/THB
-  const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`;
+  const url = 'https://www.cbr-xml-daily.ru/daily_json.js'; // JSON‑обёртка ЦБ. [web:226]
   const resp = await fetch(url);
   if (!resp.ok) {
-    throw new Error(`FX ${resp.status}`);
+    throw new Error(`CBR ${resp.status}`);
   }
 
   const data = await resp.json();
 
-  // У open.er-api поле result === 'success' при успехе
-  if (data?.result && data.result !== 'success') {
-    throw new Error(`FX error: ${data?.error_type || 'unknown'}`);
+  if (!data || !data.Valute) {
+    throw new Error('CBR response invalid');
   }
 
-  // Курс base -> RUB может быть либо в rates.RUB, либо в conversion_rates.RUB
-  const rawRate = data?.rates?.RUB ?? data?.conversion_rates?.RUB;
-  if (!Number.isFinite(rawRate)) {
-    throw new Error('FX RUB missing');
+  const node = data.Valute[base];
+  if (!node || !Number.isFinite(node.Value) || !Number.isFinite(node.Nominal)) {
+    throw new Error(`CBR: no rate for ${base}`);
   }
 
-  const rate = rawRate;
-  const inverse = rate > 0 ? (1 / rate) : null;
+  // Официальный курс: Value RUB за Nominal единиц валюты. [web:226]
+  const rate = node.Value / node.Nominal; // 1 base -> RUB
+  const inverse = rate > 0 ? 1 / rate : null; // RUB -> base
 
-  // Время следующего обновления от провайдера (UTC строка)
-  // Пример: "Sat, 22 Nov 2025 00:21:01 +0000"
-  let nextUpdateAt = null;
-  if (typeof data.time_next_update_utc === 'string') {
-    const ts = Date.parse(data.time_next_update_utc);
+  // Время, на которое установлен курс (поле Date) или Timestamp. [web:226]
+  // Это дата в часовом поясе МСК; для "когда обновили" достаточно перевести в ms.
+  let updatedAt = now;
+  if (typeof data.Timestamp === 'string') {
+    const ts = Date.parse(data.Timestamp);
     if (!Number.isNaN(ts)) {
-      nextUpdateAt = ts; // сохраняем как ms
+      updatedAt = ts;
+    }
+  } else if (typeof data.Date === 'string') {
+    const ts = Date.parse(data.Date);
+    if (!Number.isNaN(ts)) {
+      updatedAt = ts;
     }
   }
 
-  // Локальное время успешного запроса (для "когда мы в последний раз обновили")
-  const updatedAt = now;
+  // Следующее обновление: логически 15:30 МСК ближайшего рабочего дня. [web:231][web:238]
+  const nextUpdateAt = calcNextCbrUpdate(now);
 
-  // Сохраняем всё в кэш
   fxCache[base] = {
     rate,
     inverse,
@@ -1811,8 +1860,14 @@ async function fetchFxRate(base) {
     nextUpdateAt,
   };
 
-  return { rate, inverse, updatedAt, nextUpdateAt };
+  return {
+    rate,
+    inverse,
+    updatedAt,
+    nextUpdateAt,
+  };
 }
+
 // НОВОЕ: форматирование чисел
 function fmtAmount(x, digits = 2) {
   if (x == null || !Number.isFinite(x)) return '—';
