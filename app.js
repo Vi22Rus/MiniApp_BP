@@ -1745,14 +1745,14 @@ function addAddPlaceButton() {
 
 // ===== ВРЕМЯ СЛЕДУЮЩЕГО ОБНОВЛЕНИЯ КУРСОВ ЦБ РФ =====
 // ЦБ РФ публикует официальные курсы один раз в рабочий день;
-// считаем, что обновление происходит в 17:31 по Москве (UTC+3). [web:231][web:238]
-const MSK_OFFSET_MS = 3 * 60 * 60 * 1000; // Москва постоянно в UTC+3. [web:237]
+// считаем, что обновление происходит в 17:31 по Москве (UTC+3).
+const MSK_OFFSET_MS = 3 * 60 * 60 * 1000; // Москва постоянно в UTC+3.
 
 function calcNextCbrUpdate(nowMs = Date.now()) {
   const nowUtc = nowMs;
 
   // Текущее "московское" время (через сдвиг UTC+3)
-  const nowMsk = new Date(nowUtc + MSK_OFFSET_MS); [web:237]
+  const nowMsk = new Date(nowUtc + MSK_OFFSET_MS);
 
   const year = nowMsk.getUTCFullYear();
   const month = nowMsk.getUTCMonth();     // 0-11
@@ -1760,9 +1760,9 @@ function calcNextCbrUpdate(nowMs = Date.now()) {
   const dow = nowMsk.getUTCDay();         // 0=вс, 1=пн, ..., 6=сб
 
   // 17:31 МСК -> 14:31 UTC для текущего дня
-  const todayUpdateUtc = Date.UTC(year, month, day, 14, 31, 0); [web:237]
+  const todayUpdateUtc = Date.UTC(year, month, day, 14, 31, 0);
 
-  const isWorkDay = dow >= 1 && dow <= 5; // пн–пт [web:231]
+  const isWorkDay = dow >= 1 && dow <= 5; // пн–пт
 
   // Если сегодня рабочий день и 17:31 МСК ещё не наступило —
   // следующее обновление считаем сегодня в 17:31 МСК.
@@ -1787,6 +1787,7 @@ function calcNextCbrUpdate(nowMs = Date.now()) {
     }
   }
 }
+
 
 // ===== КУРСЫ ЦБ РФ: THB / USD / CNY -> RUB =====
 // Берём официальный ежедневный курс из https://www.cbr-xml-daily.ru/daily_json.js. [web:226]
