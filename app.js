@@ -1736,23 +1736,52 @@ function addAddPlaceButton() {
     });
 }
 // НОВОЕ: загрузка курса base->RUB через exchangerate.host
+// ЗАМЕНИТЬ: прямой курс base -> RUB без EUR
 async function fetchFxRate(base) {
   const now = Date.now();
   const cache = fxCache[base];
   if (cache && (now - cache.ts) < FX_TTL_MS) {
     return { rate: cache.rate, inverse: cache.inverse, updatedAt: cache.ts };
   }
-  // Пример без ключа: https://api.exchangerate.host/latest?base=THB&symbols=RUB
-  const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${FX_TARGET}`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`FX ${resp.status}`);
-  const data = await resp.json();
-  const rate = data?.rates?.[FX_TARGET];
-  if (!Number.isFinite(rate)) throw new Error('FX rate missing');
+  if (!FX_BASES.includes(base)) throw new Error(`Unsupported base ${base}`);
+  if (base === 'RUB') throw new Error('Base cannot be RUB');
+
+  // 1) Прямая попытка: base -> RUB (эндпоинт с symbols=RUB)
+  // Пример формата: /latest?base=THB&symbols=RUB
+  // Если провайдер периодически не возвращает RUB, пробуем "мультисписок".
+  const directUrl = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=RUB`;
+  let rate = null;
+  let updatedAt = now;
+
+  try {
+    const r = await fetch(directUrl);
+    if (!r.ok) throw new Error(`FX direct ${r.status}`);
+    const d = await r.json();
+    const v = d?.rates?.RUB;
+    if (Number.isFinite(v)) {
+      rate = v;
+      // У некоторых API есть d.date (YYYY-MM-DD) — можно сохранить как updatedAt
+      if (d?.date) updatedAt = Date.parse(d.date) || now;
+    }
+  } catch (e) {
+    // игнор, перейдём на запасной путь
+  }
+
+  // 2) Запасной путь: запросить общую таблицу для base и взять RUB
+  if (!Number.isFinite(rate)) {
+    const tableUrl = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}`;
+    const r2 = await fetch(tableUrl);
+    if (!r2.ok) throw new Error(`FX table ${r2.status}`);
+    const d2 = await r2.json();
+    const v2 = d2?.rates?.RUB;
+    if (!Number.isFinite(v2)) throw new Error('FX rate missing');
+    rate = v2;
+    if (d2?.date) updatedAt = Date.parse(d2.date) || now;
+  }
 
   const inverse = rate > 0 ? (1 / rate) : null;
-  fxCache[base] = { rate, inverse, ts: now };
-  return { rate, inverse, updatedAt: now };
+  fxCache[base] = { rate, inverse, ts: updatedAt };
+  return { rate, inverse, updatedAt };
 }
 
 // НОВОЕ: форматирование чисел
