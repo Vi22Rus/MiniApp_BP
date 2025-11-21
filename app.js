@@ -186,7 +186,7 @@ function formatDateForAPI(dateStr) {
 
 
 async function fetchWeatherData(date) {
-  const apiDate = formatDateForAPI(date);
+  const apiDate = formatDateForAPI(date); // ожидается DD.MM.YYYY -> YYYY-MM-DD
 
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
@@ -202,7 +202,7 @@ async function fetchWeatherData(date) {
 
   if (requestDate > maxForecastDate) {
     console.warn(`⚠ Дата ${apiDate} выходит за пределы прогноза API (макс. 16 дней). Используются климатические нормы.`);
-    const [day, month] = date.split('.');
+    const [, month] = date.split('.');
     const monthNum = parseInt(month, 10);
 
     let airTemp, waterTemp;
@@ -222,45 +222,63 @@ async function fetchWeatherData(date) {
   }
 
   try {
-    const airTempUrl =
-      `https://api.open-meteo.com/v1/forecast` +
-      `?latitude=${PATTAYA_LAT}` +
-      `&longitude=${PATTAYA_LON}` +
-      `&daily=temperature_2m_max` +
-      `&timezone=Asia/Bangkok` +
-      `&start_date=${apiDate}` +
-      `&end_date=${apiDate}`;
+    // Валидируем ISO-дату и строим корректные URL через URLSearchParams
+    assertIsoDate(apiDate);
 
-    // ВАЖНО: marine endpoint и правильный daily параметр
-    const waterTempUrl =
-      `https://marine-api.open-meteo.com/v1/marine` +
-      `?latitude=${PATTAYA_LAT}` +
-      `&longitude=${PATTAYA_LON}` +
-      `&daily=water_temperature_max` +
-      `&timezone=Asia/Bangkok` +
-      `&start_date=${apiDate}` +
-      `&end_date=${apiDate}`;
+    const airTempUrl = buildAirUrl(PATTAYA_LAT, PATTAYA_LON, apiDate);           // daily=temperature_2m_max
+    let waterTempUrl = buildMarineUrl(PATTAYA_LAT, PATTAYA_LON, apiDate, 'daily'); // daily=sea_surface_temperature_max
 
-    const [airResponse, waterResponse] = await Promise.all([
+    // Запрашиваем воздух и воду параллельно
+    let [airResponse, waterResponse] = await Promise.all([
       fetch(airTempUrl),
       fetch(waterTempUrl),
     ]);
 
-    // Можно добавить проверку .ok для явного логирования 4xx/5xx
-    // if (!waterResponse.ok) { throw new Error(`Marine API ${waterResponse.status}`); }
-
     const airData = await airResponse.json();
-    const waterData = await waterResponse.json();
 
-    // Читаем корректные поля с подчёркиваниями
-    let airTemp = airData.daily?.temperature_2m_max?.[0] ?? null;
-    let waterTemp = waterData.daily?.water_temperature_max?.[0] ?? null;
+    let waterData = null;
+    if (!waterResponse.ok) {
+      // Считываем reason и пробуем hourly fallback
+      let errBody = {};
+      try { errBody = await waterResponse.json(); } catch (_) {}
+      console.warn('Marine daily error:', waterResponse.status, errBody?.reason || errBody);
 
-    // Фолбэк на климатические нормы, если что-то не пришло
+      // Fallback на hourly=sea_surface_temperature, берём максимум
+      waterTempUrl = buildMarineUrl(PATTAYA_LAT, PATTAYA_LON, apiDate, 'hourly');
+      waterResponse = await fetch(waterTempUrl);
+      if (!waterResponse.ok) {
+        let err2 = {};
+        try { err2 = await waterResponse.json(); } catch (_) {}
+        console.error('Marine hourly error:', waterResponse.status, err2?.reason || err2);
+      } else {
+        waterData = await waterResponse.json();
+      }
+    } else {
+      waterData = await waterResponse.json();
+    }
+
+    // Парсим воздух: daily.temperature_2m_max[0]
+    let airTemp = airData?.daily?.temperature_2m_max?.[0] ?? null;
+
+    // Парсим воду:
+    // 1) daily sea_surface_temperature_max
+    let waterTemp = waterData?.daily?.sea_surface_temperature_max?.[0] ?? null;
+
+    // 2) если это hourly fallback — берём максимум из hourly.sea_surface_temperature
+    if (waterTemp == null) {
+      const hourly = waterData?.hourly?.sea_surface_temperature;
+      if (Array.isArray(hourly) && hourly.length) {
+        const numeric = hourly.filter((v) => Number.isFinite(v));
+        if (numeric.length) {
+          waterTemp = Math.max(...numeric);
+        }
+      }
+    }
+
+    // Фолбэк на климатические нормы, если чего-то нет
     if (airTemp == null || waterTemp == null) {
-      const [_, month] = date.split('.');
+      const [, month] = date.split('.');
       const monthNum = parseInt(month, 10);
-
       if (monthNum === 12 || monthNum === 1) {
         airTemp = airTemp ?? 30;
         waterTemp = waterTemp ?? 28;
@@ -289,6 +307,46 @@ async function fetchWeatherData(date) {
   }
 }
 
+function assertIsoDate(d) {
+  // строго YYYY-MM-DD, без пробелов и лишних символов
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error(`Bad ISO date: ${d}`);
+  const [y, m, day] = d.split('-').map(Number);
+  // проверяем валидность календарной даты
+  const iso = new Date(Date.UTC(y, m - 1, day)).toISOString().slice(0, 10);
+  if (iso !== d) throw new Error(`Bad calendar date: ${d}`);
+}
+
+function buildMarineUrl(lat, lon, isoDate, mode = 'daily') {
+  assertIsoDate(isoDate);
+  const u = new URL('https://marine-api.open-meteo.com/v1/marine');
+  u.searchParams.set('latitude', String(lat));
+  u.searchParams.set('longitude', String(lon));
+  if (mode === 'daily') {
+    // daily-агрегат SST: в некоторых конфигурациях доступен как sea_surface_temperature_max
+    u.searchParams.set('daily', 'sea_surface_temperature_max');
+  } else if (mode === 'hourly') {
+    // hourly SST, берём максимум вручную
+    u.searchParams.set('hourly', 'sea_surface_temperature');
+  } else {
+    throw new Error(`Unknown marine mode: ${mode}`);
+  }
+  u.searchParams.set('timezone', 'Asia/Bangkok');
+  u.searchParams.set('start_date', isoDate);
+  u.searchParams.set('end_date', isoDate);
+  return u.toString();
+}
+
+function buildAirUrl(lat, lon, isoDate) {
+  assertIsoDate(isoDate);
+  const u = new URL('https://api.open-meteo.com/v1/forecast');
+  u.searchParams.set('latitude', String(lat));
+  u.searchParams.set('longitude', String(lon));
+  u.searchParams.set('daily', 'temperature_2m_max');
+  u.searchParams.set('timezone', 'Asia/Bangkok');
+  u.searchParams.set('start_date', isoDate);
+  u.searchParams.set('end_date', isoDate);
+  return u.toString();
+}
 
 // ИСПРАВЛЕНИЕ: Замена точек на дефисы для совместимости с Firebase
 function sanitizeKeyForFirebase(key) {
