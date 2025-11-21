@@ -1760,7 +1760,7 @@ function calcNextCbrUpdate(nowMs = Date.now()) {
   const dow = nowMsk.getUTCDay();         // 0=вс, 1=пн, ..., 6=сб
 
   // 17:31 МСК -> 14:31 UTC для текущего дня
-  const todayUpdateUtc = Date.UTC(year, month, day, 14, 31, 0);
+  const todayUpdateUtc = Date.UTC(year, month, day, 11, 31, 0);
 
   const isWorkDay = dow >= 1 && dow <= 5; // пн–пт
 
