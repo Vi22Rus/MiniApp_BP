@@ -1849,7 +1849,7 @@ async function fetchFxRate(base) {
     }
   }
 
-  // Следующее обновление: логически 15:30 МСК ближайшего рабочего дня. [web:231][web:238]
+  // Следующее обновление: логически 17:31 МСК ближайшего рабочего дня. [web:231][web:238]
   const nextUpdateAt = calcNextCbrUpdate(now);
 
   fxCache[base] = {
