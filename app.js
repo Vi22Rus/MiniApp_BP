@@ -1919,21 +1919,20 @@ function initFxUI() {
   }
 }
 
-// НОВОЕ: обеспечить наличие курса для текущей базы
+// правка: метка времени всегда по локальному времени запроса
 async function ensureFxLoaded(force = false) {
   try {
     if (force) delete fxCache[fxState.base];
-    const { rate, inverse, updatedAt } = await fetchFxRate(fxState.base);
+    const { rate, inverse } = await fetchFxRate(fxState.base);
     fxState.rate = rate;
     fxState.inverse = inverse;
-    fxState.updatedAt = updatedAt;
+    fxState.updatedAt = Date.now(); // <- берем "сейчас", а не дату с сервера
   } catch (err) {
     console.error('FX error:', err);
-    fxState.rate = null;
-    fxState.inverse = null;
-    fxState.updatedAt = null;
+    // при ошибке fxState не трогаем, оставляем прошлый курс
   }
 }
+
 // ИНИЦИАЛИЗАЦИЯ КОНВЕРТЕРА ПОСЛЕ ЗАГРУЗКИ DOM
 document.addEventListener('DOMContentLoaded', () => {
   // Если есть ваши существующие init-функции — вызовите их здесь же.
