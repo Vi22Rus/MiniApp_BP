@@ -2,6 +2,18 @@
 // Исправлено: Загрузка данных ежедневника через async/await
 // 2025-10-01
 // ===== FIREBASE CONFIGURATION =====
+// НОВОЕ: валюты, кэш и состояние курса
+const FX_BASES = ['THB', 'USD', 'CNY']; // базовые валюты
+const FX_TARGET = 'RUB';                // фиксированная цель
+let fxState = {
+  base: 'THB',
+  rate: null,        // курс 1 base -> RUB
+  inverse: null,     // курс 1 RUB -> base
+  updatedAt: null,   // timestamp
+};
+let fxCache = {};     // кэш по ключу base: { rate, inverse, ts }
+const FX_TTL_MS = 30 * 60 * 1000; // 30 минут
+
 const firebaseConfig = {
   apiKey: "AIzaSyBX7abjiafmFuRLNwixPgfAIuoyUWNtIEQ",
   authDomain: "pattaya-plans-app.firebaseapp.com",
@@ -1723,6 +1735,149 @@ function addAddPlaceButton() {
         }
     });
 }
+// НОВОЕ: загрузка курса base->RUB через exchangerate.host
+async function fetchFxRate(base) {
+  const now = Date.now();
+  const cache = fxCache[base];
+  if (cache && (now - cache.ts) < FX_TTL_MS) {
+    return { rate: cache.rate, inverse: cache.inverse, updatedAt: cache.ts };
+  }
+  // Пример без ключа: https://api.exchangerate.host/latest?base=THB&symbols=RUB
+  const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${FX_TARGET}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`FX ${resp.status}`);
+  const data = await resp.json();
+  const rate = data?.rates?.[FX_TARGET];
+  if (!Number.isFinite(rate)) throw new Error('FX rate missing');
+
+  const inverse = rate > 0 ? (1 / rate) : null;
+  fxCache[base] = { rate, inverse, ts: now };
+  return { rate, inverse, updatedAt: now };
+}
+
+// НОВОЕ: форматирование чисел
+function fmtAmount(x, digits = 2) {
+  if (x == null || !Number.isFinite(x)) return '—';
+  return x.toLocaleString('ru-RU', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function fmtUpdated(ts) {
+  if (!ts) return '—';
+  const diffMin = Math.floor((Date.now() - ts) / 60000);
+  if (diffMin < 1) return 'Обновлено только что';
+  if (diffMin === 1) return 'Обновлено 1 мин назад';
+  return `Обновлено ${diffMin} мин назад`;
+}
+
+// НОВОЕ: пересчёт результата в RUB
+function recalcFxUI() {
+  const amountEl = document.getElementById('rateAmount');
+  const resultEl = document.getElementById('rateResultValue');
+  const detailsEl = document.getElementById('rateDetails');
+  const statusEl = document.getElementById('rateStatusText');
+  const baseBadge = document.getElementById('rateBaseBadge');
+
+  if (!amountEl || !resultEl) return;
+
+  const amount = parseFloat(amountEl.value.replace(',', '.')) || 0;
+  baseBadge.textContent = fxState.base;
+
+  if (fxState.rate != null) {
+    const rub = amount * fxState.rate;
+    resultEl.textContent = fmtAmount(rub, 2);
+    detailsEl.textContent = `1 ${fxState.base} = ${fmtAmount(fxState.rate, 4)} RUB • 1 RUB = ${fmtAmount(fxState.inverse, 6)} ${fxState.base}`;
+    statusEl.textContent = fmtUpdated(fxState.updatedAt);
+  } else {
+    resultEl.textContent = '—';
+    detailsEl.textContent = 'Курс не загружен';
+    statusEl.textContent = '—';
+  }
+}
+
+// НОВОЕ: инициализация UI конвертера
+function initFxUI() {
+  const openBtn = document.getElementById('rateFetchBtn');
+  const card = document.getElementById('rateCard');
+  const chipsWrap = document.getElementById('baseCurrencyChips');
+  const amountEl = document.getElementById('rateAmount');
+  const refreshBtn = document.getElementById('rateRefreshBtn');
+
+  if (!openBtn || !card) return;
+
+  // Раскрытие/сворачивание карточки
+  openBtn.addEventListener('click', async () => {
+    card.style.display = (card.style.display === 'none' || card.style.display === '') ? 'block' : 'none';
+    if (card.style.display === 'block') {
+      await ensureFxLoaded(); // при первом открытии подгрузим курс
+      recalcFxUI();
+    }
+  });
+
+  // Переключение базовой валюты
+  if (chipsWrap) {
+    chipsWrap.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button.chip');
+      if (!btn) return;
+      const cur = btn.getAttribute('data-cur');
+      if (!FX_BASES.includes(cur)) return;
+
+      // визуальное выделение
+      chipsWrap.querySelectorAll('button.chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      fxState.base = cur;
+      await ensureFxLoaded(true); // под текущую базу
+      recalcFxUI();
+    });
+  }
+
+  // Ввод суммы
+  if (amountEl) {
+    amountEl.addEventListener('input', () => recalcFxUI());
+  }
+
+  // Обновить курс принудительно
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = 'Обновление…';
+      try {
+        // очистить кэш конкретной базы и запросить заново
+        delete fxCache[fxState.base];
+        await ensureFxLoaded(true);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        recalcFxUI();
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Обновить курс';
+      }
+    });
+  }
+}
+
+// НОВОЕ: обеспечить наличие курса для текущей базы
+async function ensureFxLoaded(force = false) {
+  try {
+    if (force) delete fxCache[fxState.base];
+    const { rate, inverse, updatedAt } = await fetchFxRate(fxState.base);
+    fxState.rate = rate;
+    fxState.inverse = inverse;
+    fxState.updatedAt = updatedAt;
+  } catch (err) {
+    console.error('FX error:', err);
+    fxState.rate = null;
+    fxState.inverse = null;
+    fxState.updatedAt = null;
+  }
+}
+// ИНИЦИАЛИЗАЦИЯ КОНВЕРТЕРА ПОСЛЕ ЗАГРУЗКИ DOM
+document.addEventListener('DOMContentLoaded', () => {
+  // Если есть ваши существующие init-функции — вызовите их здесь же.
+  // Инициализация интерфейса курса валют:
+  initFxUI();
+});
+
 
 
 
