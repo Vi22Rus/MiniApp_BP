@@ -879,6 +879,102 @@ body {
   font-weight: normal;
   margin-top: 4px;
 }
+/* НОВОЕ: стили конвертера валют */
+.rate-container { margin-top: 16px; }
+.btn-wide {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #f6f7fb;
+  color: #0b1220;
+  cursor: pointer;
+}
+.btn-wide:active { opacity: 0.85; }
+
+.rate-card {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface, rgba(0,0,0,0.04));
+}
+
+.rate-row { margin-bottom: 12px; }
+.rate-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted, #64748b);
+  margin-bottom: 6px;
+}
+
+.rate-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rate-input {
+  width: 100%;
+  padding: 12px 64px 12px 12px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  font-size: 1.1rem;
+  outline: none;
+}
+
+.rate-badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #eef1ff;
+  color: #4f46e5;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.rate-chips { display: flex; gap: 8px; }
+.chip {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f2f3f7;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.chip.active {
+  background: #e6e9ff;
+  color: #3d3bd1;
+  box-shadow: inset 0 0 0 1px #4f46e5;
+}
+
+.rate-result { display: flex; flex-direction: column; gap: 4px; }
+.rate-result-main {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.rate-result-sub {
+  font-size: 0.9rem;
+  color: var(--muted, #64748b);
+}
+
+.btn-line {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: white;
+  cursor: pointer;
+  margin-right: 8px;
+}
+.rate-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.muted { color: var(--muted, #64748b); font-size: 0.9rem; }
 
 
 
