@@ -184,6 +184,7 @@ function formatDateForAPI(dateStr) {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
+
 async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
 
@@ -192,32 +193,27 @@ async function fetchWeatherData(date) {
     return weatherCache[apiDate];
   }
 
-  // НОВАЯ ВАЛИДАЦИЯ: Проверяем дату в пределах диапазона прогноза (16 дней)
+  // Ограничение прогноза: 16 дней
   const requestDate = new Date(apiDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const maxForecastDate = new Date(today);
   maxForecastDate.setDate(today.getDate() + 16);
 
-  // Если дата за пределами диапазона API - возвращаем климатические нормы
   if (requestDate > maxForecastDate) {
     console.warn(`⚠ Дата ${apiDate} выходит за пределы прогноза API (макс. 16 дней). Используются климатические нормы.`);
     const [day, month] = date.split('.');
-    const monthNum = parseInt(month);
+    const monthNum = parseInt(month, 10);
 
     let airTemp, waterTemp;
     if (monthNum === 12 || monthNum === 1) {
-      airTemp = 30;
-      waterTemp = 28;
+      airTemp = 30; waterTemp = 28;
     } else if (monthNum >= 2 && monthNum <= 4) {
-      airTemp = 32;
-      waterTemp = 29;
+      airTemp = 32; waterTemp = 29;
     } else if (monthNum >= 5 && monthNum <= 10) {
-      airTemp = 29;
-      waterTemp = 29;
+      airTemp = 29; waterTemp = 29;
     } else {
-      airTemp = 30;
-      waterTemp = 28;
+      airTemp = 30; waterTemp = 28;
     }
 
     const result = { airTemp, waterTemp };
@@ -226,108 +222,134 @@ async function fetchWeatherData(date) {
   }
 
   try {
-    const airTempUrl = `https://api.open-meteo.com/v1/forecast?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=temperature_2m_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
-    const waterTempUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${PATTAYA_LAT}&longitude=${PATTAYA_LON}&daily=sea_water_temperature_max&timezone=Asia/Bangkok&start_date=${apiDate}&end_date=${apiDate}`;
+    const airTempUrl =
+      `https://api.open-meteo.com/v1/forecast` +
+      `?latitude=${PATTAYA_LAT}` +
+      `&longitude=${PATTAYA_LON}` +
+      `&daily=temperature_2m_max` +
+      `&timezone=Asia/Bangkok` +
+      `&start_date=${apiDate}` +
+      `&end_date=${apiDate}`;
 
-    const [airResponse, waterResponse] = await Promise.all([fetch(airTempUrl), fetch(waterTempUrl)]);
+    // ВАЖНО: marine endpoint и правильный daily параметр
+    const waterTempUrl =
+      `https://marine-api.open-meteo.com/v1/marine` +
+      `?latitude=${PATTAYA_LAT}` +
+      `&longitude=${PATTAYA_LON}` +
+      `&daily=water_temperature_max` +
+      `&timezone=Asia/Bangkok` +
+      `&start_date=${apiDate}` +
+      `&end_date=${apiDate}`;
+
+    const [airResponse, waterResponse] = await Promise.all([
+      fetch(airTempUrl),
+      fetch(waterTempUrl),
+    ]);
+
+    // Можно добавить проверку .ok для явного логирования 4xx/5xx
+    // if (!waterResponse.ok) { throw new Error(`Marine API ${waterResponse.status}`); }
 
     const airData = await airResponse.json();
     const waterData = await waterResponse.json();
 
-    let airTemp = airData.daily?.temperature_2m_max?.[0] || null;
-    let waterTemp = waterData.daily?.sea_water_temperature_max?.[0] || null;
+    // Читаем корректные поля с подчёркиваниями
+    let airTemp = airData.daily?.temperature_2m_max?.[0] ?? null;
+    let waterTemp = waterData.daily?.water_temperature_max?.[0] ?? null;
 
-    // Фолбэк на климатические нормы
-    if (!airTemp || !waterTemp) {
-      const [day, month] = date.split('.');
-      const monthNum = parseInt(month);
+    // Фолбэк на климатические нормы, если что-то не пришло
+    if (airTemp == null || waterTemp == null) {
+      const [_, month] = date.split('.');
+      const monthNum = parseInt(month, 10);
 
       if (monthNum === 12 || monthNum === 1) {
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
+        airTemp = airTemp ?? 30;
+        waterTemp = waterTemp ?? 28;
       } else if (monthNum >= 2 && monthNum <= 4) {
-        airTemp = airTemp || 32;
-        waterTemp = waterTemp || 29;
+        airTemp = airTemp ?? 32;
+        waterTemp = waterTemp ?? 29;
       } else if (monthNum >= 5 && monthNum <= 10) {
-        airTemp = airTemp || 29;
-        waterTemp = waterTemp || 29;
+        airTemp = airTemp ?? 29;
+        waterTemp = waterTemp ?? 29;
       } else {
-        airTemp = airTemp || 30;
-        waterTemp = waterTemp || 28;
+        airTemp = airTemp ?? 30;
+        waterTemp = waterTemp ?? 28;
       }
     }
 
     const result = {
-      airTemp: airTemp ? Math.round(airTemp) : null,
-      waterTemp: waterTemp ? Math.round(waterTemp) : null
+      airTemp: airTemp != null ? Math.round(airTemp) : null,
+      waterTemp: waterTemp != null ? Math.round(waterTemp) : null,
     };
 
     weatherCache[apiDate] = result;
     return result;
-
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
     return { airTemp: 30, waterTemp: 28 };
   }
 }
 
+
 // ИСПРАВЛЕНИЕ: Замена точек на дефисы для совместимости с Firebase
 function sanitizeKeyForFirebase(key) {
-  // Заменяем точки на дефисы
   return key.replace(/\./g, '-');
 }
 
+
 async function setStorageItem(key, value, callback = null) {
-    const sanitizedKey = sanitizeKeyForFirebase(key);
-    if (firebaseDatabase) {
-        try {
-            await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).set(value);
-            console.log('✅ Firebase: сохранено', sanitizedKey);
-            if (callback) callback();
-        } catch (error) {
-            console.error('✗ Firebase save error:', error);
-            localStorage.setItem(key, value);
-            if (callback) callback();
-        }
-    } else {
-        localStorage.setItem(key, value);
-        if (callback) callback();
+  const sanitizedKey = sanitizeKeyForFirebase(key);
+  if (firebaseDatabase) {
+    try {
+      await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).set(value);
+      console.log('✅ Firebase: сохранено', sanitizedKey);
+      if (callback) callback();
+    } catch (error) {
+      console.error('✗ Firebase save error:', error);
+      localStorage.setItem(key, value);
+      if (callback) callback();
     }
+  } else {
+    localStorage.setItem(key, value);
+    if (callback) callback();
+  }
 }
+
 
 async function getStorageItem(key) {
-    const sanitizedKey = sanitizeKeyForFirebase(key);
-    if (firebaseDatabase) {
-        try {
-            const snapshot = await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).once('value');
-            if (snapshot.exists()) {
-                console.log('✅ Firebase: загружено', sanitizedKey);
-                return snapshot.val();
-            }
-        } catch (error) {
-            console.error('✗ Firebase load error:', error);
-        }
+  const sanitizedKey = sanitizeKeyForFirebase(key);
+  if (firebaseDatabase) {
+    try {
+      const snapshot = await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).once('value');
+      if (snapshot.exists()) {
+        console.log('✅ Firebase: загружено', sanitizedKey);
+        return snapshot.val();
+      }
+    } catch (error) {
+      console.error('✗ Firebase load error:', error);
     }
-    return localStorage.getItem(key);
+  }
+  return localStorage.getItem(key);
 }
 
+
 async function removeStorageItem(key, callback = null) {
-    const sanitizedKey = sanitizeKeyForFirebase(key);
-    if (firebaseDatabase) {
-        try {
-            await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).remove();
-            console.log('✅ Firebase: удалено', sanitizedKey);
-            if (callback) callback();
-        } catch (error) {
-            console.error('✗ Firebase delete error:', error);
-            localStorage.removeItem(key);
-            if (callback) callback();
-        }
-    } else {
-        localStorage.removeItem(key);
-        if (callback) callback();
+  const sanitizedKey = sanitizeKeyForFirebase(key);
+  if (firebaseDatabase) {
+    try {
+      await firebaseDatabase.ref('dailyPlans/' + sanitizedKey).remove();
+      console.log('✅ Firebase: удалено', sanitizedKey);
+      if (callback) callback();
+    } catch (error) {
+      console.error('✗ Firebase delete error:', error);
+      localStorage.removeItem(key);
+      if (callback) callback();
     }
+  } else {
+    localStorage.removeItem(key);
+    if (callback) callback();
+  }
 }
+
 
 function getDistance([lat1, lon1], [lat2, lon2]) {
     const toRad = d => d * Math.PI / 180;
