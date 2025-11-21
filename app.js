@@ -1324,9 +1324,6 @@ function initGeoItemButton(button) {
     button.addEventListener('touchcancel', handleCancel);
 }
 
-
-
-
 function openRatingModal(geoId) {
     currentRatingGeoId = geoId;
     const modal = document.getElementById('ratingModal');
@@ -1737,6 +1734,7 @@ function addAddPlaceButton() {
 }
 // НОВОЕ: загрузка курса base->RUB через exchangerate.host
 // ЗАМЕНИТЬ: прямой курс base -> RUB без EUR
+// ЗАМЕНИТЬ: fetchFxRate — только THB/USD/CNY -> RUB, без ключей и без EUR
 async function fetchFxRate(base) {
   const now = Date.now();
   const cache = fxCache[base];
@@ -1746,43 +1744,79 @@ async function fetchFxRate(base) {
   if (!FX_BASES.includes(base)) throw new Error(`Unsupported base ${base}`);
   if (base === 'RUB') throw new Error('Base cannot be RUB');
 
-  // 1) Прямая попытка: base -> RUB (эндпоинт с symbols=RUB)
-  // Пример формата: /latest?base=THB&symbols=RUB
-  // Если провайдер периодически не возвращает RUB, пробуем "мультисписок".
-  const directUrl = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=RUB`;
-  let rate = null;
-  let updatedAt = now;
+  // Провайдер A: open.er-api.com (бесплатный)
+  const tryOpenErApi = async () => {
+    const u = `https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`;
+    const r = await fetch(u);
+    if (!r.ok) throw new Error(`erapi ${r.status}`);
+    const d = await r.json();
+    if (d?.result === 'error') throw new Error(`erapi ${d?.error_type || 'api error'}`);
+    const v = d?.rates?.RUB;
+    if (!Number.isFinite(v)) throw new Error('erapi RUB missing');
+    const ts = (d?.time_last_update_unix ? d.time_last_update_unix * 1000 : now);
+    return { rate: v, ts };
+  };
 
-  try {
-    const r = await fetch(directUrl);
-    if (!r.ok) throw new Error(`FX direct ${r.status}`);
+  // Провайдер B: api.exchangerate-api.com (бесплатный)
+  const tryExchangerateApiCom = async () => {
+    const u = `https://api.exchangerate-api.com/v4/latest/${encodeURIComponent(base)}`;
+    const r = await fetch(u);
+    if (!r.ok) throw new Error(`exrateapi ${r.status}`);
     const d = await r.json();
     const v = d?.rates?.RUB;
-    if (Number.isFinite(v)) {
-      rate = v;
-      // У некоторых API есть d.date (YYYY-MM-DD) — можно сохранить как updatedAt
-      if (d?.date) updatedAt = Date.parse(d.date) || now;
-    }
-  } catch (e) {
-    // игнор, перейдём на запасной путь
-  }
+    if (!Number.isFinite(v)) throw new Error('exrateapi RUB missing');
+    const ts = (d?.time_last_updated ? d.time_last_updated * 1000 : now);
+    return { rate: v, ts };
+  };
 
-  // 2) Запасной путь: запросить общую таблицу для base и взять RUB
-  if (!Number.isFinite(rate)) {
-    const tableUrl = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}`;
-    const r2 = await fetch(tableUrl);
-    if (!r2.ok) throw new Error(`FX table ${r2.status}`);
+  // Провайдер C: exchangerate.host (бесплатный, но у вас RUB бывает пуст)
+  const tryExchangerateHost = async () => {
+    // сначала direct
+    const u1 = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=RUB`;
+    try {
+      const r1 = await fetch(u1);
+      if (r1.ok) {
+        const d1 = await r1.json();
+        const v1 = d1?.rates?.RUB;
+        if (Number.isFinite(v1)) {
+          const ts1 = (d1?.date ? Date.parse(d1.date) : now);
+          return { rate: v1, ts: ts1 };
+        }
+      }
+    } catch {}
+    // затем table
+    const u2 = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}`;
+    const r2 = await fetch(u2);
+    if (!r2.ok) throw new Error(`host ${r2.status}`);
     const d2 = await r2.json();
     const v2 = d2?.rates?.RUB;
-    if (!Number.isFinite(v2)) throw new Error('FX rate missing');
-    rate = v2;
-    if (d2?.date) updatedAt = Date.parse(d2.date) || now;
+    if (!Number.isFinite(v2)) throw new Error('host RUB missing');
+    const ts2 = (d2?.date ? Date.parse(d2.date) : now);
+    return { rate: v2, ts: ts2 };
+  };
+
+  let result = null;
+  const attempts = [tryOpenErApi, tryExchangerateApiCom, tryExchangerateHost];
+  const errors = [];
+  for (const fn of attempts) {
+    try {
+      result = await fn();
+      break;
+    } catch (e) {
+      errors.push(e.message || String(e));
+    }
+  }
+  if (!result) {
+    throw new Error(`FX rate missing (no-key providers): ${errors.join(' | ')}`);
   }
 
+  const rate = result.rate;
+  const updatedAt = result.ts;
   const inverse = rate > 0 ? (1 / rate) : null;
   fxCache[base] = { rate, inverse, ts: updatedAt };
   return { rate, inverse, updatedAt };
 }
+
 
 // НОВОЕ: форматирование чисел
 function fmtAmount(x, digits = 2) {
