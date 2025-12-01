@@ -1389,10 +1389,8 @@ function openRatingModal(geoId) {
     const placeName = document.getElementById('ratingPlaceName');
     const starsContainer = document.getElementById('starsContainer');
     const commentField = document.getElementById('ratingComment');
-    const photoInputCamera = document.getElementById('photoInputCamera');
-    const photoInputGallery = document.getElementById('photoInputGallery');
-    const addPhotoCameraBtn = document.getElementById('addPhotoCameraBtn');
-    const addPhotoGalleryBtn = document.getElementById('addPhotoGalleryBtn');
+    const photoInput = document.getElementById('photoInput');
+    const addPhotoBtn = document.getElementById('addPhotoBtn');
 
     if (!modal || !placeName || !starsContainer || !commentField) return;
 
@@ -1433,33 +1431,20 @@ function openRatingModal(geoId) {
         }, 1000);
     });
 
-    // Обработчики кнопок "Камера" и "Галерея"
-    if (addPhotoCameraBtn && addPhotoGalleryBtn && photoInputCamera && photoInputGallery) {
-        // Удаляем старые обработчики через клонирование
-        const newPhotoCameraBtn = addPhotoCameraBtn.cloneNode(true);
-        addPhotoCameraBtn.parentNode.replaceChild(newPhotoCameraBtn, addPhotoCameraBtn);
+    // Обработчик кнопки "Добавить фото"
+    if (addPhotoBtn && photoInput) {
+        // Удаляем старые обработчики
+        const newPhotoBtn = addPhotoBtn.cloneNode(true);
+        addPhotoBtn.parentNode.replaceChild(newPhotoBtn, addPhotoBtn);
 
-        const newPhotoGalleryBtn = addPhotoGalleryBtn.cloneNode(true);
-        addPhotoGalleryBtn.parentNode.replaceChild(newPhotoGalleryBtn, addPhotoGalleryBtn);
+        const newPhotoInput = photoInput.cloneNode(true);
+        photoInput.parentNode.replaceChild(newPhotoInput, photoInput);
 
-        const newPhotoInputCamera = photoInputCamera.cloneNode(true);
-        photoInputCamera.parentNode.replaceChild(newPhotoInputCamera, photoInputCamera);
-
-        const newPhotoInputGallery = photoInputGallery.cloneNode(true);
-        photoInputGallery.parentNode.replaceChild(newPhotoInputGallery, photoInputGallery);
-
-        // Обработчик для камеры
-        newPhotoCameraBtn.onclick = () => {
-            newPhotoInputCamera.click();
+        newPhotoBtn.onclick = () => {
+            newPhotoInput.click();
         };
 
-        // Обработчик для галереи
-        newPhotoGalleryBtn.onclick = () => {
-            newPhotoInputGallery.click();
-        };
-
-        // Общая функция загрузки
-        const handlePhotoUpload = async (e) => {
+        newPhotoInput.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -1490,17 +1475,12 @@ function openRatingModal(geoId) {
             }
 
             // Очищаем input
-            e.target.value = '';
+            newPhotoInput.value = '';
         };
-
-        newPhotoInputCamera.onchange = handlePhotoUpload;
-        newPhotoInputGallery.onchange = handlePhotoUpload;
     }
 
     modal.classList.add('active');
 }
-
-
 
 function closeRatingModal() {
     const modal = document.getElementById('ratingModal');
