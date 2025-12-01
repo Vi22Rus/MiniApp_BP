@@ -1666,14 +1666,15 @@ async function uploadPhoto(geoId, file) {
 }
 
 // Прямой доступ к камере через MediaDevices API
+// Прямой доступ к камере через MediaDevices API
 async function openNativeCamera(geoId) {
     try {
         // Запрашиваем доступ к камере (задняя камера)
         const stream = await navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: 'environment',
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
             }
         });
 
@@ -1693,9 +1694,9 @@ async function openNativeCamera(geoId) {
         `;
 
         const video = document.createElement('video');
-        video.srcObject = stream;
         video.autoplay = true;
         video.playsInline = true;
+        video.muted = true; // ВАЖНО для автовоспроизведения
         video.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
 
         const controls = document.createElement('div');
@@ -1743,6 +1744,21 @@ async function openNativeCamera(geoId) {
         cameraOverlay.appendChild(controls);
         document.body.appendChild(cameraOverlay);
 
+        // КРИТИЧНО: сначала добавляем в DOM, потом присваиваем srcObject
+        video.srcObject = stream;
+
+        // Ждём загрузки видео
+        await new Promise((resolve, reject) => {
+            video.onloadedmetadata = () => {
+                video.play().then(resolve).catch(reject);
+            };
+
+            // Таймаут на случай, если видео не загрузится
+            setTimeout(() => reject(new Error('Timeout')), 5000);
+        });
+
+        console.log('✅ Камера инициализирована');
+
         // Функция закрытия камеры
         const closeCamera = () => {
             stream.getTracks().forEach(track => track.stop());
@@ -1756,6 +1772,12 @@ async function openNativeCamera(geoId) {
 
         // Обработчик снимка
         captureBtn.onclick = async () => {
+            // Проверяем, что видео воспроизводится
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                alert('Камера ещё не готова, подождите секунду');
+                return;
+            }
+
             // Создаём canvas для захвата кадра
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
@@ -1807,11 +1829,14 @@ async function openNativeCamera(geoId) {
             alert('Доступ к камере запрещён. Разрешите доступ в настройках Telegram.');
         } else if (error.name === 'NotFoundError') {
             alert('Камера не найдена на устройстве.');
+        } else if (error.message === 'Timeout') {
+            alert('Камера не отвечает. Попробуйте ещё раз или используйте галерею.');
         } else {
-            alert('Не удалось открыть камеру: ' + error.message);
+            alert('Не удалось открыть камеру. Используйте кнопку "Галерея"');
         }
     }
 }
+
 
 // Сохранение URL фото в данных места
 async function savePhotoUrl(geoId, photoUrl) {
