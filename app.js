@@ -1357,22 +1357,40 @@ function openRatingModal(geoId) {
     const modal = document.getElementById('ratingModal');
     const placeName = document.getElementById('ratingPlaceName');
     const starsContainer = document.getElementById('starsContainer');
-
-    if (!modal || !placeName || !starsContainer) return;
-
-    placeName.textContent = allGeoData[geoId]?.name || `Место ${geoId}`;
+    const commentField = document.getElementById('ratingComment');
     
-    // Загружаем текущий рейтинг
-    loadRatingToModal(geoId, starsContainer);
-
-    // Обработчики кликов по звездам
+    if (!modal || !placeName || !starsContainer || !commentField) return;
+    
+    placeName.textContent = allGeoData[geoId]?.name || `Место #${geoId}`;
+    
+    // Загружаем сохранённые данные (рейтинг + комментарий)
+    loadRatingToModal(geoId, starsContainer, commentField);
+    
+    // Обработчики звёзд
     starsContainer.querySelectorAll('.star').forEach(star => {
         star.onclick = () => {
             const value = parseInt(star.dataset.value);
             setRating(geoId, value, starsContainer);
         };
     });
-
+    
+    // Счётчик символов в комментарии
+    const charCount = document.getElementById('commentCharCount');
+    commentField.addEventListener('input', () => {
+        if (charCount) {
+            charCount.textContent = commentField.value.length;
+        }
+    });
+    
+    // Автосохранение комментария при вводе (debounce 1 сек)
+    let saveTimeout;
+    commentField.addEventListener('input', () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveComment(geoId, commentField.value.trim());
+        }, 1000);
+    });
+    
     modal.classList.add('active');
 }
 
@@ -1383,14 +1401,27 @@ function closeRatingModal() {
 }
 
 async function setRating(geoId, value, starsContainer) {
-    // Сохраняем в Firebase
     const key = `geo_rating_${geoId}`;
-    await setStorageItem(key, value.toString());
     
-    // Обновляем звезды в попапе
+    // Загружаем текущий комментарий, чтобы не потерять при изменении звёзд
+    const existing = await getStorageItem(key);
+    let data = { rating: value, comment: '' };
+    
+    if (existing) {
+        try {
+            const parsed = JSON.parse(existing);
+            data.comment = parsed.comment || '';
+        } catch (e) {
+            // Старый формат (просто число) — игнорируем
+        }
+    }
+    
+    data.rating = value;
+    await setStorageItem(key, JSON.stringify(data));
+    
     updateStarsDisplay(starsContainer, value);
     
-    // Обновляем звезды в блоке
+    // Обновляем звёзды на самой карточке
     const button = document.querySelector(`.geo-item-btn[data-id="${geoId}"]`);
     if (button) {
         const ratingButton = button.querySelector('.geo-item-rating-button');
@@ -1409,7 +1440,27 @@ async function setRating(geoId, value, starsContainer) {
     }
 }
 
-
+async function saveComment(geoId, commentText) {
+    const key = `geo_rating_${geoId}`;
+    
+    // Загружаем текущий рейтинг
+    const existing = await getStorageItem(key);
+    let data = { rating: 0, comment: commentText };
+    
+    if (existing) {
+        try {
+            const parsed = JSON.parse(existing);
+            data.rating = parsed.rating || 0;
+        } catch (e) {
+            // Старый формат — оставляем rating = 0
+        }
+    }
+    
+    data.comment = commentText;
+    await setStorageItem(key, JSON.stringify(data));
+    
+    console.log('💾 Комментарий сохранён для места', geoId);
+}
 
 async function resetRating() {
     if (currentRatingGeoId === null) return;
@@ -1418,16 +1469,26 @@ async function resetRating() {
     await removeStorageItem(key);
     
     const starsContainer = document.getElementById('starsContainer');
+    const commentField = document.getElementById('ratingComment');
+    
     updateStarsDisplay(starsContainer, 0);
     
+    if (commentField) {
+        commentField.value = '';
+        const charCount = document.getElementById('commentCharCount');
+        if (charCount) charCount.textContent = '0';
+    }
+    
+    // Обновляем звёзды на карточке
     const button = document.querySelector(`.geo-item-btn[data-id="${currentRatingGeoId}"]`);
     if (button) {
         const ratingDiv = button.querySelector('.geo-item-rating');
-        if (ratingDiv) {
-            updateStarsDisplay(ratingDiv, 0);
-        }
+        if (ratingDiv) updateStarsDisplay(ratingDiv, 0);
     }
+    
+    console.log('🗑️ Рейтинг и комментарий сброшены');
 }
+
 
 function updateStarsDisplay(container, value) {
     const stars = container.querySelectorAll('.star');
@@ -1442,12 +1503,35 @@ function updateStarsDisplay(container, value) {
     });
 }
 
-async function loadRatingToModal(geoId, container) {
+async function loadRatingToModal(geoId, starsContainer, commentField) {
     const key = `geo_rating_${geoId}`;
     const saved = await getStorageItem(key);
-    const value = saved ? parseInt(saved) : 0;
-    updateStarsDisplay(container, value);
+    
+    let rating = 0;
+    let comment = '';
+    
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            rating = data.rating || 0;
+            comment = data.comment || '';
+        } catch (e) {
+            // Старый формат (просто число)
+            rating = parseInt(saved) || 0;
+        }
+    }
+    
+    updateStarsDisplay(starsContainer, rating);
+    
+    if (commentField) {
+        commentField.value = comment;
+        const charCount = document.getElementById('commentCharCount');
+        if (charCount) {
+            charCount.textContent = comment.length;
+        }
+    }
 }
+
 
 async function loadGeoRating(geoId, ratingDiv) {
     const key = `geo_rating_${geoId}`;
