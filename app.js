@@ -655,8 +655,11 @@ function initGeoItemButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
 
-    // 🔴 КРИТИЧНО: проверка в самом начале, до любых действий
-    if (button.geoInit) return;
+    // Проверка и защита от повторной инициализации
+    if (button.geoInit) {
+        console.warn('Кнопка уже инициализирована, пропуск:', id);
+        return;
+    }
     button.geoInit = true;
 
     // Добавляем кнопку рейтинга, если её ещё нет
@@ -665,28 +668,52 @@ function initGeoItemButton(button) {
         ratingButton.className = 'geo-item-rating-button';
         ratingButton.innerHTML = '<span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>';
         
-        ratingButton.onclick = (e) => {
+        // 🔴 УЛУЧШЕНО: обработчик клика для мобильных
+        const openRating = (e) => {
             e.stopPropagation();
             e.preventDefault();
             openRatingModal(id);
         };
-
-        ratingButton.addEventListener('mousedown', e => e.stopPropagation());
-        ratingButton.addEventListener('touchstart', e => e.stopPropagation());
-        ratingButton.addEventListener('mousemove', e => e.stopPropagation());
-        ratingButton.addEventListener('touchmove', e => e.stopPropagation());
+        
+        ratingButton.onclick = openRating;
+        
+        // 🔴 УЛУЧШЕНО: полная изоляция touch-событий
+        ratingButton.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+        }, { passive: false });
+        
+        ratingButton.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            openRatingModal(id);
+        }, { passive: false });
+        
+        ratingButton.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
+        
+        ratingButton.addEventListener('mousemove', (e) => {
+            e.stopPropagation();
+        });
+        
+        ratingButton.addEventListener('touchmove', (e) => {
+            e.stopPropagation();
+        }, { passive: false });
         
         button.appendChild(ratingButton);
         loadGeoRatingForButton(id, ratingButton);
     }
 
-    // Логика long-press и клика
+    // Логика long-press и клика для основной карточки
     let pressTimer = null;
     let startX = 0, startY = 0;
     let hasMoved = false;
 
     const handleStart = (e) => {
-        if (e.target.closest('.geo-item-rating-button')) return;
+        // 🔴 УСИЛЕНО: проверяем тап именно на кнопке рейтинга
+        if (e.target.closest('.geo-item-rating-button')) {
+            return;
+        }
         
         hasMoved = false;
         startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
@@ -722,6 +749,7 @@ function initGeoItemButton(button) {
     };
 
     const handleEnd = (e) => {
+        // 🔴 УСИЛЕНО: игнорируем клик на кнопке рейтинга
         if (e.target.closest('.geo-item-rating-button')) {
             clearTimeout(pressTimer);
             pressTimer = null;
@@ -758,7 +786,10 @@ function initGeoItemButton(button) {
     button.addEventListener('touchmove', handleMove, { passive: true });
     button.addEventListener('touchend', handleEnd);
     button.addEventListener('touchcancel', handleCancel);
+    
+    console.log('✓ Кнопка инициализирована:', id, allGeoData[id]?.name);
 }
+
 
 function showPlaygroundModal(playground) {
     let content = `<h3>🎠 ${playground.name}</h3>`;
