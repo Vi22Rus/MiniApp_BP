@@ -1630,20 +1630,17 @@ async function addNewPlace() {
 // Рендеринг динамических мест при загрузке страницы
 function renderDynamicPlaces() {
     if (dynamicGeoData.length === 0) {
-        console.log('✓ Динамических мест нет');
+        console.log('Нет динамических мест для отображения');
         return;
     }
     
-    console.log('✓ Загружено динамических мест:', dynamicGeoData.length);
+    console.log('Отображение динамических мест:', dynamicGeoData.length);
     
     dynamicGeoData.forEach((place, index) => {
-        // Добавляем в общий массив
         allGeoData.push(place);
         const newId = allGeoData.length - 1;
-        
+
         let container = null;
-        
-        // Определяем контейнер
         if (place.type === 'cafe' && place.subBlock) {
             container = document.querySelector(`.cafe-sub-block[data-subblock-name="${place.subBlock}"]`);
         } else if (place.type === 'temple') {
@@ -1653,44 +1650,41 @@ function renderDynamicPlaces() {
         } else if (place.type === 'park') {
             container = document.querySelector('.geo-parks .geo-items-container');
         }
-        
+
         if (!container) {
-            console.error('❌ Контейнер не найден для:', place.type, place.subBlock);
+            console.error('Контейнер не найден для:', place.type, place.subBlock);
             return;
         }
-        
-        // Создаём кнопку
+
         const button = document.createElement('button');
         button.className = 'geo-item-btn';
         button.dataset.type = place.type;
         button.dataset.id = newId;
-        
-        // Формируем HTML
+
         if (place.type === 'cafe') {
             button.innerHTML = `
                 <div class="cafe-line">
-                    <span class="cafe-rating">⭐</span>
+                    <span class="cafe-rating"></span>
                     <strong>${place.name}</strong>
                 </div>
-                <span class="cafe-description">- ${place.description}</span>
+                <span class="cafe-description">➜ ${place.description}</span>
             `;
         } else {
             const icon = getIconForType(place.type);
             button.innerHTML = `<span class="icon">${icon}</span><strong>${place.name}</strong>`;
         }
-        
-        // Добавляем в контейнер
+
         const addBtn = container.querySelector('.add-place-btn');
         if (addBtn) {
             container.insertBefore(button, addBtn);
         } else {
             container.appendChild(button);
         }
+
+        // 🔴 УБРАЛИ ЭТОТ ВЫЗОВ: initGeoItemButton(button);
+        // Инициализация будет в initGeoFeatures()
         
-        // Инициализируем обработчики
-        initGeoItemButton(button);
-        
-        console.log(`✅ Отрендерено: ${place.name}`);
+        console.log('Добавлено место:', place.name);
     });
 }
 
