@@ -1374,20 +1374,27 @@ function openRatingModal(geoId) {
         };
     });
     
-    // Счётчик символов в комментарии
+    // 🔴 ИСПРАВЛЕНИЕ: удаляем старые обработчики через клонирование
+    const newCommentField = commentField.cloneNode(true);
+    commentField.parentNode.replaceChild(newCommentField, commentField);
+    
+    // Заново загружаем данные в новое поле
+    loadRatingToModal(geoId, starsContainer, newCommentField);
+    
+    // Счётчик символов
     const charCount = document.getElementById('commentCharCount');
-    commentField.addEventListener('input', () => {
+    newCommentField.addEventListener('input', () => {
         if (charCount) {
-            charCount.textContent = commentField.value.length;
+            charCount.textContent = newCommentField.value.length;
         }
     });
     
-    // Автосохранение комментария при вводе (debounce 1 сек)
+    // Автосохранение комментария с правильным geoId через замыкание
     let saveTimeout;
-    commentField.addEventListener('input', () => {
+    newCommentField.addEventListener('input', () => {
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
-            saveComment(geoId, commentField.value.trim());
+            saveComment(geoId, newCommentField.value.trim());
         }, 1000);
     });
     
