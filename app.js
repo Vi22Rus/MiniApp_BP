@@ -1645,7 +1645,15 @@ async function uploadPhoto(geoId, file) {
             throw new Error(data.error?.message || 'Неизвестная ошибка');
         }
 
-        const photoUrl = data.data.url;
+        // ОТЛАДКА: Смотрим весь ответ
+        console.log('📸 Полный ответ ImgBB:', JSON.stringify(data, null, 2));
+
+        // Используем display_url (лучшее качество) вместо url
+        const photoUrl = data.data.display_url || data.data.url;
+
+        console.log('📸 URL фото:', photoUrl);
+        console.log('📸 Размер файла:', data.data.size, 'байт');
+        console.log('📸 Разрешение:', data.data.width, 'x', data.data.height);
 
         progressBar.style.width = '100%';
         progressText.textContent = 'Готово!';
@@ -1664,6 +1672,7 @@ async function uploadPhoto(geoId, file) {
         return null;
     }
 }
+
 
 // Прямой доступ к камере через MediaDevices API
 // Прямой доступ к камере через MediaDevices API
@@ -1891,22 +1900,46 @@ function renderPhotos(geoId, photos) {
         return;
     }
 
-    photos.forEach(photoUrl => {
+    photos.forEach((photoUrl, index) => {
         const photoItem = document.createElement('div');
         photoItem.className = 'photo-item';
+
+        // Индикатор загрузки
         photoItem.innerHTML = `
-            <img src="${photoUrl}" alt="Фото места">
-            <button class="delete-photo" onclick="event.stopPropagation(); handleDeletePhoto('${geoId}', '${photoUrl}')">×</button>
+            <div style="display: flex; align-items: center; justify-content: center; min-height: 100px; color: #9ca3af;">
+                Загрузка...
+            </div>
         `;
 
-        // Открытие фото в новой вкладке при клике
-        photoItem.querySelector('img').onclick = () => {
-            window.open(photoUrl, '_blank');
+        const img = new Image();
+
+        img.onload = () => {
+            console.log(`✅ Фото ${index + 1} загружено:`, photoUrl);
+            photoItem.innerHTML = `
+                <img src="${photoUrl}" alt="Фото места" loading="lazy">
+                <button class="delete-photo" onclick="event.stopPropagation(); handleDeletePhoto('${geoId}', '${photoUrl}')">×</button>
+            `;
+
+            // Открытие фото в новой вкладке при клике
+            photoItem.querySelector('img').onclick = () => {
+                window.open(photoUrl, '_blank');
+            };
         };
 
+        img.onerror = () => {
+            console.error(`❌ Ошибка загрузки фото ${index + 1}:`, photoUrl);
+            photoItem.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; min-height: 100px; color: #ef4444; font-size: 12px; text-align: center; padding: 10px;">
+                    Ошибка загрузки
+                </div>
+            `;
+        };
+
+        img.src = photoUrl;
         container.appendChild(photoItem);
     });
 }
+
 
 // Обработчик удаления фото
 async function handleDeletePhoto(geoId, photoUrl) {
