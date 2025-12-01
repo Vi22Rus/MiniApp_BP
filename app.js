@@ -655,55 +655,65 @@ function initGeoItemButton(button) {
     const id = parseInt(button.dataset.id, 10);
     if (isNaN(id)) return;
 
-    if (button._geoInit) return; // ✅ предотвращает двойное назначение
-    button._geoInit = true;
+    // 🔴 КРИТИЧНО: проверка в самом начале, до любых действий
+    if (button.geoInit) return;
+    button.geoInit = true;
 
+    // Добавляем кнопку рейтинга, если её ещё нет
     if (!button.querySelector('.geo-item-rating-button')) {
         const ratingButton = document.createElement('button');
         ratingButton.className = 'geo-item-rating-button';
-        ratingButton.innerHTML = '<span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span>';
+        ratingButton.innerHTML = '<span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>';
+        
         ratingButton.onclick = (e) => {
             e.stopPropagation();
             e.preventDefault();
             openRatingModal(id);
         };
-        ratingButton.addEventListener('mousedown', (e) => e.stopPropagation());
-        ratingButton.addEventListener('touchstart', (e) => e.stopPropagation());
-        ratingButton.addEventListener('mousemove', (e) => e.stopPropagation());
-        ratingButton.addEventListener('touchmove', (e) => e.stopPropagation());
+
+        ratingButton.addEventListener('mousedown', e => e.stopPropagation());
+        ratingButton.addEventListener('touchstart', e => e.stopPropagation());
+        ratingButton.addEventListener('mousemove', e => e.stopPropagation());
+        ratingButton.addEventListener('touchmove', e => e.stopPropagation());
+        
         button.appendChild(ratingButton);
         loadGeoRatingForButton(id, ratingButton);
     }
 
+    // Логика long-press и клика
     let pressTimer = null;
     let startX = 0, startY = 0;
     let hasMoved = false;
 
     const handleStart = (e) => {
         if (e.target.closest('.geo-item-rating-button')) return;
+        
         hasMoved = false;
         startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
         pressTimer = setTimeout(() => {
             if (!hasMoved) {
                 if (!userCoords) {
-                    alert('Сначала определите местоположение');
+                    alert('Сначала определите своё местоположение.');
                     return;
                 }
                 const destination = allGeoData[id].coords.join(',');
                 const origin = userCoords.join(',');
                 window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
+                pressTimer = null;
             }
-            pressTimer = null;
         }, 800);
     };
 
     const handleMove = (e) => {
         if (!pressTimer) return;
+        
         const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
         const diffX = Math.abs(currentX - startX);
         const diffY = Math.abs(currentY - startY);
+
         if (diffX > 10 || diffY > 10) {
             hasMoved = true;
             clearTimeout(pressTimer);
@@ -717,8 +727,10 @@ function initGeoItemButton(button) {
             pressTimer = null;
             return;
         }
+
         if (pressTimer && !hasMoved) {
             clearTimeout(pressTimer);
+            
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
                 showPlaygroundModal(allGeoData[id]);
             } else if (allGeoData[id] && allGeoData[id].type === 'park') {
@@ -726,9 +738,10 @@ function initGeoItemButton(button) {
             } else {
                 window.open(allGeoData[id].link, '_blank');
             }
+
+            pressTimer = null;
+            hasMoved = false;
         }
-        pressTimer = null;
-        hasMoved = false;
     };
 
     const handleCancel = () => {
