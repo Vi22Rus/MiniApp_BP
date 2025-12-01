@@ -259,21 +259,39 @@
   </div>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-<div id="ratingModal" class="modal-overlay">
-  <div class="modal-content rating-modal">
-    <button class="close-btn" onclick="closeRatingModal()">✕</button>
-    <h3 id="ratingPlaceName"></h3>
-    <div class="stars-container" id="starsContainer">
-      <span class="star" data-value="1">☆</span>
-      <span class="star" data-value="2">☆</span>
-      <span class="star" data-value="3">☆</span>
-      <span class="star" data-value="4">☆</span>
-      <span class="star" data-value="5">☆</span>
+<!-- Модальное окно рейтинга -->
+<div id="ratingModal" class="modal">
+    <div class="modal-content rating-modal-content">
+        <h3 id="ratingPlaceName">Место</h3>
+        <div id="starsContainer" class="stars-container">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+        </div>
+        
+        <!-- НОВОЕ: поле для комментария -->
+        <div class="comment-section">
+            <label for="ratingComment">Комментарий:</label>
+            <textarea 
+                id="ratingComment" 
+                placeholder="Ваши заметки о месте..." 
+                rows="4"
+                maxlength="500"
+            ></textarea>
+            <div class="comment-counter">
+                <span id="commentCharCount">0</span> / 500
+            </div>
+        </div>
+        
+        <div class="rating-buttons">
+            <button onclick="closeRatingModal()">Закрыть</button>
+            <button onclick="resetRating()">Сбросить</button>
+        </div>
     </div>
-    <button class="reset-btn" onclick="resetRating()">Сбросить</button>
-  </div>
 </div>
+
 
 <div id="addPlaceModal" class="modal-overlay">
   <div class="modal-content add-place-modal">
