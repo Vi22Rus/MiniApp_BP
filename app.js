@@ -1536,16 +1536,43 @@ async function loadRatingToModal(geoId, starsContainer, commentField) {
 async function loadGeoRating(geoId, ratingDiv) {
     const key = `geo_rating_${geoId}`;
     const saved = await getStorageItem(key);
-    const value = saved ? parseInt(saved) : 0;
-    updateStarsDisplay(ratingDiv, value);
+    
+    let rating = 0;
+    
+    if (saved) {
+        try {
+            // Новый формат: {rating: 3, comment: "..."}
+            const data = JSON.parse(saved);
+            rating = data.rating || 0;
+        } catch (e) {
+            // Старый формат (просто число "3")
+            rating = parseInt(saved) || 0;
+        }
+    }
+    
+    updateStarsDisplay(ratingDiv, rating);
 }
+
 async function loadGeoRatingForButton(geoId, ratingButton) {
     const key = `geo_rating_${geoId}`;
     const saved = await getStorageItem(key);
-    const value = saved ? parseInt(saved) : 0;
+    
+    let rating = 0;
+    
+    if (saved) {
+        try {
+            // Новый формат: {rating: 3, comment: "..."}
+            const data = JSON.parse(saved);
+            rating = data.rating || 0;
+        } catch (e) {
+            // Старый формат (просто число "3")
+            rating = parseInt(saved) || 0;
+        }
+    }
+    
     const stars = ratingButton.querySelectorAll('.star');
     stars.forEach((star, index) => {
-        if (index < value) {
+        if (index < rating) {
             star.classList.add('filled');
             star.textContent = '★';
         } else {
@@ -1554,6 +1581,7 @@ async function loadGeoRatingForButton(geoId, ratingButton) {
         }
     });
 }
+
 
 // Переменная для хранения динамических мест
 let dynamicGeoData = [];
