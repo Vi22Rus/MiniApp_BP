@@ -1619,8 +1619,9 @@ async function addNewPlace() {
         container.appendChild(button);
     }
     
-    // Инициализируем обработчики (клик, рейтинг)
-    initGeoItemButton(button);
+    if (!button.geoInit) {
+      initGeoItemButton(button);
+    }
     
     closeAddPlaceModal();
     alert('✅ Место успешно добавлено!');
