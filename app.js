@@ -500,7 +500,7 @@ function initCalendarFilters() {
 }
 
 function initGeoFeatures() {
-       document.getElementById('locateBtn').addEventListener('click', () => {
+    document.getElementById('locateBtn').addEventListener('click', () => {
         if (!navigator.geolocation) {
             alert('Геолокация не поддерживается.');
             return resetGeoState();
@@ -523,9 +523,14 @@ function initGeoFeatures() {
         });
     });
 
-    document.querySelectorAll('.geo-item-btn').forEach(initGeoItemButton);
+    // ИСПРАВЛЕНО: инициализируем только те кнопки, которые ещё не были инициализированы
+    document.querySelectorAll('.geo-item-btn').forEach(btn => {
+        if (!btn.geoInit) {
+            initGeoItemButton(btn);
+        }
+    });
+    
     addAddPlaceButton(); // Добавляем кнопку "Добавить место"
-
 }
 
 function updateGeoView() {
