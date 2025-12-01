@@ -287,31 +287,39 @@
         </div>
 
         <!-- Секция фотографий -->
-        <div class="photo-section">
-            <label>Фотографии:</label>
-            <div id="photosContainer" class="photos-grid"></div>
-            <input
-                type="file"
-                id="photoInput"
-                accept="image/*"
-                capture="environment"
-                style="display: none;"
-            >
-            <button id="addPhotoBtn" class="photo-btn">📷 Добавить фото</button>
-            <div id="uploadProgress" class="upload-progress" style="display: none;">
-                <div class="progress-bar">
-                    <div id="progressBarFill" class="progress-fill"></div>
-                </div>
-                <span id="progressText">Загрузка...</span>
-            </div>
-        </div>
+<div class="photo-section">
+    <label>Фотографии:</label>
+    <div id="photosContainer" class="photos-grid"></div>
 
-        <div class="rating-buttons">
-            <button onclick="closeRatingModal()">Закрыть</button>
-            <button onclick="resetRating()">Сбросить</button>
+    <!-- ДВА input: камера и галерея -->
+    <input
+        type="file"
+        id="photoInputCamera"
+        accept="image/*"
+        capture="environment"
+        style="display: none;"
+    >
+    <input
+        type="file"
+        id="photoInputGallery"
+        accept="image/*"
+        style="display: none;"
+    >
+
+    <!-- ДВЕ кнопки -->
+    <div style="display: flex; gap: 8px;">
+        <button id="addPhotoCameraBtn" class="photo-btn" style="flex: 1;">📷 Камера</button>
+        <button id="addPhotoGalleryBtn" class="photo-btn" style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🖼️ Галерея</button>
+    </div>
+
+    <div id="uploadProgress" class="upload-progress" style="display: none;">
+        <div class="progress-bar">
+            <div id="progressBarFill" class="progress-fill"></div>
         </div>
+        <span id="progressText">Загрузка...</span>
     </div>
 </div>
+
 
 
 
