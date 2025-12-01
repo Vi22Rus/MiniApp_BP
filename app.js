@@ -1440,9 +1440,19 @@ function openRatingModal(geoId) {
         const newPhotoInput = photoInput.cloneNode(true);
         photoInput.parentNode.replaceChild(newPhotoInput, photoInput);
 
-        newPhotoBtn.onclick = () => {
-            newPhotoInput.click();
-        };
+        newPhotoBtn.onclick = async () => {
+    // Показываем выбор: Камера или Галерея
+    const choice = confirm('Нажмите OK для камеры, Отмена для выбора из галереи');
+
+    if (choice) {
+        // Открываем камеру через MediaDevices API
+        await openNativeCamera(geoId);
+    } else {
+        // Открываем галерею (стандартный input)
+        newPhotoInput.click();
+    }
+};
+
 
         newPhotoInput.onchange = async (e) => {
             const file = e.target.files[0];
@@ -1652,6 +1662,154 @@ async function uploadPhoto(geoId, file) {
         alert('Не удалось загрузить фото: ' + error.message);
         progressEl.style.display = 'none';
         return null;
+    }
+}
+
+// Прямой доступ к камере через MediaDevices API
+async function openNativeCamera(geoId) {
+    try {
+        // Запрашиваем доступ к камере (задняя камера)
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            }
+        });
+
+        // Создаём полноэкранный интерфейс камеры
+        const cameraOverlay = document.createElement('div');
+        cameraOverlay.id = 'cameraOverlay';
+        cameraOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+        `;
+
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+
+        const controls = document.createElement('div');
+        controls.style.cssText = `
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 0 20px;
+        `;
+
+        const captureBtn = document.createElement('button');
+        captureBtn.innerHTML = '📷';
+        captureBtn.style.cssText = `
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid #4f46e5;
+            font-size: 32px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.innerHTML = '✕';
+        cancelBtn.style.cssText = `
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ef4444;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+
+        controls.appendChild(cancelBtn);
+        controls.appendChild(captureBtn);
+        cameraOverlay.appendChild(video);
+        cameraOverlay.appendChild(controls);
+        document.body.appendChild(cameraOverlay);
+
+        // Функция закрытия камеры
+        const closeCamera = () => {
+            stream.getTracks().forEach(track => track.stop());
+            if (document.body.contains(cameraOverlay)) {
+                document.body.removeChild(cameraOverlay);
+            }
+        };
+
+        // Обработчик отмены
+        cancelBtn.onclick = closeCamera;
+
+        // Обработчик снимка
+        captureBtn.onclick = async () => {
+            // Создаём canvas для захвата кадра
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // Конвертируем в blob
+            canvas.toBlob(async (blob) => {
+                closeCamera();
+
+                if (!blob) {
+                    alert('Ошибка создания фото');
+                    return;
+                }
+
+                // Создаём файл
+                const file = new File([blob], `camera_${Date.now()}.jpg`, {
+                    type: 'image/jpeg'
+                });
+
+                // Загружаем через существующую функцию
+                const photoUrl = await uploadPhoto(geoId, file);
+
+                if (photoUrl) {
+                    await savePhotoUrl(geoId, photoUrl);
+
+                    // Перезагружаем фото в модалке
+                    const key = `geo_rating_${geoId}`;
+                    const saved = await getStorageItem(key);
+
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            renderPhotos(geoId, data.photos || []);
+                        } catch (e) {
+                            renderPhotos(geoId, []);
+                        }
+                    }
+                }
+            }, 'image/jpeg', 0.85);
+        };
+
+    } catch (error) {
+        console.error('Ошибка доступа к камере:', error);
+
+        if (error.name === 'NotAllowedError') {
+            alert('Доступ к камере запрещён. Разрешите доступ в настройках Telegram.');
+        } else if (error.name === 'NotFoundError') {
+            alert('Камера не найдена на устройстве.');
+        } else {
+            alert('Не удалось открыть камеру: ' + error.message);
+        }
     }
 }
 
