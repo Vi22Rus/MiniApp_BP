@@ -1113,6 +1113,129 @@ body {
   color: #e5e7eb;
 }
 
+/* ===== СТИЛИ ДЛЯ ФОТОГРАФИЙ ===== */
+
+.photo-section {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.photo-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  min-height: 40px;
+}
+
+.photo-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+  cursor: pointer;
+}
+
+.photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-item .delete-photo {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.photo-item:hover .delete-photo {
+  opacity: 1;
+}
+
+.photo-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.photo-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.photo-btn:active {
+  transform: translateY(0);
+}
+
+.upload-progress {
+  margin-top: 12px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  width: 0%;
+  transition: width 0.3s;
+}
+
+#progressText {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .photo-item {
+  background: #374151;
+}
+
+[data-theme="dark"] .progress-bar {
+  background: #374151;
+}
+
+[data-theme="dark"] #progressText {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .photo-section label {
+  color: #e5e7eb;
+}
 
 
 

@@ -1389,14 +1389,16 @@ function openRatingModal(geoId) {
     const placeName = document.getElementById('ratingPlaceName');
     const starsContainer = document.getElementById('starsContainer');
     const commentField = document.getElementById('ratingComment');
-    
+    const photoInput = document.getElementById('photoInput');
+    const addPhotoBtn = document.getElementById('addPhotoBtn');
+
     if (!modal || !placeName || !starsContainer || !commentField) return;
-    
+
     placeName.textContent = allGeoData[geoId]?.name || `Место #${geoId}`;
-    
-    // Загружаем сохранённые данные (рейтинг + комментарий)
+
+    // Загружаем сохранённые данные (рейтинг + комментарий + фото)
     loadRatingToModal(geoId, starsContainer, commentField);
-    
+
     // Обработчики звёзд
     starsContainer.querySelectorAll('.star').forEach(star => {
         star.onclick = () => {
@@ -1404,14 +1406,14 @@ function openRatingModal(geoId) {
             setRating(geoId, value, starsContainer);
         };
     });
-    
-    // 🔴 ИСПРАВЛЕНИЕ: удаляем старые обработчики через клонирование
+
+    // Удаляем старые обработчики через клонирование
     const newCommentField = commentField.cloneNode(true);
     commentField.parentNode.replaceChild(newCommentField, commentField);
-    
+
     // Заново загружаем данные в новое поле
     loadRatingToModal(geoId, starsContainer, newCommentField);
-    
+
     // Счётчик символов
     const charCount = document.getElementById('commentCharCount');
     newCommentField.addEventListener('input', () => {
@@ -1419,8 +1421,8 @@ function openRatingModal(geoId) {
             charCount.textContent = newCommentField.value.length;
         }
     });
-    
-    // Автосохранение комментария с правильным geoId через замыкание
+
+    // Автосохранение комментария
     let saveTimeout;
     newCommentField.addEventListener('input', () => {
         clearTimeout(saveTimeout);
@@ -1428,9 +1430,58 @@ function openRatingModal(geoId) {
             saveComment(geoId, newCommentField.value.trim());
         }, 1000);
     });
-    
+
+    // Обработчик кнопки "Добавить фото"
+    if (addPhotoBtn && photoInput) {
+        // Удаляем старые обработчики
+        const newPhotoBtn = addPhotoBtn.cloneNode(true);
+        addPhotoBtn.parentNode.replaceChild(newPhotoBtn, addPhotoBtn);
+
+        const newPhotoInput = photoInput.cloneNode(true);
+        photoInput.parentNode.replaceChild(newPhotoInput, photoInput);
+
+        newPhotoBtn.onclick = () => {
+            newPhotoInput.click();
+        };
+
+        newPhotoInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Проверка размера (макс 5 МБ)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Файл слишком большой. Максимум 5 МБ');
+                return;
+            }
+
+            // Загружаем фото
+            const photoUrl = await uploadPhoto(geoId, file);
+
+            if (photoUrl) {
+                await savePhotoUrl(geoId, photoUrl);
+
+                // Перезагружаем фото в модалке
+                const key = `geo_rating_${geoId}`;
+                const saved = await getStorageItem(key);
+
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        renderPhotos(geoId, data.photos || []);
+                    } catch (e) {
+                        renderPhotos(geoId, []);
+                    }
+                }
+            }
+
+            // Очищаем input
+            newPhotoInput.value = '';
+        };
+    }
+
     modal.classList.add('active');
 }
+
 
 function closeRatingModal() {
     const modal = document.getElementById('ratingModal');
@@ -1503,30 +1554,197 @@ async function saveComment(geoId, commentText) {
 async function resetRating() {
     if (currentRatingGeoId === null) return;
     
+    if (!confirm('Удалить рейтинг, комментарий и все фото?')) return;
+
     const key = `geo_rating_${currentRatingGeoId}`;
     await removeStorageItem(key);
-    
+
     const starsContainer = document.getElementById('starsContainer');
     const commentField = document.getElementById('ratingComment');
-    
+
     updateStarsDisplay(starsContainer, 0);
-    
+
     if (commentField) {
         commentField.value = '';
         const charCount = document.getElementById('commentCharCount');
         if (charCount) charCount.textContent = '0';
     }
-    
+
+    renderPhotos(currentRatingGeoId, []);
+
     // Обновляем звёзды на карточке
     const button = document.querySelector(`.geo-item-btn[data-id="${currentRatingGeoId}"]`);
     if (button) {
-        const ratingDiv = button.querySelector('.geo-item-rating');
-        if (ratingDiv) updateStarsDisplay(ratingDiv, 0);
+        const ratingButton = button.querySelector('.geo-item-rating-button');
+        if (ratingButton) {
+            const stars = ratingButton.querySelectorAll('.star');
+            stars.forEach(star => {
+                star.classList.remove('filled');
+                star.textContent = '☆';
+            });
+        }
     }
-    
-    console.log('🗑️ Рейтинг и комментарий сброшены');
+
+    console.log('🗑️ Рейтинг, комментарий и фото сброшены');
 }
 
+
+// ===== РАБОТА С ФОТОГРАФИЯМИ ЧЕРЕЗ ImgBB =====
+const IMGBB_API_KEY = '37d3e8bd689bc6706df19e1879ceed45';
+
+// Загрузка фото на ImgBB
+async function uploadPhoto(geoId, file) {
+    const progressEl = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBarFill');
+    const progressText = document.getElementById('progressText');
+
+    progressEl.style.display = 'block';
+    progressBar.style.width = '30%';
+    progressText.textContent = 'Подготовка...';
+
+    try {
+        // Конвертируем файл в base64
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
+        const base64Image = await base64Promise;
+
+        progressBar.style.width = '50%';
+        progressText.textContent = 'Загрузка...';
+
+        // Загружаем на ImgBB
+        const formData = new FormData();
+        formData.append('image', base64Image);
+        formData.append('name', `geo_${geoId}_${Date.now()}`);
+
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error?.message || 'Неизвестная ошибка');
+        }
+
+        const photoUrl = data.data.url;
+
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Готово!';
+
+        setTimeout(() => {
+            progressEl.style.display = 'none';
+        }, 1000);
+
+        console.log('✅ Фото загружено:', photoUrl);
+        return photoUrl;
+
+    } catch (error) {
+        console.error('Ошибка загрузки фото:', error);
+        alert('Не удалось загрузить фото: ' + error.message);
+        progressEl.style.display = 'none';
+        return null;
+    }
+}
+
+// Сохранение URL фото в данных места
+async function savePhotoUrl(geoId, photoUrl) {
+    const key = `geo_rating_${geoId}`;
+    const existing = await getStorageItem(key);
+
+    let data = { rating: 0, comment: '', photos: [] };
+
+    if (existing) {
+        try {
+            data = JSON.parse(existing);
+            if (!data.photos) data.photos = [];
+        } catch (e) {
+            // Старый формат
+        }
+    }
+
+    data.photos.push(photoUrl);
+    await setStorageItem(key, JSON.stringify(data));
+
+    console.log('💾 URL фото сохранён');
+}
+
+// Удаление фото (только из списка)
+async function deletePhoto(geoId, photoUrl) {
+    const key = `geo_rating_${geoId}`;
+    const existing = await getStorageItem(key);
+
+    if (!existing) return;
+
+    try {
+        const data = JSON.parse(existing);
+        if (data.photos) {
+            data.photos = data.photos.filter(url => url !== photoUrl);
+            await setStorageItem(key, JSON.stringify(data));
+            console.log('🗑️ Фото удалено из списка');
+        }
+    } catch (e) {
+        console.error('Ошибка удаления фото:', e);
+    }
+}
+
+// Отображение фотографий
+function renderPhotos(geoId, photos) {
+    const container = document.getElementById('photosContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!photos || photos.length === 0) {
+        container.innerHTML = '<div style="color: #9ca3af; font-size: 13px;">Нет фотографий</div>';
+        return;
+    }
+
+    photos.forEach(photoUrl => {
+        const photoItem = document.createElement('div');
+        photoItem.className = 'photo-item';
+        photoItem.innerHTML = `
+            <img src="${photoUrl}" alt="Фото места">
+            <button class="delete-photo" onclick="event.stopPropagation(); handleDeletePhoto('${geoId}', '${photoUrl}')">×</button>
+        `;
+
+        // Открытие фото в новой вкладке при клике
+        photoItem.querySelector('img').onclick = () => {
+            window.open(photoUrl, '_blank');
+        };
+
+        container.appendChild(photoItem);
+    });
+}
+
+// Обработчик удаления фото
+async function handleDeletePhoto(geoId, photoUrl) {
+    if (!confirm('Удалить это фото?')) return;
+
+    await deletePhoto(geoId, photoUrl);
+
+    // Перезагружаем фото в модалке
+    const key = `geo_rating_${geoId}`;
+    const saved = await getStorageItem(key);
+
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            renderPhotos(geoId, data.photos || []);
+        } catch (e) {
+            renderPhotos(geoId, []);
+        }
+    }
+}
 
 function updateStarsDisplay(container, value) {
     const stars = container.querySelectorAll('.star');
@@ -1547,20 +1765,22 @@ async function loadRatingToModal(geoId, starsContainer, commentField) {
     
     let rating = 0;
     let comment = '';
-    
+    let photos = [];
+
     if (saved) {
         try {
             const data = JSON.parse(saved);
             rating = data.rating || 0;
             comment = data.comment || '';
+            photos = data.photos || [];
         } catch (e) {
             // Старый формат (просто число)
             rating = parseInt(saved) || 0;
         }
     }
-    
+
     updateStarsDisplay(starsContainer, rating);
-    
+
     if (commentField) {
         commentField.value = comment;
         const charCount = document.getElementById('commentCharCount');
@@ -1568,7 +1788,11 @@ async function loadRatingToModal(geoId, starsContainer, commentField) {
             charCount.textContent = comment.length;
         }
     }
+
+    // Отображаем фотографии
+    renderPhotos(geoId, photos);
 }
+
 
 
 async function loadGeoRating(geoId, ratingDiv) {

@@ -260,6 +260,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <!-- Модальное окно рейтинга -->
+<!-- Модальное окно рейтинга -->
 <div id="ratingModal" class="modal">
     <div class="modal-content rating-modal-content">
         <h3 id="ratingPlaceName">Место</h3>
@@ -270,13 +271,13 @@
             <span class="star" data-value="4">★</span>
             <span class="star" data-value="5">★</span>
         </div>
-        
-        <!-- НОВОЕ: поле для комментария -->
+
+        <!-- Поле для комментария -->
         <div class="comment-section">
             <label for="ratingComment">Комментарий:</label>
-            <textarea 
-                id="ratingComment" 
-                placeholder="Ваши заметки о месте..." 
+            <textarea
+                id="ratingComment"
+                placeholder="Ваши заметки о месте..."
                 rows="4"
                 maxlength="500"
             ></textarea>
@@ -284,13 +285,34 @@
                 <span id="commentCharCount">0</span> / 500
             </div>
         </div>
-        
+
+        <!-- Секция фотографий -->
+        <div class="photo-section">
+            <label>Фотографии:</label>
+            <div id="photosContainer" class="photos-grid"></div>
+            <input
+                type="file"
+                id="photoInput"
+                accept="image/*"
+                capture="environment"
+                style="display: none;"
+            >
+            <button id="addPhotoBtn" class="photo-btn">📷 Добавить фото</button>
+            <div id="uploadProgress" class="upload-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progressBarFill" class="progress-fill"></div>
+                </div>
+                <span id="progressText">Загрузка...</span>
+            </div>
+        </div>
+
         <div class="rating-buttons">
             <button onclick="closeRatingModal()">Закрыть</button>
             <button onclick="resetRating()">Сбросить</button>
         </div>
     </div>
 </div>
+
 
 
 <div id="addPlaceModal" class="modal-overlay">
