@@ -202,7 +202,7 @@ body {
 }
 
 .modal-content {
-    background: var(--card-bg);
+    background: #ffffff;
     padding: 20px;
     border-radius: 16px;
     width: 90%;
@@ -215,6 +215,11 @@ body {
     animation: slideUp 0.3s ease-out;
     box-sizing: border-box;
 }
+
+[data-theme="dark"] .modal-content {
+    background: #1f2937;
+}
+
 
 .close-btn {
   position: absolute;
