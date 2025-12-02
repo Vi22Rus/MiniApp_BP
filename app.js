@@ -1900,7 +1900,6 @@ async function deletePhoto(geoId, photoUrl) {
     }
 }
 
-// Отображение фотографий
 function renderPhotos(geoId, photos) {
     const container = document.getElementById('photosContainer');
     if (!container) return;
@@ -1912,26 +1911,45 @@ function renderPhotos(geoId, photos) {
         return;
     }
 
-    console.log('📷 Рендерим фото:', photos);
+    console.log('📷 Рендерим', photos.length, 'фото для места', geoId);
 
     photos.forEach((photoUrl, index) => {
-        console.log(`📷 Фото ${index + 1}:`, photoUrl);
+        console.log(`📷 Фото #${index + 1}:`, photoUrl);
 
         const photoItem = document.createElement('div');
         photoItem.className = 'photo-item';
-        photoItem.innerHTML = `
-            <img src="${photoUrl}" alt="Фото ${index + 1}" onerror="this.parentElement.innerHTML='<div style=color:#ef4444;padding:10px;font-size:12px;>Ошибка загрузки</div>'">
-            <button class="delete-photo" onclick="event.stopPropagation(); handleDeletePhoto('${geoId}', '${photoUrl}')">×</button>
-        `;
+        photoItem.style.cssText = 'position: relative; margin-bottom: 10px; background: #f3f4f6; border-radius: 8px; overflow: hidden;';
 
-        // Открытие фото в новой вкладке при клике на изображение
-        const img = photoItem.querySelector('img');
-        if (img) {
-            img.onclick = (e) => {
-                e.stopPropagation();
-                window.open(photoUrl, '_blank');
-            };
-        }
+        const img = document.createElement('img');
+        img.src = photoUrl;
+        img.alt = `Фото ${index + 1}`;
+        img.style.cssText = 'width: 100%; height: auto; display: block; max-height: 300px; object-fit: contain;';
+
+        img.onerror = () => {
+            console.error(`❌ Ошибка загрузки фото #${index + 1}:`, photoUrl);
+            photoItem.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">❌ Ошибка загрузки</div>';
+        };
+
+        img.onload = () => {
+            console.log(`✅ Фото #${index + 1} загружено успешно`);
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-photo';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            handleDeletePhoto(geoId, photoUrl);
+        };
+
+        photoItem.appendChild(img);
+        photoItem.appendChild(deleteBtn);
+
+        // Клик для открытия в новой вкладке
+        img.onclick = (e) => {
+            e.stopPropagation();
+            window.open(photoUrl, '_blank');
+        };
 
         container.appendChild(photoItem);
     });
@@ -2637,6 +2655,38 @@ document.addEventListener('DOMContentLoaded', () => {
   initFxUI();
 });
 
+// Временная функция для отладки
+async function debugPhotos() {
+    if (currentRatingGeoId === null) {
+        alert('Откройте сначала карточку места');
+        return;
+    }
+
+    const key = `geo_rating_${currentRatingGeoId}`;
+    const saved = await getStorageItem(key);
+
+    console.log('🔍 Отладка для места', currentRatingGeoId);
+    console.log('🔍 Ключ:', key);
+    console.log('🔍 Сохранённые данные:', saved);
+
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            console.log('🔍 Распарсенные данные:', data);
+            console.log('🔍 Массив фото:', data.photos);
+
+            if (data.photos && data.photos.length > 0) {
+                alert(`Найдено ${data.photos.length} фото:\n\n${data.photos.join('\n\n')}`);
+            } else {
+                alert('Фото не найдены в сохранённых данных');
+            }
+        } catch (e) {
+            alert('Ошибка парсинга: ' + e.message);
+        }
+    } else {
+        alert('Нет сохранённых данных для этого места');
+    }
+}
 
 
 
