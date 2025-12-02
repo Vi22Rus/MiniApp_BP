@@ -2632,7 +2632,6 @@ function initFxUI() {
   const card = document.getElementById('rateCard');
   const chipsWrap = document.getElementById('baseCurrencyChips');
   const amountEl = document.getElementById('rateAmount');
-  const refreshBtn = document.getElementById('rateRefreshBtn');
 
   if (!openBtn || !card) return;
 
@@ -2667,26 +2666,6 @@ function initFxUI() {
   if (amountEl) {
     amountEl.addEventListener('input', () => recalcFxUI());
   }
-
-  // Обновить курс принудительно
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', async () => {
-      refreshBtn.disabled = true;
-      refreshBtn.textContent = 'Обновление…';
-      try {
-        // очистить кэш конкретной базы и запросить заново
-        delete fxCache[fxState.base];
-        await ensureFxLoaded(true);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        recalcFxUI();
-        refreshBtn.disabled = false;
-        refreshBtn.textContent = 'Обновить курс';
-      }
-    });
-  }
-}
 
 // ===== ОБЕСПЕЧИТЬ НАЛИЧИЕ КУРСА ДЛЯ ТЕКУЩЕЙ БАЗЫ =====
 async function ensureFxLoaded(force = false) {
