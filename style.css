@@ -1139,7 +1139,7 @@ body {
 .photo-item {
   position: relative;
   width: 100%;
-  min-height: 100px;
+  min-height: 80px;
   border-radius: 8px;
   overflow: hidden;
   background: #f3f4f6;
@@ -1150,11 +1150,10 @@ body {
   width: 100%;
   height: auto;
   display: block;
-  object-fit: contain; /* ИЗМЕНЕНО: contain вместо cover */
+  object-fit: contain;
   max-height: 200px;
+  background: #f3f4f6;
 }
-
-
 .photo-item .delete-photo {
   position: absolute;
   top: 4px;

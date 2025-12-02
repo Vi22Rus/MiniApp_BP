@@ -1648,10 +1648,23 @@ async function uploadPhoto(geoId, file) {
         // ОТЛАДКА: Смотрим весь ответ
         console.log('📸 Полный ответ ImgBB:', JSON.stringify(data, null, 2));
 
-        // Используем display_url (лучшее качество) вместо url
-        const photoUrl = data.data.display_url || data.data.url;
+        // Логируем все доступные варианты URL
+        console.log('📸 Доступные URL:', {
+            url: data.data.url,
+            display_url: data.data.display_url,
+            image_url: data.data.image?.url,
+            thumb_url: data.data.thumb?.url,
+            medium_url: data.data.medium?.url
+        });
 
-        console.log('📸 URL фото:', photoUrl);
+        // Пробуем разные варианты (приоритет: url > display_url > image.url)
+        const photoUrl = data.data.url || data.data.display_url || data.data.image?.url;
+
+        if (!photoUrl) {
+            throw new Error('Не удалось получить URL фото из ответа ImgBB');
+        }
+
+        console.log('📸 Выбранный URL:', photoUrl);
         console.log('📸 Размер файла:', data.data.size, 'байт');
         console.log('📸 Разрешение:', data.data.width, 'x', data.data.height);
 
@@ -1666,13 +1679,12 @@ async function uploadPhoto(geoId, file) {
         return photoUrl;
 
     } catch (error) {
-        console.error('Ошибка загрузки фото:', error);
+        console.error('❌ Ошибка загрузки фото:', error);
         alert('Не удалось загрузить фото: ' + error.message);
         progressEl.style.display = 'none';
         return null;
     }
 }
-
 
 // Прямой доступ к камере через MediaDevices API
 // Прямой доступ к камере через MediaDevices API
@@ -1900,45 +1912,31 @@ function renderPhotos(geoId, photos) {
         return;
     }
 
+    console.log('📷 Рендерим фото:', photos);
+
     photos.forEach((photoUrl, index) => {
+        console.log(`📷 Фото ${index + 1}:`, photoUrl);
+
         const photoItem = document.createElement('div');
         photoItem.className = 'photo-item';
-
-        // Индикатор загрузки
         photoItem.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; min-height: 100px; color: #9ca3af;">
-                Загрузка...
-            </div>
+            <img src="${photoUrl}" alt="Фото ${index + 1}" onerror="this.parentElement.innerHTML='<div style=color:#ef4444;padding:10px;font-size:12px;>Ошибка загрузки</div>'">
+            <button class="delete-photo" onclick="event.stopPropagation(); handleDeletePhoto('${geoId}', '${photoUrl}')">×</button>
         `;
 
-        const img = new Image();
-
-        img.onload = () => {
-            console.log(`✅ Фото ${index + 1} загружено:`, photoUrl);
-            photoItem.innerHTML = `
-                <img src="${photoUrl}" alt="Фото места" loading="lazy">
-                <button class="delete-photo" onclick="event.stopPropagation(); handleDeletePhoto('${geoId}', '${photoUrl}')">×</button>
-            `;
-
-            // Открытие фото в новой вкладке при клике
-            photoItem.querySelector('img').onclick = () => {
+        // Открытие фото в новой вкладке при клике на изображение
+        const img = photoItem.querySelector('img');
+        if (img) {
+            img.onclick = (e) => {
+                e.stopPropagation();
                 window.open(photoUrl, '_blank');
             };
-        };
+        }
 
-        img.onerror = () => {
-            console.error(`❌ Ошибка загрузки фото ${index + 1}:`, photoUrl);
-            photoItem.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; min-height: 100px; color: #ef4444; font-size: 12px; text-align: center; padding: 10px;">
-                    Ошибка загрузки
-                </div>
-            `;
-        };
-
-        img.src = photoUrl;
         container.appendChild(photoItem);
     });
 }
+
 
 
 // Обработчик удаления фото
