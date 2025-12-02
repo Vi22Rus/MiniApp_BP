@@ -1277,6 +1277,20 @@ body {
 .transport-icon {
   font-size: 14px;
 }
+.taxi-option {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.taxi-option:hover {
+    background: #4f46e5 !important;
+    color: white !important;
+    transform: scale(1.05);
+}
+
+.taxi-option:active {
+    transform: scale(0.98);
+}
 
 
 

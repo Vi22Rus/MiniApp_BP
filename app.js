@@ -593,8 +593,11 @@ function updateAllDistances() {
     }
 
     const transport = calculateTransport(distance);
+    const coords = allGeoData[id].coords;
+
+    // 🔥 НОВОЕ: добавляем data-атрибуты и обработчики
     transportDiv.innerHTML = `
-      <div class="transport-option">
+      <div class="transport-option taxi-option" data-lat="${coords[0]}" data-lng="${coords[1]}">
         <span class="transport-icon">🚕</span>
         <span>${transport.taxi.time} мин · ${transport.taxi.price}฿</span>
       </div>
@@ -603,9 +606,62 @@ function updateAllDistances() {
         <span>${transport.songthaew.time} мин · ${transport.songthaew.price}฿</span>
       </div>
     `;
+
+    // 🔥 НОВОЕ: добавляем обработчик клика на блок такси
+    const taxiOption = transportDiv.querySelector('.taxi-option');
+    if (taxiOption && !taxiOption.hasListener) {
+      taxiOption.hasListener = true;
+      taxiOption.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        openTaxiApp(coords[0], coords[1]);
+      });
+    }
   });
 }
 
+// Открытие приложений такси
+function openTaxiApp(lat, lng) {
+    const destination = `${lat},${lng}`;
+    const origin = userCoords ? `${userCoords[0]},${userCoords[1]}` : '';
+
+    // Пробуем открыть Bolt
+    const boltUrl = `bolt://setPickup?pickup=${origin}&destination=${destination}`;
+    const grabUrl = `grab://open?screen=booking&pickupLatitude=${userCoords ? userCoords[0] : ''}&pickupLongitude=${userCoords ? userCoords[1] : ''}&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
+
+    let appOpened = false;
+
+    // Создаем невидимый iframe для проверки
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    // Таймаут для проверки, открылось ли приложение
+    const timeout = setTimeout(() => {
+        if (!appOpened) {
+            // Пробуем Grab
+            iframe.src = grabUrl;
+
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                if (!appOpened) {
+                    // Ни одно приложение не открылось
+                    alert('⚠️ Установите приложения Bolt или Grab!\n\n📱 Bolt: https://bolt.eu/app\n📱 Grab: https://grab.com/app');
+                }
+            }, 1500);
+        }
+    }, 1500);
+
+    // Пробуем открыть Bolt
+    iframe.src = boltUrl;
+
+    // Обработчик для определения успешного открытия
+    window.addEventListener('blur', () => {
+        appOpened = true;
+        clearTimeout(timeout);
+        document.body.removeChild(iframe);
+    }, { once: true });
+}
 
 function sortAllGeoBlocks() {
     ['naklua', 'pratamnak', 'jomtien'].forEach(subblockName => {
