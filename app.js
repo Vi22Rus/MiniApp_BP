@@ -2471,80 +2471,54 @@ function calcNextCbrUpdate(nowMs = Date.now()) {
 // Для каждой валюты:  Value = сколько RUB за Nominal единиц валюты. [web:226]
 // Нам нужен курс 1 base -> RUB: rate = Value / Nominal. [web:226]
 async function fetchFxRate(base) {
-  const now = Date.now();
-  const cache = fxCache[base];
+    const now = Date.now();
+    const cache = fxCache[base];
 
-  // Кэш по базе с TTL 30 минут (можно увеличить до суток при желании).
-  if (cache && (now - cache.ts) < FX_TTL_MS) {
-    return {
-      rate: cache.rate,
-      inverse: cache.inverse,
-      updatedAt: cache.updatedAt,
-      nextUpdateAt: cache.nextUpdateAt,
-    };
-  }
+    // Проверяем, не изменилась ли дата с момента последнего запроса
+    if (cache) {
+        const cacheDate = new Date(cache.updatedAt).toDateString();
+        const nowDate = new Date().toDateString();
 
-  if (!FX_BASES.includes(base)) {
-    throw new Error(`Unsupported base ${base}`);
-  }
-  if (base === 'RUB') {
-    throw new Error('Base cannot be RUB');
-  }
-
-  const url = 'https://www.cbr-xml-daily.ru/daily_json.js'; // JSON‑обёртка ЦБ. [web:226]
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`CBR ${resp.status}`);
-  }
-
-  const data = await resp.json();
-
-  if (!data || !data.Valute) {
-    throw new Error('CBR response invalid');
-  }
-
-  const node = data.Valute[base];
-  if (!node || !Number.isFinite(node.Value) || !Number.isFinite(node.Nominal)) {
-    throw new Error(`CBR: no rate for ${base}`);
-  }
-
-  // Официальный курс: Value RUB за Nominal единиц валюты. [web:226]
-  const rate = node.Value / node.Nominal; // 1 base -> RUB
-  const inverse = rate > 0 ? 1 / rate : null; // RUB -> base
-
-  // Время, на которое установлен курс (поле Date) или Timestamp. [web:226]
-  // Это дата в часовом поясе МСК; для "когда обновили" достаточно перевести в ms.
-  let updatedAt = now;
-  if (typeof data.Timestamp === 'string') {
-    const ts = Date.parse(data.Timestamp);
-    if (!Number.isNaN(ts)) {
-      updatedAt = ts;
+        // Если дата та же и кеш свежий (< 30 мин), возвращаем кеш
+        if (cacheDate === nowDate && now - cache.ts < FX_TTL_MS) {
+            return { rate: cache.rate, inverse: cache.inverse, updatedAt: cache.updatedAt, nextUpdateAt: cache.nextUpdateAt };
+        }
     }
-  } else if (typeof data.Date === 'string') {
-    const ts = Date.parse(data.Date);
-    if (!Number.isNaN(ts)) {
-      updatedAt = ts;
+
+    if (!FX_BASES.includes(base)) throw new Error(`Unsupported base ${base}`);
+    if (base === 'RUB') throw new Error(`Base cannot be RUB`);
+
+    // ✅ Добавляем cache-busting параметр и заставляем браузер не кешировать
+    const url = `https://www.cbr-xml-daily.ru/daily_json.js?_=${Date.now()}`;
+    const resp = await fetch(url, { cache: 'no-cache' });
+
+    if (!resp.ok) throw new Error(`CBR ${resp.status}`);
+    const data = await resp.json();
+
+    if (!data || !data.Valute) throw new Error(`CBR response invalid`);
+    const node = data.Valute[base];
+    if (!node || !Number.isFinite(node.Value) || !Number.isFinite(node.Nominal)) {
+        throw new Error(`CBR no rate for ${base}`);
     }
-  }
 
-  // Следующее обновление: логически 17:31 МСК ближайшего рабочего дня. [web:231][web:238]
-  const nextUpdateAt = calcNextCbrUpdate(now);
+    const rate = node.Value / node.Nominal;
+    const inverse = rate > 0 ? 1 / rate : null;
 
-  fxCache[base] = {
-    rate,
-    inverse,
-    ts: now,
-    updatedAt,
-    nextUpdateAt,
-  };
+    let updatedAt = now;
+    if (typeof data.Timestamp === 'string') {
+        const ts = Date.parse(data.Timestamp);
+        if (!Number.isNaN(ts)) updatedAt = ts;
+    } else if (typeof data.Date === 'string') {
+        const ts = Date.parse(data.Date);
+        if (!Number.isNaN(ts)) updatedAt = ts;
+    }
 
-  return {
-    rate,
-    inverse,
-    updatedAt,
-    nextUpdateAt,
-  };
+    const nextUpdateAt = calcNextCbrUpdate(now);
+
+    fxCache[base] = { rate, inverse, ts: now, updatedAt, nextUpdateAt };
+    return { rate, inverse, updatedAt, nextUpdateAt };
 }
+
 
 // НОВОЕ: форматирование чисел
 function fmtAmount(x, digits = 2) {
