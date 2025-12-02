@@ -2629,23 +2629,31 @@ function recalcFxUI() {
 // НОВОЕ: инициализация UI конвертера
 // НОВОЕ: инициализация UI конвертера
 function initFxUI() {
+  console.log('initFxUI вызвана');
+
   const openBtn = document.getElementById('rateFetchBtn');
   const card = document.getElementById('rateCard');
-  const chipsWrap = document.getElementById('baseCurrencyChips');
-  const amountEl = document.getElementById('rateAmount');
 
-  if (!openBtn || !card) return;
+  console.log('openBtn:', openBtn);
+  console.log('card:', card);
 
-  // Раскрытие/сворачивание карточки
+  if (!openBtn || !card) {
+    console.error('Не найдены элементы:', { openBtn, card });
+    return;
+  }
+
   openBtn.addEventListener('click', async () => {
-    card.style.display = (card.style.display === 'none' || card.style.display === '') ? 'block' : 'none';
-    if (card.style.display === 'block') {
-      await ensureFxLoaded(); // при первом открытии подгрузим курс
+    console.log('Клик по кнопке!');
+    if (card.style.display === 'none' || card.style.display === '') {
+      card.style.display = 'block';
+      await ensureFxLoaded();
       recalcFxUI();
+    } else {
+      card.style.display = 'none';
     }
   });
 
-  // Переключение базовой валюты
+  const chipsWrap = document.getElementById('baseCurrencyChips');
   if (chipsWrap) {
     chipsWrap.addEventListener('click', async (e) => {
       const btn = e.target.closest('button.chip');
@@ -2653,21 +2661,21 @@ function initFxUI() {
       const cur = btn.getAttribute('data-cur');
       if (!FX_BASES.includes(cur)) return;
 
-      // визуальное выделение
       chipsWrap.querySelectorAll('button.chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
       fxState.base = cur;
-      await ensureFxLoaded(true); // под текущую базу
+      await ensureFxLoaded(true);
       recalcFxUI();
     });
   }
 
-  // Ввод суммы
+  const amountEl = document.getElementById('rateAmount');
   if (amountEl) {
     amountEl.addEventListener('input', () => recalcFxUI());
   }
-} // ← ВОТ ЭТА СКОБКА БЫЛА ПРОПУЩЕНА!
+}
+
 
 // ===== ОБЕСПЕЧИТЬ НАЛИЧИЕ КУРСА ДЛЯ ТЕКУЩЕЙ БАЗЫ =====
 async function ensureFxLoaded(force = false) {
