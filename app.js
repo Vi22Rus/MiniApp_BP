@@ -1646,24 +1646,14 @@ async function uploadPhoto(geoId, file) {
 
         console.log('📸 Полный ответ ImgBB:', JSON.stringify(data, null, 2));
 
-        // Базовый URL от ImgBB
-        const basePhotoUrl = data.data.url || data.data.display_url || data.data.image?.url;
+        // Используем прямую ссылку от ImgBB
+        const photoUrl = data.data.url || data.data.display_url || data.data.image?.url;
 
-        if (!basePhotoUrl) {
+        if (!photoUrl) {
             throw new Error('Не удалось получить URL фото из ответа ImgBB');
         }
 
-        // Проверяем, запущено ли в Telegram WebView
-        const isTelegram = window.Telegram?.WebApp?.initData !== undefined;
-
-        // Используем прокси для Telegram, чтобы обойти проблемы с CORS и загрузкой
-        const photoUrl = isTelegram
-            ? `https://images.weserv.nl/?url=${encodeURIComponent(basePhotoUrl)}&w=800&output=jpg`
-            : basePhotoUrl;
-
-        console.log('📸 Telegram WebView:', isTelegram);
-        console.log('📸 Базовый URL:', basePhotoUrl);
-        console.log('📸 Финальный URL:', photoUrl);
+        console.log('📸 URL фото:', photoUrl);
         console.log('📸 Размер файла:', data.data.size, 'байт');
         console.log('📸 Разрешение:', data.data.width, 'x', data.data.height);
 
@@ -1684,6 +1674,7 @@ async function uploadPhoto(geoId, file) {
         return null;
     }
 }
+
 
 
 // Прямой доступ к камере через MediaDevices API
