@@ -9,17 +9,21 @@
   <title>Pattaya 2025/26</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="style.css">
-    <script>
+  <script>
+  // Сразу сохраняем курсы в глобальную переменную
+  window.CBR_RATES = null;
+
   function CBR_XML_Daily_Ru(rates) {
-    // пробрасываем данные в твой код
-    window.PP = window.PP || {};
-    if (window.PP.onCbrRates) {
+    window.CBR_RATES = rates;
+    console.log('✅ JSONP загрузил курсы ЦБ:', rates.Date);
+
+    // Если app.js уже загрузился и определил PP.onCbrRates — вызываем
+    if (window.PP && window.PP.onCbrRates) {
       window.PP.onCbrRates(rates);
     }
   }
-</script>
-<script src="https://www.cbr-xml-daily.ru/daily_jsonp.js" async></script>
-
+  </script>
+  <script src="https://www.cbr-xml-daily.ru/daily_jsonp.js" async></script>
   <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -40,7 +44,6 @@
       <button class="tab-button" data-tab="contacts">Контакты</button>
       <button class="tab-button" data-tab="nearby">Гео</button>
     </nav>
-
     <main>
       <section id="calendar" class="tab-content active">
         <div class="filters">
