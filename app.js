@@ -1902,74 +1902,21 @@ function renderPhotos(geoId, photos) {
         return;
     }
 
-    console.log('📷 Рендерим', photos.length, 'фото для места', geoId);
+    console.log('📷 Рендерим', photos.length, 'фото');
 
     photos.forEach((photoUrl, index) => {
-        console.log(`📷 Фото #${index + 1}:`, photoUrl);
-
         const photoItem = document.createElement('div');
         photoItem.className = 'photo-item';
-        photoItem.style.cssText = 'position: relative; margin-bottom: 10px; background: #f3f4f6; border-radius: 8px; overflow: hidden; min-height: 100px;';
+        photoItem.innerHTML = `
+            <img src="${photoUrl}" alt="Фото ${index + 1}">
+            <button class="delete-photo" onclick="event.stopPropagation(); handleDeletePhoto('${geoId}', '${photoUrl}')">×</button>
+        `;
 
-        // Индикатор загрузки
-        const loader = document.createElement('div');
-        loader.style.cssText = 'padding: 40px; text-align: center; color: #9ca3af;';
-        loader.textContent = 'Загрузка...';
-        photoItem.appendChild(loader);
-
+        photoItem.querySelector('img').onclick = () => window.open(photoUrl, '_blank');
         container.appendChild(photoItem);
-
-        // Принудительная загрузка изображения
-        const img = new Image();
-
-        img.onload = function() {
-            console.log(`✅ Фото #${index + 1} загружено:`, this.naturalWidth, 'x', this.naturalHeight);
-
-            // Убираем loader
-            photoItem.innerHTML = '';
-
-            // Создаём новый img элемент с явными размерами
-            const displayImg = document.createElement('img');
-            displayImg.src = photoUrl;
-            displayImg.alt = `Фото ${index + 1}`;
-            displayImg.style.cssText = `
-                width: 100%;
-                height: auto;
-                display: block;
-                object-fit: contain;
-                background: #f3f4f6;
-                min-height: ${this.naturalHeight}px;
-            `;
-            displayImg.draggable = false;
-
-            // Кнопка удаления
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-photo';
-            deleteBtn.innerHTML = '×';
-            deleteBtn.onclick = (e) => {
-                e.stopPropagation();
-                handleDeletePhoto(geoId, photoUrl);
-            };
-
-            photoItem.appendChild(displayImg);
-            photoItem.appendChild(deleteBtn);
-
-            // Клик для открытия в новой вкладке
-            displayImg.onclick = (e) => {
-                e.stopPropagation();
-                window.open(photoUrl, '_blank');
-            };
-        };
-
-        img.onerror = function() {
-            console.error(`❌ Ошибка загрузки фото #${index + 1}:`, photoUrl);
-            photoItem.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">❌ Ошибка загрузки</div>';
-        };
-
-        // Запускаем загрузку
-        img.src = photoUrl;
     });
 }
+
 
 
 // Обработчик удаления фото
