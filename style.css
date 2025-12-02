@@ -1250,6 +1250,26 @@ body {
   color: #e5e7eb;
 }
 
+.transport-info {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.transport-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.transport-icon {
+  font-size: 14px;
+}
 
 
 

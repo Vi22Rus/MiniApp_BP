@@ -38,6 +38,34 @@ let userCoords = null;
 let firebaseApp;
 let firebaseDatabase;
 
+// Расчёт расстояния между двумя точками (формула Haversine)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Радиус Земли в км
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Расстояние в км
+}
+
+// Расчёт стоимости и времени транспорта
+function calculateTransport(distanceKm) {
+    // Сонгтео
+    let songthaewPrice = distanceKm <= 3 ? 10 : (distanceKm <= 10 ? 20 : 30);
+    let songthaewTime = Math.ceil(distanceKm * 3); // ~3 мин/км
+
+    // Такси
+    let taxiPrice = 35 + Math.ceil(distanceKm * 10);
+    let taxiTime = Math.ceil(distanceKm * 2); // ~2 мин/км
+
+    return {
+        songthaew: { time: songthaewTime, price: songthaewPrice },
+        taxi: { time: taxiTime, price: taxiPrice }
+    };
+}
+
 function initFirebase() {
     try {
         if (typeof firebase !== 'undefined') {
@@ -540,22 +568,44 @@ function updateGeoView() {
 }
 
 function updateAllDistances() {
-    if (!userCoords) return;
-    document.querySelectorAll('.geo-item-btn').forEach(button => {
-        const id = parseInt(button.dataset.id, 10);
-        if (isNaN(id)) return;
-        
-        const distance = getDistance(userCoords, allGeoData[id].coords);
-        button.dataset.distance = distance;
-        let distSpan = button.querySelector('.distance-tag');
-        if (!distSpan) {
-            distSpan = document.createElement('span');
-            distSpan.className = 'distance-tag';
-            button.appendChild(distSpan);
-        }
-        distSpan.textContent = ` ≈ ${distance} км`;
-    });
+  if (!userCoords) return;
+  document.querySelectorAll('.geo-item-btn').forEach(button => {
+    const id = parseInt(button.dataset.id, 10);
+    if (isNaN(id)) return;
+    const distance = parseFloat(getDistance(userCoords, allGeoData[id].coords));
+    button.dataset.distance = distance;
+
+    // Добавляем тег расстояния
+    let distSpan = button.querySelector('.distance-tag');
+    if (!distSpan) {
+      distSpan = document.createElement('span');
+      distSpan.className = 'distance-tag';
+      button.appendChild(distSpan);
+    }
+    distSpan.textContent = distance.toFixed(1) + ' км';
+
+    // Добавляем блок транспорта
+    let transportDiv = button.querySelector('.transport-info');
+    if (!transportDiv) {
+      transportDiv = document.createElement('div');
+      transportDiv.className = 'transport-info';
+      button.appendChild(transportDiv);
+    }
+
+    const transport = calculateTransport(distance);
+    transportDiv.innerHTML = `
+      <div class="transport-option">
+        <span class="transport-icon">🚕</span>
+        <span>${transport.taxi.time} мин · ${transport.taxi.price}฿</span>
+      </div>
+      <div class="transport-option">
+        <span class="transport-icon">🛺</span>
+        <span>${transport.songthaew.time} мин · ${transport.songthaew.price}฿</span>
+      </div>
+    `;
+  });
 }
+
 
 function sortAllGeoBlocks() {
     ['naklua', 'pratamnak', 'jomtien'].forEach(subblockName => {
