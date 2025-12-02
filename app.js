@@ -2629,31 +2629,32 @@ function recalcFxUI() {
 // НОВОЕ: инициализация UI конвертера
 // НОВОЕ: инициализация UI конвертера
 function initFxUI() {
-  console.log('initFxUI вызвана');
+  const openBtn  = document.getElementById('rateFetchBtn');
+  const card     = document.getElementById('rateCard');
+  const chipsWrap = document.getElementById('baseCurrencyChips');
+  const amountEl  = document.getElementById('rateAmount');
 
-  const openBtn = document.getElementById('rateFetchBtn');
-  const card = document.getElementById('rateCard');
+  if (!card) return;
 
-  console.log('openBtn:', openBtn);
-  console.log('card:', card);
+  // Всегда показываем карточку и сразу грузим курс
+  card.style.display = 'block';
+  (async () => {
+    try { await ensureFxLoaded(); } catch (e) {}
+    if (typeof recalcFxUI === 'function') recalcFxUI();
+  })();
 
-  if (!openBtn || !card) {
-    console.error('Не найдены элементы:', { openBtn, card });
-    return;
+  // Опционально: оставить работу кнопки, если она есть
+  if (openBtn) {
+    openBtn.addEventListener('click', async () => {
+      card.style.display = (card.style.display === 'none') ? 'block' : 'none';
+      if (card.style.display === 'block') {
+        try { await ensureFxLoaded(); } catch (e) {}
+        if (typeof recalcFxUI === 'function') recalcFxUI();
+      }
+    });
   }
 
-  openBtn.addEventListener('click', async () => {
-    console.log('Клик по кнопке!');
-    if (card.style.display === 'none' || card.style.display === '') {
-      card.style.display = 'block';
-      await ensureFxLoaded();
-      recalcFxUI();
-    } else {
-      card.style.display = 'none';
-    }
-  });
-
-  const chipsWrap = document.getElementById('baseCurrencyChips');
+  // Переключение базовой валюты
   if (chipsWrap) {
     chipsWrap.addEventListener('click', async (e) => {
       const btn = e.target.closest('button.chip');
@@ -2661,21 +2662,26 @@ function initFxUI() {
       const cur = btn.getAttribute('data-cur');
       if (!FX_BASES.includes(cur)) return;
 
-      chipsWrap.querySelectorAll('button.chip').forEach(b => b.classList.remove('active'));
+      chipsWrap.querySelectorAll('button.chip')
+        .forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
       fxState.base = cur;
-      await ensureFxLoaded(true);
-      recalcFxUI();
+      try { await ensureFxLoaded(true); } catch (e) {}
+      if (typeof recalcFxUI === 'function') recalcFxUI();
     });
   }
 
-  const amountEl = document.getElementById('rateAmount');
+  // Ввод суммы
   if (amountEl) {
-    amountEl.addEventListener('input', () => recalcFxUI());
+    amountEl.addEventListener('input', () => {
+      if (typeof recalcFxUI === 'function') recalcFxUI();
+    });
   }
 }
 
+// Если этой строки нет — добавь где-нибудь после определения initFxUI:
+document.addEventListener('DOMContentLoaded', initFxUI);
 
 // ===== ОБЕСПЕЧИТЬ НАЛИЧИЕ КУРСА ДЛЯ ТЕКУЩЕЙ БАЗЫ =====
 async function ensureFxLoaded(force = false) {
