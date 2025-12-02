@@ -2627,6 +2627,7 @@ function recalcFxUI() {
 
 
 // НОВОЕ: инициализация UI конвертера
+// НОВОЕ: инициализация UI конвертера
 function initFxUI() {
   const openBtn = document.getElementById('rateFetchBtn');
   const card = document.getElementById('rateCard');
@@ -2666,6 +2667,7 @@ function initFxUI() {
   if (amountEl) {
     amountEl.addEventListener('input', () => recalcFxUI());
   }
+} // ← ВОТ ЭТА СКОБКА БЫЛА ПРОПУЩЕНА!
 
 // ===== ОБЕСПЕЧИТЬ НАЛИЧИЕ КУРСА ДЛЯ ТЕКУЩЕЙ БАЗЫ =====
 async function ensureFxLoaded(force = false) {
@@ -2687,12 +2689,4 @@ async function ensureFxLoaded(force = false) {
     // При ошибке не трогаем старый fxState, чтобы не ломать отображение
   }
 }
-
-
-// ИНИЦИАЛИЗАЦИЯ КОНВЕРТЕРА ПОСЛЕ ЗАГРУЗКИ DOM
-document.addEventListener('DOMContentLoaded', () => {
-  // Если есть ваши существующие init-функции — вызовите их здесь же.
-  // Инициализация интерфейса курса валют:
-  initFxUI();
-});
 
