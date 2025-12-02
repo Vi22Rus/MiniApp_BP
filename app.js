@@ -637,26 +637,26 @@ function openTaxiApp(lat, lng) {
     const dest = `${lat},${lng}`;
     const origin = userCoords ? `${userCoords[0]},${userCoords[1]}` : '';
 
-    // Мобильные deep‑links
+    // Мобильные deep-links
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
         const boltUrl = `bolt://setPickup?pickup=${origin}&destination=${dest}`;
         const grabUrl = `grab://open?screen=booking&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
 
-        // Простой приоритет: сначала Bolt, потом Grab, без попытки угадать успешный запуск
+        // Сначала пробуем Bolt
         try {
             window.location.href = boltUrl;
-        } catch (_) {}
+        } catch (e) {}
 
-        // Через 800 мс пробуем Grab (если Bolt не перехватил)
+        // Через 800 мс пробуем Grab
         setTimeout(() => {
             try {
                 window.location.href = grabUrl;
-            } catch (_) {}
+            } catch (e) {}
         }, 800);
 
-        // Fallback-подсказка
+        // Через 1600 мс показываем подсказку
         setTimeout(() => {
             alert('Установите приложения Bolt или Grab!');
         }, 1600);
@@ -665,30 +665,6 @@ function openTaxiApp(lat, lng) {
         window.open('https://bolt.eu/app', '_blank');
         window.open('https://www.grab.com/', '_blank');
     }
-}
-
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    // Пробуем открыть Bolt
-    window.location.href = boltUrl;
-
-    // Через 1 секунду проверяем, открылось ли приложение
-    setTimeout(() => {
-        document.removeEventListener('visibilitychange', onVisibilityChange);
-
-        if (!appOpened) {
-            // Пробуем Grab
-            window.location.href = grabUrl;
-
-            setTimeout(() => {
-                if (!appOpened) {
-                    // Показываем сообщение только если оба приложения не открылись
-                    alert('⚠️ Установите приложения Bolt или Grab!\n\n📱 Bolt: https://bolt.eu/app\n📱 Grab: https://grab.com/app');
-                }
-            }, 1000);
-        }
-    }, 1000);
 }
 
 function sortAllGeoBlocks() {
