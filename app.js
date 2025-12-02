@@ -2509,31 +2509,43 @@ function calcNextCbrUpdate(nowMs = Date.now()) {
 // Для каждой валюты:  Value = сколько RUB за Nominal единиц валюты. [web:226]
 // Нам нужен курс 1 base -> RUB: rate = Value / Nominal. [web:226]
 async function fetchFxRate(base) {
-  const now = Date.now();
+    const now = Date.now();
 
-  if (!window.CBR_RATES || !window.CBR_RATES.Valute) {
-    throw new Error('Курсы ЦБ ещё не загрузились');
-  }
+    // Ждём до 5 секунд, пока JSONP не загрузит курсы в window.CBR_RATES
+    const maxWaitMs = 5000;
+    const pollIntervalMs = 200;
+    let waited = 0;
 
-  const data = window.CBR_RATES;
-  const node = data.Valute[base];
-  if (!node) {
-    throw new Error('Нет курса для ' + base);
-  }
+    while ((!window.CBR_RATES || !window.CBR_RATES.Valute) && waited < maxWaitMs) {
+        await new Promise(r => setTimeout(r, pollIntervalMs));
+        waited += pollIntervalMs;
+    }
 
-  const rate = node.Value / node.Nominal;   // base -> RUB
-  const inverse = rate > 0 ? 1 / rate : null;
+    if (!window.CBR_RATES || !window.CBR_RATES.Valute) {
+        alert('Не удалось загрузить курсы ЦБ. Попробуй обновить страницу.');
+        throw new Error('Курсы ЦБ не загрузились (таймаут)');
+    }
 
-  let updatedAt = now;
-  if (typeof data.Date === 'string') {
-    const ts = Date.parse(data.Date);
-    if (!Number.isNaN(ts)) updatedAt = ts;
-  }
+    const data = window.CBR_RATES;
+    const node = data.Valute[base];
+    if (!node || !Number.isFinite(node.Value) || !Number.isFinite(node.Nominal)) {
+        alert('Для валюты ' + base + ' нет курса ЦБ.');
+        throw new Error('Нет курса для ' + base);
+    }
 
-  const nextUpdateAt = calcNextCbrUpdate(now);
+    const rate = node.Value / node.Nominal;   // base -> RUB
+    const inverse = rate > 0 ? 1 / rate : null;
 
-  fxCache[base] = { rate, inverse, ts: now, updatedAt, nextUpdateAt };
-  return { rate, inverse, updatedAt, nextUpdateAt };
+    let updatedAt = now;
+    if (typeof data.Date === 'string') {
+        const ts = Date.parse(data.Date);
+        if (!Number.isNaN(ts)) updatedAt = ts;
+    }
+
+    const nextUpdateAt = calcNextCbrUpdate(now);
+
+    fxCache[base] = { rate, inverse, ts: now, updatedAt, nextUpdateAt };
+    return { rate, inverse, updatedAt, nextUpdateAt };
 }
 
 
