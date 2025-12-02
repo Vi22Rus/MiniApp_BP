@@ -1,9 +1,3 @@
-// Version: 2.5.0 | Lines: 940
-// Исправлено: Загрузка данных ежедневника через async/await
-// 2025-10-01
-// ===== FIREBASE CONFIGURATION =====
-// ===== КОНФИГ ВАЛЮТ И СОСТОЯНИЕ КУРСА =====
-
 // Базовые валюты, которые можно выбрать в UI
 const FX_BASES = ['THB', 'USD', 'CNY'];
 // Целевая валюта фиксирована
@@ -472,6 +466,7 @@ function getDistance([lat1, lon1], [lat2, lon2]) {
 document.addEventListener('DOMContentLoaded', () => {
     try {
         initApp();
+        initFxUI();      // конвертер валют
     } catch (e) {
         console.error("Критическая ошибка при инициализации:", e);
     }
@@ -633,39 +628,7 @@ function updateAllDistances() {
 }
 
 
-function openTaxiApp(lat, lng) {
-    const dest = `${lat},${lng}`;
-    const origin = userCoords ? `${userCoords[0]},${userCoords[1]}` : '';
 
-    // Мобильные deep-links
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isMobile) {
-        const boltUrl = `bolt://setPickup?pickup=${origin}&destination=${dest}`;
-        const grabUrl = `grab://open?screen=booking&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
-
-        // Сначала пробуем Bolt
-        try {
-            window.location.href = boltUrl;
-        } catch (e) {}
-
-        // Через 800 мс пробуем Grab
-        setTimeout(() => {
-            try {
-                window.location.href = grabUrl;
-            } catch (e) {}
-        }, 800);
-
-        // Через 1600 мс показываем подсказку
-        setTimeout(() => {
-            alert('Установите приложения Bolt или Grab!');
-        }, 1600);
-    } else {
-        // На десктопе просто открываем сайты
-        window.open('https://bolt.eu/app', '_blank');
-        window.open('https://www.grab.com/', '_blank');
-    }
-}
 
 function sortAllGeoBlocks() {
     ['naklua', 'pratamnak', 'jomtien'].forEach(subblockName => {
@@ -1417,112 +1380,6 @@ function showContactModal(contact) {
     document.getElementById('modalOverlay').classList.add('active');
 }
 let currentRatingGeoId = null;
-function initGeoItemButton(button) {
-    const id = parseInt(button.dataset.id, 10);
-    if (isNaN(id)) return;
-
-    // Добавляем кнопку со звёздами как последний элемент блока
-    if (!button.querySelector('.geo-item-rating-button')) {
-        const ratingButton = document.createElement('button');
-        ratingButton.className = 'geo-item-rating-button';
-        ratingButton.innerHTML = '<span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span>';
-        ratingButton.onclick = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            openRatingModal(id);
-        };
-        // Блокируем обработчики нажатия на кнопке
-        ratingButton.addEventListener('mousedown', (e) => e.stopPropagation());
-        ratingButton.addEventListener('touchstart', (e) => e.stopPropagation());
-        ratingButton.addEventListener('mousemove', (e) => e.stopPropagation());
-        ratingButton.addEventListener('touchmove', (e) => e.stopPropagation());
-        button.appendChild(ratingButton);
-        loadGeoRatingForButton(id, ratingButton);
-    }
-
-    let pressTimer = null;
-    let startX = 0, startY = 0;
-    let hasMoved = false;
-
-    const handleStart = (e) => {
-        // Проверяем, что клик не по кнопке со звёздами
-        if (e.target.closest('.geo-item-rating-button')) {
-            return;
-        }
-
-        hasMoved = false;
-        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        
-        pressTimer = setTimeout(() => {
-            if (!hasMoved) {
-                if (!userCoords) {
-                    alert('Сначала определите местоположение');
-                    return;
-                }
-                const destination = allGeoData[id].coords.join(',');
-                const origin = userCoords.join(',');
-                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
-            }
-            pressTimer = null;
-        }, 800);
-    };
-
-    const handleMove = (e) => {
-        if (!pressTimer) return;
-        
-        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        const diffX = Math.abs(currentX - startX);
-        const diffY = Math.abs(currentY - startY);
-
-        // Если палец/мышь сдвинулись больше чем на 10px - это движение, не клик
-        if (diffX > 10 || diffY > 10) {
-            hasMoved = true;
-            clearTimeout(pressTimer);
-            pressTimer = null;
-        }
-    };
-
-    const handleEnd = (e) => {
-        // Проверяем, что клик не по кнопке со звёздами
-        if (e.target.closest('.geo-item-rating-button')) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-            return;
-        }
-        
-        if (pressTimer && !hasMoved) {
-            clearTimeout(pressTimer);
-            // Обычный клик
-            if (allGeoData[id] && allGeoData[id].type === 'playground') {
-                showPlaygroundModal(allGeoData[id]);
-            } else if (allGeoData[id] && allGeoData[id].type === 'park') {
-                showParkModal(allGeoData[id]);
-            } else {
-                window.open(allGeoData[id].link, '_blank');
-            }
-        }
-        pressTimer = null;
-        hasMoved = false;
-    };
-
-    const handleCancel = () => {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-        hasMoved = false;
-    };
-
-    button.addEventListener('mousedown', handleStart);
-    button.addEventListener('mousemove', handleMove);
-    button.addEventListener('mouseup', handleEnd);
-    button.addEventListener('mouseleave', handleCancel);
-    button.addEventListener('touchstart', handleStart, { passive: true });
-    button.addEventListener('touchmove', handleMove, { passive: true });
-    button.addEventListener('touchend', handleEnd);
-    button.addEventListener('touchcancel', handleCancel);
-}
-
 function openRatingModal(geoId) {
     currentRatingGeoId = geoId;
     const modal = document.getElementById('ratingModal');
@@ -2765,12 +2622,38 @@ async function ensureFxLoaded(force = false) {
     // При ошибке не трогаем старый fxState, чтобы не ломать отображение
   }
 }
+function openTaxiApp(lat, lng) {
+    const dest = `${lat},${lng}`;
+    const origin = userCoords ? `${userCoords[0]},${userCoords[1]}` : '';
 
+    // Мобильные deep-links
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-// ИНИЦИАЛИЗАЦИЯ КОНВЕРТЕРА ПОСЛЕ ЗАГРУЗКИ DOM
-document.addEventListener('DOMContentLoaded', () => {
-  // Если есть ваши существующие init-функции — вызовите их здесь же.
-  // Инициализация интерфейса курса валют:
-  initFxUI();
-});
+    if (isMobile) {
+        const boltUrl = `bolt://setPickup?pickup=${origin}&destination=${dest}`;
+        const grabUrl = `grab://open?screen=booking&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
+
+        // Сначала пробуем Bolt
+        try {
+            window.location.href = boltUrl;
+        } catch (e) {}
+
+        // Через 800 мс пробуем Grab
+        setTimeout(() => {
+            try {
+                window.location.href = grabUrl;
+            } catch (e) {}
+        }, 800);
+
+        // Через 1600 мс показываем подсказку
+        setTimeout(() => {
+            alert('Установите приложения Bolt или Grab!');
+        }, 1600);
+    } else {
+        // На десктопе просто открываем сайты
+        window.open('https://bolt.eu/app', '_blank');
+        window.open('https://www.grab.com/', '_blank');
+    }
+}
+
 
