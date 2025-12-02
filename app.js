@@ -775,8 +775,24 @@ function initGeoItemButton(button) {
                     alert('Сначала определите своё местоположение.');
                     return;
                 }
-                const destination = allGeoData[id].coords.join(',');
+
+                // 🔥 ИСПРАВЛЕНО: безопасное получение координат
+                const place = allGeoData[id];
+                if (!place || !place.coords) {
+                    console.error('Место не найдено или нет координат:', id);
+                    alert('Ошибка: координаты места не найдены');
+                    return;
+                }
+
+                // Преобразуем координаты в массив независимо от формата
+                const destCoords = Array.isArray(place.coords)
+                    ? place.coords
+                    : [place.coords[0], place.coords[1]];
+
+                const destination = destCoords.join(',');
                 const origin = userCoords.join(',');
+
+                console.log('Построение маршрута:', { origin, destination, place: place.name });
                 window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
                 pressTimer = null;
             }
@@ -785,7 +801,7 @@ function initGeoItemButton(button) {
 
     const handleMove = (e) => {
         if (!pressTimer) return;
-        
+
         const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
         const diffX = Math.abs(currentX - startX);
@@ -808,7 +824,7 @@ function initGeoItemButton(button) {
 
         if (pressTimer && !hasMoved) {
             clearTimeout(pressTimer);
-            
+
             if (allGeoData[id] && allGeoData[id].type === 'playground') {
                 showPlaygroundModal(allGeoData[id]);
             } else if (allGeoData[id] && allGeoData[id].type === 'park') {
@@ -836,9 +852,10 @@ function initGeoItemButton(button) {
     button.addEventListener('touchmove', handleMove, { passive: true });
     button.addEventListener('touchend', handleEnd);
     button.addEventListener('touchcancel', handleCancel);
-    
+
     console.log('✓ Кнопка инициализирована:', id, allGeoData[id]?.name);
 }
+
 
 
 function showPlaygroundModal(playground) {
@@ -2129,12 +2146,30 @@ async function loadDynamicGeoData() {
         try {
             dynamicGeoData = JSON.parse(saved);
             console.log('✓ Загружено динамических мест:', dynamicGeoData.length);
+
+            // 🔥 ДОБАВЛЕНО: проверка и нормализация координат
+            dynamicGeoData.forEach((place, index) => {
+                if (place.coords && !Array.isArray(place.coords)) {
+                    console.warn(`⚠️ Место "${place.name}" (ID ${index}): координаты не массив, конвертирую...`);
+                    // Преобразуем объект {0: lat, 1: lng} в массив [lat, lng]
+                    place.coords = [place.coords[0], place.coords[1]];
+                    console.log(`✓ Исправлено:`, place.coords);
+                }
+            });
+
+            // Сохраняем исправленные данные обратно
+            if (dynamicGeoData.some(p => p.coords && !Array.isArray(p.coords))) {
+                await setStorageItem('dynamic_geo_data', JSON.stringify(dynamicGeoData));
+                console.log('✓ Координаты нормализованы и сохранены');
+            }
+
         } catch (e) {
             console.error('Ошибка парсинга:', e);
             dynamicGeoData = [];
         }
     }
 }
+
 
 // Добавить новое место
 async function addNewPlace() {
