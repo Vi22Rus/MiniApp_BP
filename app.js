@@ -1601,7 +1601,6 @@ async function resetRating() {
 // ===== РАБОТА С ФОТОГРАФИЯМИ ЧЕРЕЗ ImgBB =====
 const IMGBB_API_KEY = '37d3e8bd689bc6706df19e1879ceed45';
 
-// Загрузка фото на ImgBB
 async function uploadPhoto(geoId, file) {
     const progressEl = document.getElementById('uploadProgress');
     const progressBar = document.getElementById('progressBarFill');
@@ -1645,26 +1644,26 @@ async function uploadPhoto(geoId, file) {
             throw new Error(data.error?.message || 'Неизвестная ошибка');
         }
 
-        // ОТЛАДКА: Смотрим весь ответ
         console.log('📸 Полный ответ ImgBB:', JSON.stringify(data, null, 2));
 
-        // Логируем все доступные варианты URL
-        console.log('📸 Доступные URL:', {
-            url: data.data.url,
-            display_url: data.data.display_url,
-            image_url: data.data.image?.url,
-            thumb_url: data.data.thumb?.url,
-            medium_url: data.data.medium?.url
-        });
+        // Базовый URL от ImgBB
+        const basePhotoUrl = data.data.url || data.data.display_url || data.data.image?.url;
 
-        // Пробуем разные варианты (приоритет: url > display_url > image.url)
-        const photoUrl = data.data.url || data.data.display_url || data.data.image?.url;
-
-        if (!photoUrl) {
+        if (!basePhotoUrl) {
             throw new Error('Не удалось получить URL фото из ответа ImgBB');
         }
 
-        console.log('📸 Выбранный URL:', photoUrl);
+        // Проверяем, запущено ли в Telegram WebView
+        const isTelegram = window.Telegram?.WebApp?.initData !== undefined;
+
+        // Используем прокси для Telegram, чтобы обойти проблемы с CORS и загрузкой
+        const photoUrl = isTelegram
+            ? `https://images.weserv.nl/?url=${encodeURIComponent(basePhotoUrl)}&w=800&output=jpg`
+            : basePhotoUrl;
+
+        console.log('📸 Telegram WebView:', isTelegram);
+        console.log('📸 Базовый URL:', basePhotoUrl);
+        console.log('📸 Финальный URL:', photoUrl);
         console.log('📸 Размер файла:', data.data.size, 'байт');
         console.log('📸 Разрешение:', data.data.width, 'x', data.data.height);
 
@@ -1685,6 +1684,7 @@ async function uploadPhoto(geoId, file) {
         return null;
     }
 }
+
 
 // Прямой доступ к камере через MediaDevices API
 // Прямой доступ к камере через MediaDevices API

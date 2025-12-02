@@ -202,13 +202,18 @@ body {
 }
 
 .modal-content {
-  background: #fff;
-  border-radius: var(--radius);
-  padding: var(--gap);
-  width: 90%;
-  max-width: 360px;
-  position: relative;
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh; /* Ограничиваем высоту */
+    overflow-y: auto; /* Прокрутка */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: slideUp 0.3s ease-out;
 }
+
 
 .close-btn {
   position: absolute;
@@ -1149,12 +1154,14 @@ body {
 
 .photo-item img {
   width: 100%;
-  height: auto !important;
+  height: auto;
   display: block;
   object-fit: contain;
+  max-height: 250px; /* Ограничение высоты */
   background: #f3f4f6;
   border-radius: 8px;
 }
+
 
 .photo-item .delete-photo {
   position: absolute;
