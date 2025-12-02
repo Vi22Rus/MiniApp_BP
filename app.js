@@ -2616,39 +2616,3 @@ document.addEventListener('DOMContentLoaded', () => {
   initFxUI();
 });
 
-// Временная функция для отладки
-async function debugPhotos() {
-    if (currentRatingGeoId === null) {
-        alert('Откройте сначала карточку места');
-        return;
-    }
-
-    const key = `geo_rating_${currentRatingGeoId}`;
-    const saved = await getStorageItem(key);
-
-    console.log('🔍 Отладка для места', currentRatingGeoId);
-    console.log('🔍 Ключ:', key);
-    console.log('🔍 Сохранённые данные:', saved);
-
-    if (saved) {
-        try {
-            const data = JSON.parse(saved);
-            console.log('🔍 Распарсенные данные:', data);
-            console.log('🔍 Массив фото:', data.photos);
-
-            if (data.photos && data.photos.length > 0) {
-                alert(`Найдено ${data.photos.length} фото:\n\n${data.photos.join('\n\n')}`);
-            } else {
-                alert('Фото не найдены в сохранённых данных');
-            }
-        } catch (e) {
-            alert('Ошибка парсинга: ' + e.message);
-        }
-    } else {
-        alert('Нет сохранённых данных для этого места');
-    }
-}
-
-
-
-
