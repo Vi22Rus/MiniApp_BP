@@ -9,6 +9,17 @@
   <title>Pattaya 2025/26</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="style.css">
+    <script>
+  function CBR_XML_Daily_Ru(rates) {
+    // пробрасываем данные в твой код
+    window.PP = window.PP || {};
+    if (window.PP.onCbrRates) {
+      window.PP.onCbrRates(rates);
+    }
+  }
+</script>
+<script src="https://www.cbr-xml-daily.ru/daily_jsonp.js" async></script>
+
   <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
   <script src="app.js" defer></script>
 </head>

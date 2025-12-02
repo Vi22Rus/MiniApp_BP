@@ -38,6 +38,44 @@ let userCoords = null;
 let firebaseApp;
 let firebaseDatabase;
 
+window.PP = window.PP || {};
+
+PP.onCbrRates = function(rates) {
+  try {
+    const base = fxState.base; // THB / USD / CNY
+    const node = rates.Valute[base];
+    if (!node) throw new Error('No rate for ' + base);
+
+    const rate = node.Value / node.Nominal;  // base -> RUB
+    const inverse = rate > 0 ? 1 / rate : null;
+
+    const now = Date.now();
+    let updatedAt = now;
+    if (typeof rates.Date === 'string') {
+      const ts = Date.parse(rates.Date);
+      if (!Number.isNaN(ts)) updatedAt = ts;
+    }
+
+    fxCache[base] = {
+      rate,
+      inverse,
+      ts: now,
+      updatedAt,
+      nextUpdateAt: calcNextCbrUpdate(now)
+    };
+
+    fxState.rate = rate;
+    fxState.inverse = inverse;
+    fxState.updatedAt = updatedAt;
+    fxState.nextUpdateAt = calcNextCbrUpdate(now);
+
+    // тут вызывай свою функцию перерисовки UI конвертера
+    updateFxUI && updateFxUI();
+  } catch (e) {
+    console.error('CBR JSONP error', e);
+  }
+};
+
 // Расчёт расстояния между двумя точками (формула Haversine)
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Радиус Земли в км
@@ -2471,52 +2509,31 @@ function calcNextCbrUpdate(nowMs = Date.now()) {
 // Для каждой валюты:  Value = сколько RUB за Nominal единиц валюты. [web:226]
 // Нам нужен курс 1 base -> RUB: rate = Value / Nominal. [web:226]
 async function fetchFxRate(base) {
-    const now = Date.now();
-    const cache = fxCache[base];
+  const now = Date.now();
 
-    // Проверяем, не изменилась ли дата с момента последнего запроса
-    if (cache) {
-        const cacheDate = new Date(cache.updatedAt).toDateString();
-        const nowDate = new Date().toDateString();
+  if (!window.CBR_RATES || !window.CBR_RATES.Valute) {
+    throw new Error('Курсы ЦБ ещё не загрузились');
+  }
 
-        // Если дата та же и кеш свежий (< 30 мин), возвращаем кеш
-        if (cacheDate === nowDate && now - cache.ts < FX_TTL_MS) {
-            return { rate: cache.rate, inverse: cache.inverse, updatedAt: cache.updatedAt, nextUpdateAt: cache.nextUpdateAt };
-        }
-    }
+  const data = window.CBR_RATES;
+  const node = data.Valute[base];
+  if (!node) {
+    throw new Error('Нет курса для ' + base);
+  }
 
-    if (!FX_BASES.includes(base)) throw new Error(`Unsupported base ${base}`);
-    if (base === 'RUB') throw new Error(`Base cannot be RUB`);
+  const rate = node.Value / node.Nominal;   // base -> RUB
+  const inverse = rate > 0 ? 1 / rate : null;
 
-    // ✅ Добавляем cache-busting параметр и заставляем браузер не кешировать
-    const url = `https://www.cbr-xml-daily.ru/daily_json.js?_=${Date.now()}`;
-    const resp = await fetch(url, { cache: 'no-cache' });
+  let updatedAt = now;
+  if (typeof data.Date === 'string') {
+    const ts = Date.parse(data.Date);
+    if (!Number.isNaN(ts)) updatedAt = ts;
+  }
 
-    if (!resp.ok) throw new Error(`CBR ${resp.status}`);
-    const data = await resp.json();
+  const nextUpdateAt = calcNextCbrUpdate(now);
 
-    if (!data || !data.Valute) throw new Error(`CBR response invalid`);
-    const node = data.Valute[base];
-    if (!node || !Number.isFinite(node.Value) || !Number.isFinite(node.Nominal)) {
-        throw new Error(`CBR no rate for ${base}`);
-    }
-
-    const rate = node.Value / node.Nominal;
-    const inverse = rate > 0 ? 1 / rate : null;
-
-    let updatedAt = now;
-    if (typeof data.Timestamp === 'string') {
-        const ts = Date.parse(data.Timestamp);
-        if (!Number.isNaN(ts)) updatedAt = ts;
-    } else if (typeof data.Date === 'string') {
-        const ts = Date.parse(data.Date);
-        if (!Number.isNaN(ts)) updatedAt = ts;
-    }
-
-    const nextUpdateAt = calcNextCbrUpdate(now);
-
-    fxCache[base] = { rate, inverse, ts: now, updatedAt, nextUpdateAt };
-    return { rate, inverse, updatedAt, nextUpdateAt };
+  fxCache[base] = { rate, inverse, ts: now, updatedAt, nextUpdateAt };
+  return { rate, inverse, updatedAt, nextUpdateAt };
 }
 
 
