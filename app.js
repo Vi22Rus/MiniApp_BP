@@ -607,60 +607,66 @@ function updateAllDistances() {
       </div>
     `;
 
-    // 🔥 НОВОЕ: добавляем обработчик клика на блок такси
-    const taxiOption = transportDiv.querySelector('.taxi-option');
-    if (taxiOption && !taxiOption.hasListener) {
-      taxiOption.hasListener = true;
-      taxiOption.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
+// 🔥 ИСПРАВЛЕНО: усиленная остановка всплытия
+const taxiOption = transportDiv.querySelector('.taxi-option');
+if (taxiOption && !taxiOption.hasListener) {
+  taxiOption.hasListener = true;
+
+  // Останавливаем все события
+  ['click', 'touchstart', 'touchend', 'mousedown', 'mouseup'].forEach(eventType => {
+    taxiOption.addEventListener(eventType, (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      // Открываем такси только на финальном событии
+      if (eventType === 'click' || eventType === 'touchend') {
         openTaxiApp(coords[0], coords[1]);
-      });
-    }
+      }
+    }, { passive: false });
   });
 }
 
+// Открытие приложений такси
 // Открытие приложений такси
 function openTaxiApp(lat, lng) {
     const destination = `${lat},${lng}`;
     const origin = userCoords ? `${userCoords[0]},${userCoords[1]}` : '';
 
-    // Пробуем открыть Bolt
+    // Deep links для приложений
     const boltUrl = `bolt://setPickup?pickup=${origin}&destination=${destination}`;
-    const grabUrl = `grab://open?screen=booking&pickupLatitude=${userCoords ? userCoords[0] : ''}&pickupLongitude=${userCoords ? userCoords[1] : ''}&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
+    const grabUrl = `grab://open?screen=booking&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
 
     let appOpened = false;
 
-    // Создаем невидимый iframe для проверки
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    // Таймаут для проверки, открылось ли приложение
-    const timeout = setTimeout(() => {
-        if (!appOpened) {
-            // Пробуем Grab
-            iframe.src = grabUrl;
-
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-                if (!appOpened) {
-                    // Ни одно приложение не открылось
-                    alert('⚠️ Установите приложения Bolt или Grab!\n\n📱 Bolt: https://bolt.eu/app\n📱 Grab: https://grab.com/app');
-                }
-            }, 1500);
+    // Обработчик для определения, ушло ли приложение в фон
+    const onVisibilityChange = () => {
+        if (document.hidden) {
+            appOpened = true;
         }
-    }, 1500);
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     // Пробуем открыть Bolt
-    iframe.src = boltUrl;
+    window.location.href = boltUrl;
 
-    // Обработчик для определения успешного открытия
-    window.addEventListener('blur', () => {
-        appOpened = true;
-        clearTimeout(timeout);
-        document.body.removeChild(iframe);
-    }, { once: true });
+    // Через 1 секунду проверяем, открылось ли приложение
+    setTimeout(() => {
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+
+        if (!appOpened) {
+            // Пробуем Grab
+            window.location.href = grabUrl;
+
+            setTimeout(() => {
+                if (!appOpened) {
+                    // Показываем сообщение только если оба приложения не открылись
+                    alert('⚠️ Установите приложения Bolt или Grab!\n\n📱 Bolt: https://bolt.eu/app\n📱 Grab: https://grab.com/app');
+                }
+            }, 1000);
+        }
+    }, 1000);
 }
 
 function sortAllGeoBlocks() {
