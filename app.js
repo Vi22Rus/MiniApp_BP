@@ -1967,7 +1967,6 @@ async function loadRatingToModal(geoId, starsContainer, commentField) {
             comment = data.comment || '';
             photos = data.photos || [];
         } catch (e) {
-            // Старый формат (просто число)
             rating = parseInt(saved) || 0;
         }
     }
@@ -1982,11 +1981,11 @@ async function loadRatingToModal(geoId, starsContainer, commentField) {
         }
     }
 
-    // Отображаем фотографии
+    // ОБЯЗАТЕЛЬНО: рендерим фото
     renderPhotos(geoId, photos);
+
+    console.log('📷 Загружено фото:', photos.length);
 }
-
-
 
 async function loadGeoRating(geoId, ratingDiv) {
     const key = `geo_rating_${geoId}`;
