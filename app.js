@@ -568,83 +568,105 @@ function updateGeoView() {
 }
 
 function updateAllDistances() {
-  if (!userCoords) return;
-  document.querySelectorAll('.geo-item-btn').forEach(button => {
-    const id = parseInt(button.dataset.id, 10);
-    if (isNaN(id)) return;
-    const distance = parseFloat(getDistance(userCoords, allGeoData[id].coords));
-    button.dataset.distance = distance;
+    if (!userCoords) return;
 
-    // Добавляем тег расстояния
-    let distSpan = button.querySelector('.distance-tag');
-    if (!distSpan) {
-      distSpan = document.createElement('span');
-      distSpan.className = 'distance-tag';
-      button.appendChild(distSpan);
-    }
-    distSpan.textContent = distance.toFixed(1) + ' км';
+    document.querySelectorAll('.geo-item-btn').forEach(button => {
+        const id = parseInt(button.dataset.id, 10);
+        if (isNaN(id)) return;
 
-    // Добавляем блок транспорта
-    let transportDiv = button.querySelector('.transport-info');
-    if (!transportDiv) {
-      transportDiv = document.createElement('div');
-      transportDiv.className = 'transport-info';
-      button.appendChild(transportDiv);
-    }
+        const place = allGeoData[id];
+        if (!place || !place.coords) return;
 
-    const transport = calculateTransport(distance);
-    const coords = allGeoData[id].coords;
+        const coords = Array.isArray(place.coords)
+            ? place.coords
+            : [place.coords[0], place.coords[1]];
 
-    // 🔥 НОВОЕ: добавляем data-атрибуты и обработчики
-    transportDiv.innerHTML = `
-      <div class="transport-option taxi-option" data-lat="${coords[0]}" data-lng="${coords[1]}">
-        <span class="transport-icon">🚕</span>
-        <span>${transport.taxi.time} мин · ${transport.taxi.price}฿</span>
-      </div>
-      <div class="transport-option">
-        <span class="transport-icon">🛺</span>
-        <span>${transport.songthaew.time} мин · ${transport.songthaew.price}฿</span>
-      </div>
-    `;
+        const distance = parseFloat(getDistance(userCoords, coords));
+        button.dataset.distance = distance;
 
-// 🔥 ИСПРАВЛЕНО: усиленная остановка всплытия
-const taxiOption = transportDiv.querySelector('.taxi-option');
-if (taxiOption && !taxiOption.hasListener) {
-  taxiOption.hasListener = true;
+        // Тег расстояния
+        let distSpan = button.querySelector('.distance-tag');
+        if (!distSpan) {
+            distSpan = document.createElement('span');
+            distSpan.className = 'distance-tag';
+            button.appendChild(distSpan);
+        }
+        distSpan.textContent = distance.toFixed(1) + ' км';
 
-  // Останавливаем все события
-  ['click', 'touchstart', 'touchend', 'mousedown', 'mouseup'].forEach(eventType => {
-    taxiOption.addEventListener(eventType, (e) => {
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      e.preventDefault();
+        // Блок транспорта
+        let transportDiv = button.querySelector('.transport-info');
+        if (!transportDiv) {
+            transportDiv = document.createElement('div');
+            transportDiv.className = 'transport-info';
+            button.appendChild(transportDiv);
+        }
 
-      // Открываем такси только на финальном событии
-      if (eventType === 'click' || eventType === 'touchend') {
-        openTaxiApp(coords[0], coords[1]);
-      }
-    }, { passive: false });
-  });
+        const transport = calculateTransport(distance);
+
+        transportDiv.innerHTML = `
+          <div class="transport-option taxi-option" data-lat="${coords[0]}" data-lng="${coords[1]}">
+            <span class="transport-icon">🚕</span>
+            <span>${transport.taxi.time} мин · ${transport.taxi.price}฿</span>
+          </div>
+          <div class="transport-option">
+            <span class="transport-icon">🛺</span>
+            <span>${transport.songthaew.time} мин · ${transport.songthaew.price}฿</span>
+          </div>
+        `;
+
+        // Обработчики на блок такси
+        const taxiOption = transportDiv.querySelector('.taxi-option');
+        if (taxiOption && !taxiOption._taxiBound) {
+            taxiOption._taxiBound = true;
+
+            const handler = (e) => {
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                openTaxiApp(coords[0], coords[1]);
+            };
+
+            taxiOption.addEventListener('click', handler, { passive: false });
+            taxiOption.addEventListener('touchend', handler, { passive: false });
+        }
+    });
 }
 
-// Открытие приложений такси
-// Открытие приложений такси
+
 function openTaxiApp(lat, lng) {
-    const destination = `${lat},${lng}`;
+    const dest = `${lat},${lng}`;
     const origin = userCoords ? `${userCoords[0]},${userCoords[1]}` : '';
 
-    // Deep links для приложений
-    const boltUrl = `bolt://setPickup?pickup=${origin}&destination=${destination}`;
-    const grabUrl = `grab://open?screen=booking&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
+    // Мобильные deep‑links
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    let appOpened = false;
+    if (isMobile) {
+        const boltUrl = `bolt://setPickup?pickup=${origin}&destination=${dest}`;
+        const grabUrl = `grab://open?screen=booking&dropoffLatitude=${lat}&dropoffLongitude=${lng}`;
 
-    // Обработчик для определения, ушло ли приложение в фон
-    const onVisibilityChange = () => {
-        if (document.hidden) {
-            appOpened = true;
-        }
-    };
+        // Простой приоритет: сначала Bolt, потом Grab, без попытки угадать успешный запуск
+        try {
+            window.location.href = boltUrl;
+        } catch (_) {}
+
+        // Через 800 мс пробуем Grab (если Bolt не перехватил)
+        setTimeout(() => {
+            try {
+                window.location.href = grabUrl;
+            } catch (_) {}
+        }, 800);
+
+        // Fallback-подсказка
+        setTimeout(() => {
+            alert('Установите приложения Bolt или Grab!');
+        }, 1600);
+    } else {
+        // На десктопе просто открываем сайты
+        window.open('https://bolt.eu/app', '_blank');
+        window.open('https://www.grab.com/', '_blank');
+    }
+}
+
 
     document.addEventListener('visibilitychange', onVisibilityChange);
 
