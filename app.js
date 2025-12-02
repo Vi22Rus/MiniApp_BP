@@ -859,42 +859,55 @@ function initGeoItemButton(button) {
 
 
 function showPlaygroundModal(playground) {
-    let content = `<h3>🎠 ${playground.name}</h3>`;
-    if (playground.tips) content += `<p>💡 ${playground.tips}</p>`;
-    
-    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-    const to = `${playground.coords[0]},${playground.coords[1]}`;
-    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-    
-    if (userCoords) {
-        const userFrom = `${userCoords[0]},${userCoords[1]}`;
-        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
-        const distance = getDistance(userCoords, playground.coords);
-        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+    let content = `<h3>${playground.name}</h3>`;
+
+    if (playground.tips) {
+        content += `<p>${playground.tips}</p>`;
     }
-    
-    content += `<p><a href="${playground.link}" target="_blank">🌐 Открыть в Google Maps</a></p>`;
-    
+
+    // 🔥 ИСПРАВЛЕНО: приоритет userCoords над homeCoords
+    const from = userCoords
+        ? `${userCoords[0]},${userCoords[1]}`  // от текущего местоположения
+        : `${homeCoords.lat},${homeCoords.lng}`;  // от дома, если геолокация не определена
+
+    const to = `${playground.coords[0]},${playground.coords[1]}`;
+
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${from}&destination=${to}" target="_blank">📍 Построить маршрут</a></p>`;
+
+    if (userCoords) {
+        const distance = getDistance(userCoords, playground.coords);
+        content += `<p>📏 Расстояние: ${distance} км</p>`;
+    }
+
+    content += `<p><a href="${playground.link}" target="_blank">🗺️ Открыть в Google Maps</a></p>`;
+
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
 }
 
+
 function showParkModal(park) {
-    let content = `<h3>🌳 ${park.name}</h3>`;
-    if (park.tips) content += `<p>💡 ${park.tips}</p>`;
-    
-    const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-    const to = `${park.coords[0]},${park.coords[1]}`;
-    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank">🗺️ Маршрут от дома</a></p>`;
-    
-    if (userCoords) {
-        const userFrom = `${userCoords[0]},${userCoords[1]}`;
-        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank">📍 Маршрут от вас</a></p>`;
-        const distance = getDistance(userCoords, park.coords);
-        content += `<p>📏 Расстояние: ≈${distance} км</p>`;
+    let content = `<h3>${park.name}</h3>`;
+
+    if (park.tips) {
+        content += `<p>${park.tips}</p>`;
     }
-    
-    content += `<p><a href="${park.link}" target="_blank">🌐 Открыть в Google Maps</a></p>`;
+
+    // 🔥 ИСПРАВЛЕНО: приоритет userCoords над homeCoords
+    const from = userCoords
+        ? `${userCoords[0]},${userCoords[1]}`  // от текущего местоположения
+        : `${homeCoords.lat},${homeCoords.lng}`;  // от дома, если геолокация не определена
+
+    const to = `${park.coords[0]},${park.coords[1]}`;
+
+    content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${from}&destination=${to}" target="_blank">📍 Построить маршрут</a></p>`;
+
+    if (userCoords) {
+        const distance = getDistance(userCoords, park.coords);
+        content += `<p>📏 Расстояние: ${distance} км</p>`;
+    }
+
+    content += `<p><a href="${park.link}" target="_blank">🗺️ Открыть в Google Maps</a></p>`;
     
     document.getElementById('modalBody').innerHTML = content;
     document.getElementById('modalOverlay').classList.add('active');
