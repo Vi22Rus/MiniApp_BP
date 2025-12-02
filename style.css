@@ -447,14 +447,15 @@ body {
 }
 
 .cafe-sub-block {
-  border: 1px dashed;
-  border-radius: 8px;
-  padding: var(--gap);
-  margin-bottom: var(--gap);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    border: 1px dashed;
+    border-radius: 8px;
+    padding: var(--gap);
+    margin-bottom: var(--gap);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;  /* 🔥 Было 8px, стало 12px */
 }
+
 
 .cafe-sub-block:last-child {
   margin-bottom: 0;
@@ -476,26 +477,31 @@ body {
 }
 
 .geo-item-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: stretch;
-  padding: 12px;
-  background: var(--surface);
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s;
-  min-height: 80px;
-  font-size: 0.9rem;
-  line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    padding: 12px;
+    background: var(--surface);
+    border: 2px solid #e2e8f0;  /* 🔥 Добавлена граница */
+    border-radius: var(--radius);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    min-height: 80px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);  /* 🔥 Добавлена тень */
+    margin-bottom: 4px;  /* 🔥 Дополнительный отступ */
 }
-
 
 .geo-item-btn:hover {
-  background-color: #f0f0f0;
+    background-color: #f8f9fa;
+    border-color: var(--accent);  /* 🔥 При наведении меняется цвет границы */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
 }
+
 
 .geo-item-btn .icon {
   font-size: 1.2rem;
@@ -550,10 +556,11 @@ body {
 }
 
 .geo-items-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;  /* 🔥 Было 8px, стало 12px */
 }
+
 
 .geo-temples {
   border-color: #FACC15;
