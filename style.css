@@ -1444,7 +1444,7 @@ body {
 }
 
 .sun-times .sunrise {
-  color: #FFD700; /* Оранжевый для восхода */
+  color: #000080; /* Оранжевый для восхода */
 }
 
 .sun-times .sunset {

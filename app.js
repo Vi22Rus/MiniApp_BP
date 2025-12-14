@@ -288,7 +288,7 @@ async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
 
   if (weatherCache[apiDate]) {
-    console.log(`✓ Погода из кэша для ${apiDate}`);
+    console.log(`✅ ${date} - Температура из кэша`);
     return {
       ...weatherCache[apiDate],
       airFromCache: true,
@@ -304,11 +304,10 @@ async function fetchWeatherData(date) {
   const maxForecastDate = new Date(today);
   maxForecastDate.setDate(today.getDate() + 16);
 
-  // ✅ ДОБАВЛЕНО: Проверка, это сегодняшняя дата или нет
   const isToday = requestDate.getTime() === today.getTime();
 
   if (requestDate > maxForecastDate) {
-    console.warn(`⚠️ Дата ${apiDate} вне диапазона прогноза. Используем средние значения.`);
+    console.warn(`⚠️ ${date} - Используются средние значения температуры (вне диапазона прогноза)`);
     const [, month] = date.split('.');
     const monthNum = parseInt(month, 10);
 
@@ -331,8 +330,8 @@ async function fetchWeatherData(date) {
     const result = {
       airTemp,
       waterTemp,
-      airFromCache: false,
-      waterFromCache: false,
+      airFromCache: true,
+      waterFromCache: true,
       isStatic: true
     };
 
@@ -345,22 +344,30 @@ async function fetchWeatherData(date) {
 
     const airTempUrl = buildAirUrl(PATTAYA_LAT, PATTAYA_LON, apiDate);
     const airResponse = await fetch(airTempUrl);
+
+    if (!airResponse.ok) {
+      console.warn(`⚠️ ${date} - Open-Meteo вернул ошибку ${airResponse.status} для температуры воздуха`);
+      throw new Error(`HTTP ${airResponse.status}`);
+    }
+
     const airData = await airResponse.json();
 
     let airTemp = airData?.daily?.temperature_2m_max?.[0] ?? null;
     let waterTemp = null;
     let waterFromAPI = false;
 
-    // ✅ ИЗМЕНЕНО: Парсим температуру воды ТОЛЬКО для сегодняшней даты
+    if (airTemp !== null) {
+      console.log(`✅ ${date} - Температура воздуха получена из Open-Meteo API (${Math.round(airTemp)}°C)`);
+    }
+
     if (isToday) {
       waterTemp = await fetchSeaTemperaturePattaya();
       if (waterTemp !== null) {
-        console.log(`✓ Температура воды получена с seatemperature.info: ${waterTemp}°C`);
+        console.log(`✅ ${date} - Температура воды получена с seatemperature.info (${Math.round(waterTemp)}°C)`);
         waterFromAPI = true;
       }
     }
 
-    // Дефолтные значения по месяцам
     if (airTemp === null || waterTemp === null) {
       const [, month] = date.split('.');
       const monthNum = parseInt(month, 10);
@@ -378,14 +385,17 @@ async function fetchWeatherData(date) {
         airTemp = airTemp ?? 30;
         waterTemp = waterTemp ?? 28;
       }
+
+      if (waterTemp && !waterFromAPI) {
+        console.warn(`⚠️ ${date} - Температура воды: используется среднее значение (${waterTemp}°C)`);
+      }
     }
 
     const result = {
       airTemp: airTemp !== null ? Math.round(airTemp) : null,
       waterTemp: waterTemp !== null ? Math.round(waterTemp) : null,
       airFromCache: false,
-      // ✅ ИЗМЕНЕНО: waterFromCache = true для НЕ сегодняшних дат
-      waterFromCache: !isToday,
+      waterFromCache: !waterFromAPI,
       waterFromAPI: waterFromAPI
     };
 
@@ -396,16 +406,18 @@ async function fetchWeatherData(date) {
 
     return result;
   } catch (error) {
-    console.error('❌ Ошибка загрузки погоды:', error);
+    console.error(`❌ ${date} - Ошибка загрузки погоды:`, error.message);
+    console.warn(`⚠️ ${date} - Используются средние значения температуры (ошибка API)`);
     return {
       airTemp: 30,
       waterTemp: 28,
-      airFromCache: false,
-      waterFromCache: false,
+      airFromCache: true,
+      waterFromCache: true,
       isStatic: true
     };
   }
 }
+
 // Функция для получения времени восхода и заката солнца
 async function fetchSunTimes(date) {
   const apiDate = formatDateForAPI(date); // YYYY-MM-DD
@@ -413,32 +425,43 @@ async function fetchSunTimes(date) {
   try {
     assertIsoDate(apiDate);
 
-    const url = `https://api.open-meteo.com/v1/forecast?` +
-      `latitude=${PATTAYA_LAT}&` +
-      `longitude=${PATTAYA_LON}&` +
-      `daily=sunrise,sunset&` +
-      `timezone=Asia/Bangkok&` +
-      `start_date=${apiDate}&` +
-      `end_date=${apiDate}`;
+    const u = new URL('https://api.open-meteo.com/v1/forecast');
+    u.searchParams.set('latitude', String(PATTAYA_LAT));
+    u.searchParams.set('longitude', String(PATTAYA_LON));
+    u.searchParams.set('daily', 'sunrise,sunset');
+    u.searchParams.set('timezone', 'Asia/Bangkok');
+    u.searchParams.set('start_date', apiDate);
+    u.searchParams.set('end_date', apiDate);
 
+    const url = u.toString();
     const response = await fetch(url);
+
+    if (!response.ok) {
+      console.warn(`⚠️ ${date} - Open-Meteo вернул ошибку ${response.status} для восхода/заката`);
+      console.warn(`⚠️ ${date} - Восход/закат: используются средние значения`);
+      return { sunrise: '06:42', sunset: '18:05' };
+    }
+
     const data = await response.json();
 
     if (data?.daily?.sunrise?.[0] && data?.daily?.sunset?.[0]) {
       const sunrise = data.daily.sunrise[0]; // "2025-12-29T06:42"
       const sunset = data.daily.sunset[0];   // "2025-12-29T18:05"
 
-      // Извлекаем только время (HH:MM)
       const sunriseTime = sunrise.split('T')[1]; // "06:42"
       const sunsetTime = sunset.split('T')[1];   // "18:05"
+
+      console.log(`✅ ${date} - Восход/закат получены из Open-Meteo API (${sunriseTime} / ${sunsetTime})`);
 
       return { sunrise: sunriseTime, sunset: sunsetTime };
     }
 
-    return null;
+    console.warn(`⚠️ ${date} - Восход/закат: используются средние значения (нет данных в ответе)`);
+    return { sunrise: '06:42', sunset: '18:05' };
   } catch (error) {
-    console.error('❌ Ошибка получения времени восхода/заката:', error);
-    return null;
+    console.error(`❌ ${date} - Ошибка получения восхода/заката:`, error.message);
+    console.warn(`⚠️ ${date} - Восход/закат: используются средние значения`);
+    return { sunrise: '06:42', sunset: '18:05' };
   }
 }
 
