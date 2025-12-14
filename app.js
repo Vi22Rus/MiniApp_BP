@@ -2717,11 +2717,14 @@ async function fetchTidesData(date) {
     const cached = await getStorageItem(cacheKey);
     if (cached) {
         console.log(`✅ ${apiDate} - Приливы из кэша`);
-        return { data: JSON.parse(cached), fromCache: true };
+        try {
+            return { data: JSON.parse(cached), fromCache: true };
+        } catch (e) {
+            console.error('❌ Ошибка парсинга кэша:', e);
+        }
     }
 
     try {
-        // Используем CORS-прокси
         const corsProxy = 'https://api.allorigins.win/raw?url=';
         const targetUrl = encodeURIComponent('https://www.tide-forecast.com/locations/Ko-Si-Chang-Thailand/tides/latest');
 
@@ -2730,37 +2733,97 @@ async function fetchTidesData(date) {
         const response = await fetch(corsProxy + targetUrl);
         const html = await response.text();
 
-        // Парсим HTML прямо в браузере
+        // Парсим HTML с DOMParser
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
         const tides = [];
-        const rows = doc.querySelectorAll('tr.tide-row-odd, tr.tide-row-even');
 
-        rows.forEach(row => {
-            const timeEl = row.querySelector('td.time');
-            const heightEl = row.querySelector('b');
-            const typeEl = row.textContent;
+        // ✅ ИСПРАВЛЕННЫЙ ПАРСИНГ: ищем все строки таблицы
+        const tables = doc.querySelectorAll('table.tide-table, table');
 
-            if (timeEl && heightEl) {
-                const timeStr = timeEl.textContent.trim();
-                const heightMatch = heightEl.textContent.match(/\(([0-9.]+)\s*m\)/);
-                const type = typeEl.includes('High Tide') ? 'high' : 'low';
+        for (const table of tables) {
+            const rows = table.querySelectorAll('tr');
 
-                if (heightMatch) {
-                    tides.push({
-                        time: convertToISO(timeStr, date),
-                        type: type,
-                        height: parseFloat(heightMatch[1])
-                    });
+            for (const row of rows) {
+                // Ищем ячейки времени и типа прилива
+                const cells = row.querySelectorAll('td');
+
+                if (cells.length >= 3) {
+                    let timeText = null;
+                    let heightText = null;
+                    let typeText = null;
+
+                    // Проходим по всем ячейкам
+                    for (const cell of cells) {
+                        const text = cell.textContent.trim();
+
+                        // Время (формат: 2:08 AM, 10:35 AM)
+                        if (/^\d{1,2}:\d{2}\s*[AP]M$/i.test(text)) {
+                            timeText = text;
+                        }
+
+                        // Высота (формат: 3.15 ft (0.96 m) или просто число с m)
+                        if (/\([\d.]+\s*m\)/.test(text) || /[\d.]+\s*m/.test(text)) {
+                            heightText = text;
+                        }
+
+                        // Тип прилива
+                        if (/high\s*tide/i.test(text)) {
+                            typeText = 'high';
+                        } else if (/low\s*tide/i.test(text)) {
+                            typeText = 'low';
+                        }
+                    }
+
+                    // Если нашли все компоненты, добавляем запись
+                    if (timeText && heightText && typeText) {
+                        // Извлекаем высоту в метрах
+                        const heightMatch = heightText.match(/\(([\d.]+)\s*m\)/);
+                        const height = heightMatch ? parseFloat(heightMatch[1]) : null;
+
+                        if (height !== null) {
+                            tides.push({
+                                time: convertToISO(timeText, date),
+                                type: typeText,
+                                height: height
+                            });
+                        }
+                    }
                 }
             }
-        });
+        }
 
         console.log(`✅ Найдено ${tides.length} записей приливов`);
 
+        if (tides.length === 0) {
+            console.warn('⚠️ Парсинг не нашел данные. Проверяем альтернативный метод...');
+
+            // Альтернативный метод: регулярные выражения
+            const timeMatches = html.matchAll(/(\d{1,2}:\d{2}\s*[AP]M)/g);
+            const heightMatches = html.matchAll(/\(([\d.]+)\s*m\)/g);
+            const typeMatches = html.matchAll(/(High|Low)\s*Tide/gi);
+
+            const times = Array.from(timeMatches).map(m => m[1]);
+            const heights = Array.from(heightMatches).map(m => parseFloat(m[1]));
+            const types = Array.from(typeMatches).map(m => m[1].toLowerCase());
+
+            const minLength = Math.min(times.length, heights.length, types.length);
+
+            for (let i = 0; i < minLength; i++) {
+                tides.push({
+                    time: convertToISO(times[i], date),
+                    type: types[i],
+                    height: heights[i]
+                });
+            }
+
+            console.log(`✅ Альтернативный парсинг нашел ${tides.length} записей`);
+        }
+
         if (tides.length > 0) {
             await setStorageItem(cacheKey, JSON.stringify(tides));
+            console.log(`💾 Приливы для ${apiDate} сохранены в кэш`);
         }
 
         return { data: tides, fromCache: false };
@@ -2775,14 +2838,13 @@ function convertToISO(timeStr, date) {
     const [time, period] = timeStr.split(' ');
     let [hours, minutes] = time.split(':').map(Number);
 
-    if (period === 'PM' && hours !== 12) hours += 12;
-    if (period === 'AM' && hours === 12) hours = 0;
+    if (period.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if (period.toUpperCase() === 'AM' && hours === 12) hours = 0;
 
     const [day, month, year] = date.split('.');
 
     return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:00+07:00`;
 }
-
 
 // Функция принудительного обновления данных приливов
 async function refreshTidesData() {
