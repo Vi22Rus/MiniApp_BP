@@ -580,6 +580,8 @@ async function initApp() {
     renderActivities(activities);
     renderContacts(points);
 
+    initTidesForActivities();
+
     // Обработчики основного модального окна
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
