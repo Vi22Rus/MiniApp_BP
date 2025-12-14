@@ -2710,6 +2710,11 @@ let currentTidesDate = null;
 
 // В app.js замените fetchTidesData на это:
 
+
+// ============================================================
+// 🌊 ПАРСИНГ И ОТОБРАЖЕНИЕ ПРИЛИВОВ (исправлено 14.12.2025)
+// ============================================================
+
 async function fetchTidesData(date) {
     const apiDate = formatDateForAPI(date); // 2025-12-29
     const cacheKey = `tides_v2_${apiDate}`;
@@ -2725,13 +2730,11 @@ async function fetchTidesData(date) {
     }
 
     try {
-        // ✅ ИСПРАВЛЕНО: Формируем URL с конкретной датой
-        const dateForUrl = apiDate.replace(/-/g, ''); // 2025-12-29 -> 20251229
-
+        // ✅ ИСПРАВЛЕНО: используем /tides/latest и парсим правильно
         const corsProxy = 'https://api.allorigins.win/raw?url=';
-        const targetUrl = encodeURIComponent(`https://www.tide-forecast.com/locations/Ko-Si-Chang-Thailand/tides/${dateForUrl}`);
+        const targetUrl = encodeURIComponent(`https://www.tide-forecast.com/locations/Ko-Si-Chang/tides/latest`);
 
-        console.log(`🌊 Загрузка приливов для ${date} (${dateForUrl})`);
+        console.log(`🌊 Загрузка приливов для ${date}`);
 
         const response = await fetch(corsProxy + targetUrl);
         const html = await response.text();
@@ -2741,44 +2744,69 @@ async function fetchTidesData(date) {
 
         const tides = [];
 
-        const table = doc.querySelector('.tide-day-tides');
+        // ✅ НОВЫЙ ПАРСИНГ: ищем все блоки .tide-day
+        const tideDays = doc.querySelectorAll('.tide-day');
 
-        if (table) {
-            const rows = table.querySelectorAll('tbody tr');
+        tideDays.forEach(day => {
+            const dateHeader = day.querySelector('h4.tide-day__date');
+            if (!dateHeader) return;
 
-            for (const row of rows) {
+            const dayTitle = dateHeader.textContent.trim();
+
+            // Проверяем, соответствует ли день нашей дате
+            const [targetDay, targetMonth] = date.split('.');
+            const monthNames = {
+                'January': '01', 'February': '02', 'March': '03', 'April': '04',
+                'May': '05', 'June': '06', 'July': '07', 'August': '08',
+                'September': '09', 'October': '10', 'November': '11', 'December': '12'
+            };
+
+            // Парсим заголовок типа "Monday 16 December 2025"
+            const dateMatch = dayTitle.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+            if (!dateMatch) return;
+
+            const day_num = dateMatch[1].padStart(2, '0');
+            const month_name = dateMatch[2];
+            const month_num = monthNames[month_name];
+
+            // Проверяем совпадение
+            if (day_num !== targetDay || month_num !== targetMonth) return;
+
+            // Парсим таблицу
+            const table = day.querySelector('table');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tr');
+
+            rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
+                if (cells.length < 3) return;
 
-                if (cells.length < 3) continue;
-
-                const typeCell = cells[0];
-                const timeCell = cells[1];
-                const heightCell = cells[2];
-
-                if (!typeCell || !timeCell || !heightCell) continue;
-
-                const typeText = typeCell.textContent.trim();
+                const typeText = cells[0].textContent.trim();
                 const type = typeText.includes('High') ? 'high' : 'low';
 
-                const timeB = timeCell.querySelector('b');
-                if (!timeB) continue;
-                const timeText = timeB.textContent.trim();
+                const timeDate = cells[1].textContent.trim().replace(/\s+/g, ' ');
+                const heightText = cells[2].textContent.trim().replace(/\s+/g, ' ');
 
-                const heightSpan = heightCell.querySelector('.js-two-units-length-value__secondary');
-                if (!heightSpan) continue;
+                // Извлекаем время
+                const timeMatch = timeDate.match(/(\d{1,2}:\d{2}\s*[AP]M)/);
+                if (!timeMatch) return;
 
-                const heightMatch = heightSpan.textContent.match(/\(([\d.]+)\s*m\)/);
-                if (!heightMatch) continue;
+                const timeStr = timeMatch[1];
+
+                // Извлекаем высоту в метрах
+                const heightMatch = heightText.match(/([\d.]+)\s*m/);
+                if (!heightMatch) return;
 
                 const height = parseFloat(heightMatch[1]);
 
                 tides.push({
-                    time: convertToISO(timeText, date),
+                    time: convertToISO(timeStr, date),
                     type: type,
                     height: height
                 });
-            }
-        }
+            });
+        });
 
         console.log(`✅ Найдено ${tides.length} записей приливов для ${date}`);
 
@@ -2803,19 +2831,6 @@ function convertToISO(timeStr, date) {
 
     if (period && period.toUpperCase() === 'PM' && hours !== 12) hours += 12;
     if (period && period.toUpperCase() === 'AM' && hours === 12) hours = 0;
-
-    const [day, month, year] = date.split('.');
-
-    return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:00+07:00`;
-}
-
-
-function convertToISO(timeStr, date) {
-    const [time, period] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':').map(Number);
-
-    if (period.toUpperCase() === 'PM' && hours !== 12) hours += 12;
-    if (period.toUpperCase() === 'AM' && hours === 12) hours = 0;
 
     const [day, month, year] = date.split('.');
 
@@ -2898,7 +2913,6 @@ async function renderTidesChart(tidesData, date) {
   const canvas = document.getElementById('tidesChart');
   if (!canvas) return;
 
-  // ✅ ДОБАВЬ ЭТО:
   if (typeof Chart === 'undefined') {
     console.error('Chart.js не загружен');
     const ctx = canvas.getContext('2d');
@@ -3061,7 +3075,6 @@ async function openTidesModal(activityName, date) {
 
   const tides = result.data;
 
-  // ✅ ИЗМЕНИТЕ ЭТУ СТРОКУ:
   sourceEl.textContent = result.fromCache ? '💾 Данные из кэша' : '🌐 tide-forecast.com';
 
   const now = new Date();
@@ -3101,13 +3114,12 @@ function initTidesForActivities() {
 
             pressTimer = setTimeout(() => {
                 if (!hasMoved) {
-                    // ✅ Извлекаем дату и название
                     const dateEl = card.querySelector('p');
                     const nameEl = card.querySelector('h3');
 
                     if (dateEl && nameEl) {
                         const date = dateEl.textContent.trim();
-                        const name = nameEl.textContent.replace(/^🏖️\s*/, ''); // Убираем эмодзи
+                        const name = nameEl.textContent.replace(/^🏖️\s*/, '');
 
                         openTidesModal(name, date);
                     }
@@ -3151,6 +3163,7 @@ function initTidesForActivities() {
 
     console.log(`✅ Long-press для приливов инициализирован на ${cards.length} карточках`);
 }
+
 
 
 
