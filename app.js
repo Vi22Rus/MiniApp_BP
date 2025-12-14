@@ -1,10 +1,3 @@
-// Version: 2.5.0 | Lines: 940
-// Исправлено: Загрузка данных ежедневника через async/await
-// 2025-10-01
-// ===== FIREBASE CONFIGURATION =====
-// ===== КОНФИГ ВАЛЮТ И СОСТОЯНИЕ КУРСА =====
-
-// Базовые валюты, которые можно выбрать в UI
 const FX_BASES = ['THB', 'USD', 'CNY'];
 // Целевая валюта фиксирована
 const FX_TARGET = 'RUB';
@@ -521,8 +514,29 @@ async function initApp() {
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
-    });
-}
+    }); // ← ЗАКРЫЛИ ОБРАБОТЧИК modalOverlay
+
+    // Закрытие модальных окон по клику на затемнённый фон
+    const addPlaceModal = document.getElementById('addPlaceModal');
+    const tidesModal = document.getElementById('tidesModal');
+
+    if (addPlaceModal) {
+        addPlaceModal.addEventListener('click', (e) => {
+            if (e.target.id === 'addPlaceModal') {
+                closeAddPlaceModal();
+            }
+        });
+    }
+
+    if (tidesModal) {
+        tidesModal.addEventListener('click', (e) => {
+            if (e.target.id === 'tidesModal') {
+                closeTidesModal();
+            }
+        });
+    }
+} // ← ЗАКРЫЛИ initApp
+
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -1160,6 +1174,7 @@ function renderActivities(list) {
         });
     });
     bindDetailButtons();
+    initTidesForActivities();
 }
 
 function bindDetailButtons() {
@@ -2918,7 +2933,7 @@ async function openTidesModal(activityName, date) {
 // Закрытие модального окна
 function closeTidesModal() {
   const modal = document.getElementById('tidesModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) modal.classList.remove('active'); // ✅ ПРАВИЛЬНО
 }
 
 // Добавь обработчик долгого нажатия на карточки активностей
@@ -2963,26 +2978,7 @@ function initTidesForActivities() {
 }
 
 // Закрытие модальных окон по клику на затемнённый фон
-document.addEventListener('DOMContentLoaded', () => {
-    const addPlaceModal = document.getElementById('addPlaceModal');
-    const tidesModal = document.getElementById('tidesModal');
 
-    if (addPlaceModal) {
-        addPlaceModal.addEventListener('click', (e) => {
-            if (e.target.id === 'addPlaceModal') {
-                closeAddPlaceModal();
-            }
-        });
-    }
-
-    if (tidesModal) {
-        tidesModal.addEventListener('click', (e) => {
-            if (e.target.id === 'tidesModal') {
-                closeTidesModal();
-            }
-        });
-    }
-});
 
 
 
