@@ -1429,7 +1429,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 14px;
   color: #64748b;
   margin-bottom: 8px;
   padding: 0 4px;
@@ -1444,11 +1444,11 @@ body {
 }
 
 .sun-times .sunrise {
-  color: #f59e0b; /* Оранжевый для восхода */
+  color: #FFD700; /* Оранжевый для восхода */
 }
 
 .sun-times .sunset {
-  color: #f97316; /* Оранжево-красный для заката */
+  color: #FF4500; /* Оранжево-красный для заката */
 }
 
 
