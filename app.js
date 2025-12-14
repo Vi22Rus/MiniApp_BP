@@ -288,7 +288,7 @@ async function fetchWeatherData(date) {
   const apiDate = formatDateForAPI(date);
 
   if (weatherCache[apiDate]) {
-    console.log(`✓ Погода взята из кэша для ${apiDate}`);
+    console.log(`✓ Погода из кэша для ${apiDate}`);
     return {
       ...weatherCache[apiDate],
       airFromCache: true,
@@ -299,23 +299,33 @@ async function fetchWeatherData(date) {
   const requestDate = new Date(apiDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  requestDate.setHours(0, 0, 0, 0);
+
   const maxForecastDate = new Date(today);
   maxForecastDate.setDate(today.getDate() + 16);
 
+  // ✅ ДОБАВЛЕНО: Проверка, это сегодняшняя дата или нет
+  const isToday = requestDate.getTime() === today.getTime();
+
   if (requestDate > maxForecastDate) {
-    console.warn(`⚠ Дата ${apiDate} за пределами прогноза. Используются климатические нормы.`);
+    console.warn(`⚠️ Дата ${apiDate} вне диапазона прогноза. Используем средние значения.`);
     const [, month] = date.split('.');
     const monthNum = parseInt(month, 10);
 
     let airTemp, waterTemp;
+
     if (monthNum === 12 || monthNum === 1) {
-      airTemp = 30; waterTemp = 28;
+      airTemp = 30;
+      waterTemp = 28;
     } else if (monthNum >= 2 && monthNum <= 4) {
-      airTemp = 32; waterTemp = 29;
+      airTemp = 32;
+      waterTemp = 29;
     } else if (monthNum >= 5 && monthNum <= 10) {
-      airTemp = 29; waterTemp = 29;
+      airTemp = 29;
+      waterTemp = 29;
     } else {
-      airTemp = 30; waterTemp = 28;
+      airTemp = 30;
+      waterTemp = 28;
     }
 
     const result = {
@@ -325,6 +335,7 @@ async function fetchWeatherData(date) {
       waterFromCache: false,
       isStatic: true
     };
+
     weatherCache[apiDate] = { airTemp, waterTemp };
     return result;
   }
@@ -335,24 +346,25 @@ async function fetchWeatherData(date) {
     const airTempUrl = buildAirUrl(PATTAYA_LAT, PATTAYA_LON, apiDate);
     const airResponse = await fetch(airTempUrl);
     const airData = await airResponse.json();
-    let airTemp = airData?.daily?.temperature_2m_max?.[0] ?? null;
 
+    let airTemp = airData?.daily?.temperature_2m_max?.[0] ?? null;
     let waterTemp = null;
     let waterFromAPI = false;
-    const isToday = requestDate.getTime() === today.getTime();
 
+    // ✅ ИЗМЕНЕНО: Парсим температуру воды ТОЛЬКО для сегодняшней даты
     if (isToday) {
       waterTemp = await fetchSeaTemperaturePattaya();
       if (waterTemp !== null) {
-        console.log(`✓ Вода с seatemperature.info: ${waterTemp}°C`);
+        console.log(`✓ Температура воды получена с seatemperature.info: ${waterTemp}°C`);
         waterFromAPI = true;
       }
     }
 
-    // Фолбэк на статику
-    if (airTemp == null || waterTemp == null) {
+    // Дефолтные значения по месяцам
+    if (airTemp === null || waterTemp === null) {
       const [, month] = date.split('.');
       const monthNum = parseInt(month, 10);
+
       if (monthNum === 12 || monthNum === 1) {
         airTemp = airTemp ?? 30;
         waterTemp = waterTemp ?? 28;
@@ -369,17 +381,22 @@ async function fetchWeatherData(date) {
     }
 
     const result = {
-      airTemp: airTemp != null ? Math.round(airTemp) : null,
-      waterTemp: waterTemp != null ? Math.round(waterTemp) : null,
+      airTemp: airTemp !== null ? Math.round(airTemp) : null,
+      waterTemp: waterTemp !== null ? Math.round(waterTemp) : null,
       airFromCache: false,
-      waterFromCache: false,
+      // ✅ ИЗМЕНЕНО: waterFromCache = true для НЕ сегодняшних дат
+      waterFromCache: !isToday,
       waterFromAPI: waterFromAPI
     };
 
-    weatherCache[apiDate] = { airTemp: result.airTemp, waterTemp: result.waterTemp };
+    weatherCache[apiDate] = {
+      airTemp: result.airTemp,
+      waterTemp: result.waterTemp
+    };
+
     return result;
   } catch (error) {
-    console.error('✗ Ошибка получения погоды:', error);
+    console.error('❌ Ошибка загрузки погоды:', error);
     return {
       airTemp: 30,
       waterTemp: 28,
@@ -389,7 +406,6 @@ async function fetchWeatherData(date) {
     };
   }
 }
-
 
 function assertIsoDate(d) {
   // строго YYYY-MM-DD, без пробелов и лишних символов
