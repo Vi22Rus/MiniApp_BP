@@ -1369,6 +1369,61 @@ body {
   color: var(--muted);
   margin-top: 12px;
 }
+/* ✅ Кнопка обновления данных приливов */
+.refresh-btn {
+    display: block;
+    width: 100%;
+    max-width: 250px;
+    margin: 15px auto;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.refresh-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.refresh-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Анимация загрузки */
+.refresh-btn.loading {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Источник данных */
+.data-source {
+    text-align: center;
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 10px;
+    font-style: italic;
+}
 
 
 

@@ -493,28 +493,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initApp() {
     initFirebase();
-    
-    // ✅ ДОБАВЛЕНО: Загрузка динамических мест из Firebase
     await loadDynamicGeoData();
-    
-    // ✅ ДОБАВЛЕНО: Рендеринг динамических мест при загрузке
     renderDynamicPlaces();
-    
     initTabs();
     initCalendarFilters();
     initGeoFeatures();
     initDailyPlanModal();
-    
+
     updateCountdown();
     setInterval(updateCountdown, 3600000);
-    
+
     renderActivities(activities);
     renderContacts(points);
-    
+
+    // Обработчики основного модального окна
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
     });
+
+    // ✅ Обработчик кнопки обновления приливов
+    const refreshBtn = document.getElementById('refreshTidesBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshTidesData);
+    }
 
     // Закрытие модальных окон по клику на затемнённый фон
     const addPlaceModal = document.getElementById('addPlaceModal');
@@ -536,6 +538,7 @@ async function initApp() {
         });
     }
 }
+
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -2622,10 +2625,11 @@ async function ensureFxLoaded(force = false) {
 
 const STORMGLASS_API_KEY = '2262b22e-a819-11f0-bfe4-0242ac130006-2262b2a6-a819-11f0-bfe4-0242ac130006'; // Получи на stormglass.io
 let tidesChartInstance = null;
+let currentTidesDate = null;
 
 async function fetchTidesData(date) {
   const apiDate = formatDateForAPI(date); // YYYY-MM-DD
-  const cacheKey = `tides_${apiDate}`;
+  const cacheKey = `tides_v2_${apiDate}`;
 
   // Проверяем кэш
   const cached = await getStorageItem(cacheKey);
@@ -2640,18 +2644,15 @@ async function fetchTidesData(date) {
   }
 
   try {
-    // ✅ Конвертируем локальную дату Бангкока (UTC+7) в UTC
+    // Конвертируем локальную дату Бангкока (UTC+7) в UTC
     const [year, month, day] = apiDate.split('-').map(Number);
 
-    // Создаём локальное время Бангкока
     const bangkokStartDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
     const bangkokEndDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
 
-    // Вычитаем 7 часов для получения UTC
     const startUtc = new Date(bangkokStartDate.getTime() - (7 * 60 * 60 * 1000));
     const endUtc = new Date(bangkokEndDate.getTime() - (7 * 60 * 60 * 1000));
 
-    // Форматируем как YYYY-MM-DDTHH:mm:ss (без таймзоны!)
     const start = startUtc.toISOString().slice(0, 19);
     const end = endUtc.toISOString().slice(0, 19);
 
@@ -2672,11 +2673,20 @@ async function fetchTidesData(date) {
     const result = await response.json();
     console.log('✅ Приливы получены:', result.data.length, 'точек');
 
-    const tides = result.data.map(t => ({
+    // ✅ Конвертация из MSL в LAT (смещение к положительным значениям)
+    const rawTides = result.data;
+    const minHeight = Math.min(...rawTides.map(t => t.height));
+    const offset = minHeight < 0 ? Math.abs(minHeight) + 0.1 : 0;
+
+    const tides = rawTides.map(t => ({
       time: t.time,
       type: t.type,
-      height: t.height
+      height: t.height + offset
     }));
+
+    if (offset > 0) {
+      console.log(`🔄 Конвертация MSL → LAT: смещение +${offset.toFixed(2)} м`);
+    }
 
     // Сохраняем в кэш
     await setStorageItem(cacheKey, JSON.stringify(tides));
@@ -2689,6 +2699,69 @@ async function fetchTidesData(date) {
   }
 }
 
+// Глобальная переменная для хранения текущей даты модального окна
+let currentTidesDate = null;
+
+// Функция принудительного обновления данных приливов
+async function refreshTidesData() {
+  if (!currentTidesDate) return;
+
+  const btn = document.getElementById('refreshTidesBtn');
+  const sourceEl = document.getElementById('tidesSource');
+
+  if (!btn) return;
+
+  // Блокируем кнопку на время загрузки
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.textContent = '⏳ Загрузка...';
+  sourceEl.textContent = 'Загрузка свежих данных...';
+
+  try {
+    const apiDate = formatDateForAPI(currentTidesDate);
+    const cacheKey = `tides_v2_${apiDate}`;
+
+    // Удаляем старый кэш
+    await removeStorageItem(cacheKey);
+    console.log(`🗑️ Кэш удалён для ${apiDate}`);
+
+    // Загружаем свежие данные
+    const result = await fetchTidesData(currentTidesDate);
+
+    if (result.error) {
+      sourceEl.textContent = `Ошибка: ${result.error}`;
+      alert('Не удалось загрузить данные. Проверьте подключение к интернету.');
+      return;
+    }
+
+    const tides = result.data;
+    sourceEl.textContent = '🌐 Данные обновлены с Storm Glass API';
+
+    // Обновляем следующие приливы/отливы
+    const now = new Date();
+    const nextHigh = tides.find(t => t.type === 'high' && new Date(t.time) > now);
+    const nextLow = tides.find(t => t.type === 'low' && new Date(t.time) > now);
+
+    document.getElementById('nextHighTide').textContent =
+      nextHigh ? new Date(nextHigh.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    document.getElementById('nextLowTide').textContent =
+      nextLow ? new Date(nextLow.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+    // Перерисовываем график
+    await renderTidesChart(tides, currentTidesDate);
+
+    console.log('✅ Данные приливов обновлены для', currentTidesDate);
+  } catch (error) {
+    console.error('Ошибка обновления данных приливов:', error);
+    sourceEl.textContent = '❌ Ошибка обновления';
+    alert('Произошла ошибка при обновлении данных.');
+  } finally {
+    // Разблокируем кнопку
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.textContent = '🔄 Обновить данные';
+  }
+}
 
 // Построение графика приливов
 async function renderTidesChart(tidesData, date) {
@@ -2830,11 +2903,23 @@ async function openTidesModal(activityName, date) {
   const modal = document.getElementById('tidesModal');
   const title = document.getElementById('tidesModalTitle');
   const sourceEl = document.getElementById('tidesSource');
+  const btn = document.getElementById('refreshTidesBtn');
 
   if (!modal || !title) return;
 
+  // Сохраняем текущую дату для кнопки обновления
+  currentTidesDate = date;
+
   title.textContent = `${activityName} — ${date}`;
   sourceEl.textContent = 'Загрузка данных...';
+
+  // Сбрасываем состояние кнопки
+  if (btn) {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.textContent = '🔄 Обновить данные';
+  }
+
   modal.classList.add('active');
 
   // Загружаем данные
@@ -2863,6 +2948,7 @@ async function openTidesModal(activityName, date) {
   // Рендерим график
   await renderTidesChart(tides, date);
 }
+
 
 // Закрытие модального окна
 function closeTidesModal() {
