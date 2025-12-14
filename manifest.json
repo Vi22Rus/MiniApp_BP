@@ -2,17 +2,29 @@
   "background_color": "#ffffff",
   "dir": "ltr",
   "display": "standalone",
-  "name": "Pattaysk",
-  "short_name": "Pattaya",
-  "description": "Гид по Бангкоку и Паттайе с полезной информацией для туристов",
+  "name": "vi22rus.github",
   "orientation": "any",
-  "scope": "/MiniApp_BP/",
-  "start_url": "/MiniApp_BP/",
+  "scope": "/",
+  "short_name": "vi22rus.github",
+  "start_url": "/",
   "theme_color": "#ffffff",
   "icons": [
-  {
-    "src": "/MiniApp_BP/favicon.ico",
-    "type": "image/x-icon",
-    "sizes": "any"
-  }
-]
+    {
+      "src": "https://vi22rus.github.io/MiniApp_BP/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "1024x1024",
+      "isSquare": true,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 1024,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "prefer_related_applications": true,
+  "categories": [
+    "lifestyle"
+  ]
+}
