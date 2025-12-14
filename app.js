@@ -2916,7 +2916,6 @@ async function refreshTidesData() {
 // ============================================================
 
 // Глобальная переменная для хранения экземпляра графика
-let tidesChartInstance = null;
 
 // Плагин для Chart.js с перекрестием
 const crosshairPlugin = {
