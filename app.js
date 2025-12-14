@@ -1273,6 +1273,7 @@ function renderActivities(list) {
 
   bindDetailButtons();
   initTidesForActivities();
+  initLongPressForSights();
 }
 
 function bindDetailButtons() {
