@@ -3177,40 +3177,40 @@ function initTidesForActivities() {
 }
 
 // ============================================================
-// 🏛️ LONG-PRESS ДЛЯ ЭКСКУРСИЙ (открытие приливов на дату экскурсии)
+// 🔧 ИСПРАВЛЕННЫЙ LONG-PRESS (не блокирует скролл)
 // ============================================================
 
-function initLongPressForSights() {
-    const cards = document.querySelectorAll('.card.activity-sight');
+// Для пляжей
+function initTidesForActivities() {
+    const cards = document.querySelectorAll('.card.activity-sea');
 
     cards.forEach(card => {
         let pressTimer = null;
         let startX = 0, startY = 0;
         let hasMoved = false;
+        let isScrolling = false;
 
-        // Предотвращаем контекстное меню
         card.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             return false;
         });
 
         const handleStart = (e) => {
-            e.preventDefault();
-
+            // ✅ НЕ БЛОКИРУЕМ событие сразу, только запоминаем координаты
             hasMoved = false;
+            isScrolling = false;
             startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
             startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
 
             pressTimer = setTimeout(() => {
-                if (!hasMoved) {
+                if (!hasMoved && !isScrolling) {
                     const dateEl = card.querySelector('p');
                     const nameEl = card.querySelector('h3');
 
                     if (dateEl && nameEl) {
                         const date = dateEl.textContent.trim();
-                        const name = nameEl.textContent.replace(/^[🏛️🐘🌴🦖🎨🏰🌊🎢]+\s*/, ''); // Убираем все эмодзи
+                        const name = nameEl.textContent.replace(/^🏖️\s*/, '');
 
-                        // Открываем модалку приливов для этой даты
                         openTidesModal(name, date);
                     }
                 }
@@ -3226,7 +3226,16 @@ function initLongPressForSights() {
             const diffX = Math.abs(currentX - startX);
             const diffY = Math.abs(currentY - startY);
 
-            if (diffX > 5 || diffY > 5) {
+            // ✅ Если движение больше по вертикали - это скролл
+            if (diffY > diffX && diffY > 10) {
+                isScrolling = true;
+                clearTimeout(pressTimer);
+                pressTimer = null;
+                return;
+            }
+
+            // ✅ Если есть любое движение больше 10px - отменяем long-press
+            if (diffX > 10 || diffY > 10) {
                 hasMoved = true;
                 clearTimeout(pressTimer);
                 pressTimer = null;
@@ -3245,14 +3254,100 @@ function initLongPressForSights() {
         card.addEventListener('mouseup', handleEnd);
         card.addEventListener('mouseleave', handleEnd);
 
-        card.addEventListener('touchstart', handleStart, { passive: false });
-        card.addEventListener('touchmove', handleMove, { passive: false });
+        // ✅ ВЕРНУЛИ passive: true для скролла
+        card.addEventListener('touchstart', handleStart, { passive: true });
+        card.addEventListener('touchmove', handleMove, { passive: true });
+        card.addEventListener('touchend', handleEnd);
+        card.addEventListener('touchcancel', handleEnd);
+    });
+
+    console.log(`✅ Long-press для приливов инициализирован на ${cards.length} карточках`);
+}
+
+// Для экскурсий
+function initLongPressForSights() {
+    const cards = document.querySelectorAll('.card.activity-sight');
+
+    cards.forEach(card => {
+        let pressTimer = null;
+        let startX = 0, startY = 0;
+        let hasMoved = false;
+        let isScrolling = false;
+
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        const handleStart = (e) => {
+            // ✅ НЕ БЛОКИРУЕМ событие сразу
+            hasMoved = false;
+            isScrolling = false;
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+            pressTimer = setTimeout(() => {
+                if (!hasMoved && !isScrolling) {
+                    const dateEl = card.querySelector('p');
+                    const nameEl = card.querySelector('h3');
+
+                    if (dateEl && nameEl) {
+                        const date = dateEl.textContent.trim();
+                        const name = nameEl.textContent.replace(/^[🏛️🐘🌴🦖🎨🏰🌊🎢]+\s*/, '');
+
+                        openTidesModal(name, date);
+                    }
+                }
+            }, 500);
+        };
+
+        const handleMove = (e) => {
+            if (!pressTimer) return;
+
+            const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+            const diffX = Math.abs(currentX - startX);
+            const diffY = Math.abs(currentY - startY);
+
+            // ✅ Если движение больше по вертикали - это скролл
+            if (diffY > diffX && diffY > 10) {
+                isScrolling = true;
+                clearTimeout(pressTimer);
+                pressTimer = null;
+                return;
+            }
+
+            // ✅ Если есть любое движение больше 10px - отменяем long-press
+            if (diffX > 10 || diffY > 10) {
+                hasMoved = true;
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        const handleEnd = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        card.addEventListener('mousedown', handleStart);
+        card.addEventListener('mousemove', handleMove);
+        card.addEventListener('mouseup', handleEnd);
+        card.addEventListener('mouseleave', handleEnd);
+
+        // ✅ ВЕРНУЛИ passive: true для скролла
+        card.addEventListener('touchstart', handleStart, { passive: true });
+        card.addEventListener('touchmove', handleMove, { passive: true });
         card.addEventListener('touchend', handleEnd);
         card.addEventListener('touchcancel', handleEnd);
     });
 
     console.log(`✅ Long-press для экскурсий инициализирован на ${cards.length} карточках`);
 }
+
 
 
 
