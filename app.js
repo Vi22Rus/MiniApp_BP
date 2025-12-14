@@ -2627,7 +2627,7 @@ async function fetchTidesData(date) {
   const apiDate = formatDateForAPI(date); // YYYY-MM-DD
   const cacheKey = `tides_${apiDate}`;
 
-  // Проверяем Firebase кэш
+  // Проверяем кэш
   const cached = await getStorageItem(cacheKey);
   if (cached) {
     console.log(`✓ Приливы взяты из кэша для ${apiDate}`);
@@ -2639,11 +2639,23 @@ async function fetchTidesData(date) {
     }
   }
 
-  // Загружаем с Storm Glass API
   try {
-    // ✅ ИСПРАВЛЕНО: Указываем таймзону Бангкока (UTC+7)
-    const start = `${apiDate}T00:00:00+07:00`;
-    const end = `${apiDate}T23:59:59+07:00`;
+    // ✅ Конвертируем локальную дату Бангкока (UTC+7) в UTC
+    const [year, month, day] = apiDate.split('-').map(Number);
+
+    // Создаём локальное время Бангкока
+    const bangkokStartDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    const bangkokEndDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+
+    // Вычитаем 7 часов для получения UTC
+    const startUtc = new Date(bangkokStartDate.getTime() - (7 * 60 * 60 * 1000));
+    const endUtc = new Date(bangkokEndDate.getTime() - (7 * 60 * 60 * 1000));
+
+    // Форматируем как YYYY-MM-DDTHH:mm:ss (без таймзоны!)
+    const start = startUtc.toISOString().slice(0, 19);
+    const end = endUtc.toISOString().slice(0, 19);
+
+    console.log('🌊 Запрос приливов:', { apiDate, start, end });
 
     const url = `https://api.stormglass.io/v2/tide/extremes/point?lat=12.9236&lng=100.8825&start=${start}&end=${end}`;
 
@@ -2652,17 +2664,21 @@ async function fetchTidesData(date) {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Storm Glass error:', response.status, errorText);
       throw new Error(`Storm Glass API error: ${response.status}`);
     }
 
     const result = await response.json();
+    console.log('✅ Приливы получены:', result.data.length, 'точек');
+
     const tides = result.data.map(t => ({
       time: t.time,
-      type: t.type, // 'high' или 'low'
+      type: t.type,
       height: t.height
     }));
 
-    // Сохраняем в Firebase
+    // Сохраняем в кэш
     await setStorageItem(cacheKey, JSON.stringify(tides));
     console.log(`✓ Приливы сохранены в кэш для ${apiDate}`);
 
@@ -2672,6 +2688,7 @@ async function fetchTidesData(date) {
     return { data: [], fromCache: false, error: e.message };
   }
 }
+
 
 // Построение графика приливов
 async function renderTidesChart(tidesData, date) {
