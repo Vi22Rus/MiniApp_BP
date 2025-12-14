@@ -1279,20 +1279,23 @@ body {
 }
 /* Индикация источника температуры */
 .temp-fresh {
-  color: #0f5132; /* темно-зеленый */
+  color: #0f5132; /* темно-зеленый - свежие данные */
   font-weight: 600;
 }
 
 .temp-cached {
-  color: #842029; /* темно-красный */
+  color: #842029; /* темно-красный - из кэша */
   font-weight: 600;
 }
 
 .weather {
   display: flex;
+  justify-content: center; /* ← ДОБАВЬ ЭТО */
   gap: 8px;
   font-size: 0.85rem;
+  margin-top: 4px;
 }
+
 
 
 
