@@ -406,6 +406,41 @@ async function fetchWeatherData(date) {
     };
   }
 }
+// Функция для получения времени восхода и заката солнца
+async function fetchSunTimes(date) {
+  const apiDate = formatDateForAPI(date); // YYYY-MM-DD
+
+  try {
+    assertIsoDate(apiDate);
+
+    const url = `https://api.open-meteo.com/v1/forecast?` +
+      `latitude=${PATTAYA_LAT}&` +
+      `longitude=${PATTAYA_LON}&` +
+      `daily=sunrise,sunset&` +
+      `timezone=Asia/Bangkok&` +
+      `start_date=${apiDate}&` +
+      `end_date=${apiDate}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data?.daily?.sunrise?.[0] && data?.daily?.sunset?.[0]) {
+      const sunrise = data.daily.sunrise[0]; // "2025-12-29T06:42"
+      const sunset = data.daily.sunset[0];   // "2025-12-29T18:05"
+
+      // Извлекаем только время (HH:MM)
+      const sunriseTime = sunrise.split('T')[1]; // "06:42"
+      const sunsetTime = sunset.split('T')[1];   // "18:05"
+
+      return { sunrise: sunriseTime, sunset: sunsetTime };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('❌ Ошибка получения времени восхода/заката:', error);
+    return null;
+  }
+}
 
 function assertIsoDate(d) {
   // строго YYYY-MM-DD, без пробелов и лишних символов
@@ -1102,111 +1137,113 @@ function handleCardClick(activityName, date, type) {
 }
 
 function renderActivities(list) {
-    const grid = document.getElementById('activitiesGrid');
-    if (!grid) return;
+  const grid = document.getElementById('activitiesGrid');
+  if (!grid) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    const future = [], past = [];
-    list.forEach(a => {
-        const parts = a.date.split('.');
-        const actDate = new Date(`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`);
-        actDate.setHours(0,0,0,0);
-        (actDate < today ? past : future).push(a);
-    });
+  const future = [], past = [];
+  list.forEach(a => {
+    const parts = a.date.split('.');
+    const actDate = new Date(`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`);
+    actDate.setHours(0,0,0,0);
+    (actDate >= today ? future : past).push(a);
+  });
 
-    function getCardClass(a, isPast, isTransfer, isBordered) {
-        let base = `card ${a.type === 'sea' ? 'activity-sea' : 'activity-sight'}`;
-        if (isTransfer) base += ' activity-transfer';
-        if (isBordered) base += ' card-bordered';
-        if (isPast) base += ' card-past';
-        return base;
+  function getCardClass(a, isPast, isTransfer, isBordered) {
+    let base = 'card ' + (a.type === 'sea' ? 'activity-sea' : 'activity-sight');
+    if (isTransfer) base += ' activity-transfer';
+    if (isBordered) base += ' card-bordered';
+    if (isPast) base += ' card-past';
+    return base;
+  }
+
+  function renderCard(a, isPast) {
+    const isTransfer = (a.name === 'Трансфер' || a.date === '26.01.2026') && a.type === 'sea';
+    const isBordered = !isTransfer;
+    const displayName = (a.date === '26.01.2026' && a.type === 'sea') ? 'Вылет домой!' : a.name;
+    let icon = a.type === 'sea' ? '🏖️' : getIconForActivity(a.name);
+
+    const prices = {
+      'Mini Siam': '<p class="price">💰 230₽ / 130₿</p>',
+      'Шоу слонов': '<p class="price">💰 650₽ / 500₿</p>',
+      'Шоу тигров': '<p class="price">💰 630₽ / 450₿</p>',
+      'Аютайя': '<p class="price">💰 420₽ / 320₿</p>',
+      '3D-музей': '<p class="price">💰 235₽ / 180₿</p>',
+      'Плавучий рынок': '<p class="price">💰 350₽ / 120₿</p>',
+      'Ко Лан': '<p class="price">💰 30₽ / 1,500₿</p>'
+    };
+    const priceLine = prices[a.name] || '';
+
+    const weatherDiv = `<div class="weather" data-date="${a.date}"></div>`;
+    const sunTimesDiv = `<div class="sun-times" data-date="${a.date}"></div>`;
+
+    const cardClass = getCardClass(a, isPast, isTransfer, isBordered);
+
+    if (a.type === 'sea') {
+      return `<div class="${cardClass}" onclick="handleCardClick('${a.name}','${a.date}','${a.type}')">
+        ${sunTimesDiv}
+        <p>${a.date}</p>
+        <h3>${icon}${displayName}</h3>
+        ${weatherDiv}
+      </div>`;
+    } else if (a.type === 'sight') {
+      return `<div class="${cardClass}" onclick="handleCardClick('${a.name}','${a.date}','${a.type}')">
+        ${sunTimesDiv}
+        <p>${a.date}</p>
+        <h3>${icon}${displayName}</h3>
+        ${priceLine}
+        ${weatherDiv}
+      </div>`;
     }
+  }
 
-    function renderCard(a, isPast) {
-        const isTransfer = (
-            a.name === '🚀 В Паттайю' ||
-            (a.date === '26.01.2026' && a.type === 'sea')
-        );
-        const isBordered = !isTransfer;
+  grid.innerHTML = future.map(a => renderCard(a, false)).join('') +
+                   past.map(a => renderCard(a, true)).join('');
 
-        const displayName = (a.date === '26.01.2026' && a.type === 'sea') ? 'В Бангкок!' : a.name;
-        let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
-        const prices = {
-            'Mini Siam': `<p class="price">Взрослый 230 ฿ / Детский 130 ฿</p>`,
-            'Деревня слонов': `<p class="price">Взрослый 650 ฿ / Детский 500 ฿</p>`,
-            'Дельфинариум': `<p class="price">Взрослый 630 ฿ / Детский 450 ฿</p>`,
-            'Сад Нонг Нуч': `<p class="price">Взрослый 420 ฿ / Детский 320 ฿</p>`,
-            'Музей искусств 3D': `<p class="price">Взрослый 235 ฿ / Детский 180 ฿</p>`,
-            'Зоопарк Кхао Кхео': `<p class="price">Взрослый 350 ฿ / Детский 120 ฿</p>`,
-            'Ко Лан': `<p class="price">Паром 30 ฿ / Общие расходы ~1,500 ฿</p>`
-        };
-        const priceLine = prices[a.name] || '';
-        const weatherDiv = `<div class="weather" data-date="${a.date}"></div>`;
-        const cardClass = getCardClass(a, isPast, isTransfer, isBordered);
+  // Загружаем погоду
+  list.forEach(async (activity) => {
+    const weather = await fetchWeatherData(activity.date);
+    const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
 
-        if(a.type === 'sea') {
-            return `<div class="${cardClass}" onclick="handleCardClick('${a.name}', '${a.date}', '${a.type}')">
-              <p>${a.date}</p>
-              <h3>${icon}${displayName}</h3>
-              ${weatherDiv}
-            </div>`;
-        } else if(a.type === 'sight') {
-            return `<div class="${cardClass}" onclick="handleCardClick('${a.name}', '${a.date}', '${a.type}')">
-              <p>${a.date}</p>
-              <h3>${icon}${displayName}</h3>
-              ${priceLine}
-              ${weatherDiv}
-            </div>`;
+    weatherDivs.forEach(div => {
+      if (weather.airTemp || weather.waterTemp) {
+        div.innerHTML = '';
+
+        if (weather.airTemp) {
+          const airSpan = document.createElement('span');
+          airSpan.textContent = `🌡️ ${weather.airTemp}°C`;
+          airSpan.className = weather.airFromCache ? 'temp-cached' : 'temp-fresh';
+          div.appendChild(airSpan);
         }
-    }
 
-    grid.innerHTML =
-        future.map(a => renderCard(a, false)).join('') +
-        past.map(a => renderCard(a, true)).join('');
-
-    // ✅ ИСПРАВЛЕНО: Правильная логика цветов температуры
-    list.forEach(async (activity) => {
-        const weather = await fetchWeatherData(activity.date);
-        const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
-        weatherDivs.forEach(div => {
-            if (weather.airTemp || weather.waterTemp) {
-                div.innerHTML = '';
-
-                // Воздух
-                if (weather.airTemp) {
-                    const airSpan = document.createElement('span');
-                    airSpan.textContent = `🌡️ ${weather.airTemp}°C `;
-                    airSpan.className = weather.airFromCache ? 'temp-cached' : 'temp-fresh';
-                    div.appendChild(airSpan);
-                }
-
-                // Вода
-                if (weather.waterTemp) {
-                    const waterSpan = document.createElement('span');
-                    waterSpan.textContent = `🌊 ${weather.waterTemp}°C`;
-
-                    // ✅ ИСПРАВЛЕНО: Проверяем источник данных
-                    if (weather.isStatic) {
-                        // Статическая температура по месяцам
-                        waterSpan.className = 'temp-cached';
-                    } else if (weather.waterFromAPI) {
-                        // Реальные данные с seatemperature.info
-                        waterSpan.className = 'temp-fresh';
-                    } else {
-                        // Из кэша в памяти
-                        waterSpan.className = weather.waterFromCache ? 'temp-cached' : 'temp-fresh';
-                    }
-
-                    div.appendChild(waterSpan);
-                }
-            }
-        });
+        if (weather.waterTemp) {
+          const waterSpan = document.createElement('span');
+          waterSpan.textContent = `🌊 ${weather.waterTemp}°C`;
+          waterSpan.className = weather.waterFromCache ? 'temp-cached' : 'temp-fresh';
+          div.appendChild(waterSpan);
+        }
+      }
     });
+  });
 
-    bindDetailButtons();
-    initTidesForActivities();
+  // ✅ ДОБАВЛЕНО: Загружаем время восхода/заката
+  list.forEach(async (activity) => {
+    const sunTimes = await fetchSunTimes(activity.date);
+    const sunDivs = document.querySelectorAll(`.sun-times[data-date="${activity.date}"]`);
+
+    sunDivs.forEach(div => {
+      if (sunTimes) {
+        div.innerHTML = `
+          <span class="sunrise">🌅 Восход: ${sunTimes.sunrise}</span>
+          <span class="sunset">🌇 Закат: ${sunTimes.sunset}</span>
+        `;
+      }
+    });
+  });
+
+  bindDetailButtons();
 }
 
 function bindDetailButtons() {

@@ -1424,6 +1424,32 @@ body {
     margin-top: 10px;
     font-style: italic;
 }
+/* Восход и закат солнца */
+.sun-times {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.sun-times .sunrise,
+.sun-times .sunset {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.sun-times .sunrise {
+  color: #f59e0b; /* Оранжевый для восхода */
+}
+
+.sun-times .sunset {
+  color: #f97316; /* Оранжево-красный для заката */
+}
 
 
 
