@@ -1484,6 +1484,11 @@ body {
     user-select: none;
     -webkit-touch-callout: none;
 }
+/* Улучшенный стиль для canvas графика */
+#tidesChart {
+    cursor: crosshair;
+    touch-action: pan-y; /* Разрешаем вертикальный скролл */
+}
 
 
 

@@ -2911,137 +2911,232 @@ async function refreshTidesData() {
 }
 
 // Построение графика приливов
+// ============================================================
+// 📊 ИНТЕРАКТИВНОЕ ПЕРЕКРЕСТИЕ ДЛЯ ГРАФИКА ПРИЛИВОВ
+// ============================================================
+
+// Глобальная переменная для хранения экземпляра графика
+let tidesChartInstance = null;
+
+// Плагин для Chart.js с перекрестием
+const crosshairPlugin = {
+    id: 'crosshair',
+    afterDatasetsDraw(chart, args, options) {
+        if (!chart.tooltip._active || !chart.tooltip._active.length) {
+            return;
+        }
+
+        const ctx = chart.ctx;
+        const activePoint = chart.tooltip._active[0];
+        const x = activePoint.element.x;
+        const y = activePoint.element.y;
+
+        const topY = chart.scales.y.top;
+        const bottomY = chart.scales.y.bottom;
+        const leftX = chart.scales.x.left;
+        const rightX = chart.scales.x.right;
+
+        // Рисуем вертикальную линию
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, topY);
+        ctx.lineTo(x, bottomY);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(79, 70, 229, 0.5)';
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+
+        // Рисуем горизонтальную линию
+        ctx.beginPath();
+        ctx.moveTo(leftX, y);
+        ctx.lineTo(rightX, y);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(79, 70, 229, 0.5)';
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.restore();
+    }
+};
+
+// Обновленная функция построения графика
 async function renderTidesChart(tidesData, date) {
-  const canvas = document.getElementById('tidesChart');
-  if (!canvas) return;
+    const canvas = document.getElementById('tidesChart');
+    if (!canvas) return;
 
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js не загружен');
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js не загружен');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#ef4444';
+        ctx.textAlign = 'center';
+        ctx.fillText('Ошибка: библиотека графиков не загружена', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+
     const ctx = canvas.getContext('2d');
-    ctx.font = '14px Arial';
-    ctx.fillStyle = '#ef4444';
-    ctx.textAlign = 'center';
-    ctx.fillText('Ошибка: библиотека графиков не загружена', canvas.width / 2, canvas.height / 2);
-    return;
-  }
 
-  const ctx = canvas.getContext('2d');
-
-  // Удаляем старый график
-  if (tidesChartInstance) {
-    tidesChartInstance.destroy();
-  }
-
-  if (!tidesData || tidesData.length === 0) {
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#999';
-    ctx.textAlign = 'center';
-    ctx.fillText('Нет данных о приливах', canvas.width / 2, canvas.height / 2);
-    return;
-  }
-
-  // Интерполяция между экстремумами для плавной кривой
-  const chartData = [];
-  for (let i = 0; i < tidesData.length - 1; i++) {
-    const start = tidesData[i];
-    const end = tidesData[i + 1];
-
-    const startTime = new Date(start.time).getTime();
-    const endTime = new Date(end.time).getTime();
-    const duration = endTime - startTime;
-    const steps = 20; // Количество промежуточных точек
-
-    for (let j = 0; j <= steps; j++) {
-      const t = j / steps;
-      const time = new Date(startTime + duration * t);
-      // Синусоидальная интерполяция для плавности
-      const height = start.height + (end.height - start.height) * Math.sin(t * Math.PI / 2);
-
-      chartData.push({ x: time, y: height });
+    // Удаляем старый график
+    if (tidesChartInstance) {
+        tidesChartInstance.destroy();
     }
-  }
 
-  // Точки экстремумов для меток
-  const annotations = tidesData.map(t => ({
-    x: new Date(t.time),
-    y: t.height,
-    type: t.type
-  }));
-
-  tidesChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      datasets: [{
-        label: 'Уровень воды (м)',
-        data: chartData,
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        borderWidth: 2
-      }, {
-        label: 'Экстремумы',
-        data: annotations,
-        pointBackgroundColor: (context) => {
-          const index = context.dataIndex;
-          return annotations[index].type === 'high' ? '#16a34a' : '#dc2626';
-        },
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 6,
-        showLine: false
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              if (context.datasetIndex === 1) {
-                const ann = annotations[context.dataIndex];
-                const time = ann.x.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                const typeText = ann.type === 'high' ? 'Прилив' : 'Отлив';
-                return `${typeText}: ${ann.y.toFixed(2)} м (${time})`;
-              }
-              return `${context.parsed.y.toFixed(2)} м`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          type: 'time',
-          time: {
-            unit: 'hour',
-            displayFormats: {
-              hour: 'HH:mm'
-            }
-          },
-          title: {
-            display: true,
-            text: 'Время'
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Высота (м)'
-          },
-          ticks: {
-            callback: function(value) {
-              return value.toFixed(1) + ' м';
-            }
-          }
-        }
-      }
+    if (!tidesData || tidesData.length === 0) {
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#999';
+        ctx.textAlign = 'center';
+        ctx.fillText('Нет данных о приливах', canvas.width / 2, canvas.height / 2);
+        return;
     }
-  });
+
+    // ✅ НОВЫЙ КОД: Интерполяция с интервалом 15 минут
+    const chartData = [];
+    for (let i = 0; i < tidesData.length - 1; i++) {
+        const start = tidesData[i];
+        const end = tidesData[i + 1];
+
+        const startTime = new Date(start.time).getTime();
+        const endTime = new Date(end.time).getTime();
+        const duration = endTime - startTime;
+
+        // Интервал 15 минут = 900000 мс
+        const interval = 15 * 60 * 1000;
+        const steps = Math.floor(duration / interval);
+
+        for (let j = 0; j <= steps; j++) {
+            const t = j / steps;
+            const time = new Date(startTime + (duration * t));
+
+            // Синусоидальная интерполяция
+            const height = start.height + (end.height - start.height) * Math.sin(t * Math.PI / 2);
+
+            chartData.push({ x: time, y: height });
+        }
+    }
+
+    // Точки экстремумов
+    const annotations = tidesData.map(t => ({
+        x: new Date(t.time),
+        y: t.height,
+        type: t.type
+    }));
+
+    tidesChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Уровень воды (м)',
+                data: chartData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                borderWidth: 2
+            }, {
+                label: 'Экстремумы',
+                data: annotations,
+                pointBackgroundColor: (context) => {
+                    const index = context.dataIndex;
+                    return annotations[index].type === 'high' ? '#16a34a' : '#dc2626';
+                },
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                showLine: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            // ✅ ВКЛЮЧАЕМ интерактивность
+            interaction: {
+                mode: 'nearest',
+                intersect: false,
+                axis: 'x'
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: true,
+                    // ✅ КАСТОМНЫЙ TOOLTIP
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1f2937',
+                    bodyColor: '#1f2937',
+                    borderColor: '#4f46e5',
+                    borderWidth: 2,
+                    padding: 12,
+                    displayColors: false,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        title: function(context) {
+                            const date = new Date(context[0].parsed.x);
+                            return date.toLocaleTimeString('ru-RU', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        },
+                        label: function(context) {
+                            const height = context.parsed.y;
+                            return `Высота: ${height.toFixed(2)} м`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        stepSize: 1,
+                        displayFormats: {
+                            hour: 'HH:mm'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Время',
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Высота (м)',
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(1) + ' м';
+                        }
+                    }
+                }
+            }
+        },
+        // ✅ РЕГИСТРИРУЕМ ПЛАГИН
+        plugins: [crosshairPlugin]
+    });
+
+    console.log('✅ График приливов отрисован с интерактивным перекрестием');
 }
 
 // Открытие модального окна приливов
