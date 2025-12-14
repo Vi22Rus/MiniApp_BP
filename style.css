@@ -1450,7 +1450,40 @@ body {
 .sun-times .sunset {
   color: #FF4500; /* Оранжево-красный для заката */
 }
+.card {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-tap-highlight-color: transparent; /* убираем подсветку при тапе */
+}
 
+/* Запрещаем контекстное меню на карточках */
+.card * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+/* Запрещаем выделение текста на карточках экскурсий */
+.card.activity-sight {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.card.activity-sight * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
 
 
 

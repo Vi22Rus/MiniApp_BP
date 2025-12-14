@@ -579,6 +579,7 @@ async function initApp() {
     renderContacts(points);
 
     initTidesForActivities();
+    initLongPressForSights();
 
     // Обработчики основного модального окна
     document.getElementById('closeModal').addEventListener('click', closeModal);
@@ -3107,7 +3108,16 @@ function initTidesForActivities() {
         let startX = 0, startY = 0;
         let hasMoved = false;
 
+        // ✅ ДОБАВЛЕНО: Предотвращаем контекстное меню
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
         const handleStart = (e) => {
+            // ✅ ДОБАВЛЕНО: Предотвращаем выделение текста
+            e.preventDefault();
+
             hasMoved = false;
             startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
             startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
@@ -3124,7 +3134,7 @@ function initTidesForActivities() {
                         openTidesModal(name, date);
                     }
                 }
-            }, 800);
+            }, 500); // ✅ УМЕНЬШЕНО: с 800ms до 500ms
         };
 
         const handleMove = (e) => {
@@ -3136,7 +3146,8 @@ function initTidesForActivities() {
             const diffX = Math.abs(currentX - startX);
             const diffY = Math.abs(currentY - startY);
 
-            if (diffX > 10 || diffY > 10) {
+            // ✅ УМЕНЬШЕНО: порог с 10px до 5px
+            if (diffX > 5 || diffY > 5) {
                 hasMoved = true;
                 clearTimeout(pressTimer);
                 pressTimer = null;
@@ -3155,14 +3166,142 @@ function initTidesForActivities() {
         card.addEventListener('mouseup', handleEnd);
         card.addEventListener('mouseleave', handleEnd);
 
-        card.addEventListener('touchstart', handleStart, { passive: true });
-        card.addEventListener('touchmove', handleMove, { passive: true });
+        // ✅ ИСПРАВЛЕНО: passive: false чтобы preventDefault() работал
+        card.addEventListener('touchstart', handleStart, { passive: false });
+        card.addEventListener('touchmove', handleMove, { passive: false });
         card.addEventListener('touchend', handleEnd);
         card.addEventListener('touchcancel', handleEnd);
     });
 
     console.log(`✅ Long-press для приливов инициализирован на ${cards.length} карточках`);
 }
+
+// ============================================================
+// 🏛️ LONG-PRESS ДЛЯ ЭКСКУРСИЙ (открытие расширенной информации)
+// ============================================================
+
+function initLongPressForSights() {
+    const cards = document.querySelectorAll('.card.activity-sight');
+
+    cards.forEach(card => {
+        let pressTimer = null;
+        let startX = 0, startY = 0;
+        let hasMoved = false;
+
+        // Предотвращаем контекстное меню
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        const handleStart = (e) => {
+            e.preventDefault();
+
+            hasMoved = false;
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+            pressTimer = setTimeout(() => {
+                if (!hasMoved) {
+                    const dateEl = card.querySelector('p');
+                    const nameEl = card.querySelector('h3');
+
+                    if (dateEl && nameEl) {
+                        const date = dateEl.textContent.trim();
+                        const name = nameEl.textContent.replace(/^[🏛️🐘🌴🦖🎨🏰🌊🎢]+\s*/, ''); // Убираем все эмодзи
+
+                        // Ищем активность в массиве activities
+                        const activity = activities.find(a => a.name === name && a.date === date);
+
+                        if (activity) {
+                            openSightModal(activity);
+                        }
+                    }
+                }
+            }, 500);
+        };
+
+        const handleMove = (e) => {
+            if (!pressTimer) return;
+
+            const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+            const diffX = Math.abs(currentX - startX);
+            const diffY = Math.abs(currentY - startY);
+
+            if (diffX > 5 || diffY > 5) {
+                hasMoved = true;
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        const handleEnd = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        card.addEventListener('mousedown', handleStart);
+        card.addEventListener('mousemove', handleMove);
+        card.addEventListener('mouseup', handleEnd);
+        card.addEventListener('mouseleave', handleEnd);
+
+        card.addEventListener('touchstart', handleStart, { passive: false });
+        card.addEventListener('touchmove', handleMove, { passive: false });
+        card.addEventListener('touchend', handleEnd);
+        card.addEventListener('touchcancel', handleEnd);
+    });
+
+    console.log(`✅ Long-press для экскурсий инициализирован на ${cards.length} карточках`);
+}
+
+// Открытие модального окна с информацией об экскурсии
+function openSightModal(activity) {
+    const modal = document.getElementById('modalOverlay');
+    const modalBody = document.getElementById('modalBody');
+
+    if (!modal || !modalBody) return;
+
+    let content = `<h3>${getIconForActivity(activity.name)} ${activity.name}</h3>`;
+
+    // Дата
+    content += `<p><strong>📅 Дата:</strong> ${activity.date}</p>`;
+
+    // Описание/советы
+    if (activity.tips) {
+        content += `<p style="margin-top: 12px; line-height: 1.6;">${activity.tips}</p>`;
+    }
+
+    // Координаты и маршрут
+    if (activity.coords) {
+        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
+        const to = `${activity.coords.lat},${activity.coords.lng}`;
+
+        content += `<div style="margin-top: 16px;">`;
+        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: 600;">🗺️ Маршрут из дома</a></p>`;
+
+        // Если есть геолокация пользователя
+        if (userCoords) {
+            const userFrom = `${userCoords[0]},${userCoords[1]}`;
+            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: 600;">📍 Маршрут от меня</a></p>`;
+
+            const distance = getDistance(userCoords[0], userCoords[1], activity.coords.lat, activity.coords.lng);
+            content += `<p style="color: var(--muted);">📏 Расстояние: ${distance} км</p>`;
+        }
+
+        content += `</div>`;
+    }
+
+    // Кнопка закрытия
+    content += `<button onclick="closeModal()" style="margin-top: 20px; padding: 10px 20px; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Закрыть</button>`;
+
+    modalBody.innerHTML = content;
+    modal.classList.add('active');
+}
+
 
 
 
