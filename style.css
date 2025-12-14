@@ -1277,5 +1277,22 @@ body {
 .transport-icon {
   font-size: 14px;
 }
+/* Индикация источника температуры */
+.temp-fresh {
+  color: #0f5132; /* темно-зеленый */
+  font-weight: 600;
+}
+
+.temp-cached {
+  color: #842029; /* темно-красный */
+  font-weight: 600;
+}
+
+.weather {
+  display: flex;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
 
 

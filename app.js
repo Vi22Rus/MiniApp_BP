@@ -296,7 +296,11 @@ async function fetchWeatherData(date) {
 
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
-    return weatherCache[apiDate];
+    return {
+      ...weatherCache[apiDate],
+      airFromCache: true,
+      waterFromCache: true
+    };
   }
 
   const requestDate = new Date(apiDate);
@@ -321,28 +325,34 @@ async function fetchWeatherData(date) {
       airTemp = 30; waterTemp = 28;
     }
 
-    const result = { airTemp, waterTemp };
-    weatherCache[apiDate] = result;
+    const result = {
+      airTemp,
+      waterTemp,
+      airFromCache: false,
+      waterFromCache: false,
+      isStatic: true
+    };
+    weatherCache[apiDate] = { airTemp, waterTemp };
     return result;
   }
 
   try {
     assertIsoDate(apiDate);
 
-    // Только температура воздуха
     const airTempUrl = buildAirUrl(PATTAYA_LAT, PATTAYA_LON, apiDate);
     const airResponse = await fetch(airTempUrl);
     const airData = await airResponse.json();
     let airTemp = airData?.daily?.temperature_2m_max?.[0] ?? null;
 
-    // Вода: сегодня с seatemperature.info, остальное - статика
     let waterTemp = null;
+    let waterFromAPI = false;
     const isToday = requestDate.getTime() === today.getTime();
 
     if (isToday) {
       waterTemp = await fetchSeaTemperaturePattaya();
       if (waterTemp !== null) {
         console.log(`✓ Вода с seatemperature.info: ${waterTemp}°C`);
+        waterFromAPI = true;
       }
     }
 
@@ -368,13 +378,22 @@ async function fetchWeatherData(date) {
     const result = {
       airTemp: airTemp != null ? Math.round(airTemp) : null,
       waterTemp: waterTemp != null ? Math.round(waterTemp) : null,
+      airFromCache: false,
+      waterFromCache: false,
+      waterFromAPI: waterFromAPI
     };
 
-    weatherCache[apiDate] = result;
+    weatherCache[apiDate] = { airTemp: result.airTemp, waterTemp: result.waterTemp };
     return result;
   } catch (error) {
     console.error('✗ Ошибка получения погоды:', error);
-    return { airTemp: 30, waterTemp: 28 };
+    return {
+      airTemp: 30,
+      waterTemp: 28,
+      airFromCache: false,
+      waterFromCache: false,
+      isStatic: true
+    };
   }
 }
 
@@ -1116,15 +1135,28 @@ function renderActivities(list) {
         future.map(a => renderCard(a, false)).join('') +
         past.map(a => renderCard(a, true)).join('');
 
-    list.forEach(async (activity) => {
+        list.forEach(async (activity) => {
         const weather = await fetchWeatherData(activity.date);
         const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
         weatherDivs.forEach(div => {
             if (weather.airTemp || weather.waterTemp) {
-                let weatherText = '';
-                if (weather.airTemp) weatherText += `🌡️ ${weather.airTemp}°C `;
-                if (weather.waterTemp) weatherText += `🌊 ${weather.waterTemp}°C`;
-                div.textContent = weatherText.trim();
+                div.innerHTML = ''; // Очищаем
+
+                // Воздух
+                if (weather.airTemp) {
+                    const airSpan = document.createElement('span');
+                    airSpan.textContent = `🌡️ ${weather.airTemp}°C `;
+                    airSpan.className = weather.airFromCache ? 'temp-cached' : 'temp-fresh';
+                    div.appendChild(airSpan);
+                }
+
+                // Вода
+                if (weather.waterTemp) {
+                    const waterSpan = document.createElement('span');
+                    waterSpan.textContent = `🌊 ${weather.waterTemp}°C`;
+                    waterSpan.className = weather.waterFromCache ? 'temp-cached' : 'temp-fresh';
+                    div.appendChild(waterSpan);
+                }
             }
         });
     });
