@@ -1110,7 +1110,7 @@ function renderActivities(list) {
             a.name === '🚀 В Паттайю' ||
             (a.date === '26.01.2026' && a.type === 'sea')
         );
-        const isBordered = !isTransfer;  // Все прочие карточки с бордером
+        const isBordered = !isTransfer;
 
         const displayName = (a.date === '26.01.2026' && a.type === 'sea') ? 'В Бангкок!' : a.name;
         let icon = a.type === 'sea' ? '🏖️ ' : (getIconForActivity(a.name) + ' ');
@@ -1147,12 +1147,13 @@ function renderActivities(list) {
         future.map(a => renderCard(a, false)).join('') +
         past.map(a => renderCard(a, true)).join('');
 
-        list.forEach(async (activity) => {
+    // ✅ ИСПРАВЛЕНО: Правильная логика цветов температуры
+    list.forEach(async (activity) => {
         const weather = await fetchWeatherData(activity.date);
         const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
         weatherDivs.forEach(div => {
             if (weather.airTemp || weather.waterTemp) {
-                div.innerHTML = ''; // Очищаем
+                div.innerHTML = '';
 
                 // Воздух
                 if (weather.airTemp) {
@@ -1166,12 +1167,25 @@ function renderActivities(list) {
                 if (weather.waterTemp) {
                     const waterSpan = document.createElement('span');
                     waterSpan.textContent = `🌊 ${weather.waterTemp}°C`;
-                    waterSpan.className = weather.waterFromCache ? 'temp-cached' : 'temp-fresh';
+
+                    // ✅ ИСПРАВЛЕНО: Проверяем источник данных
+                    if (weather.isStatic) {
+                        // Статическая температура по месяцам
+                        waterSpan.className = 'temp-cached';
+                    } else if (weather.waterFromAPI) {
+                        // Реальные данные с seatemperature.info
+                        waterSpan.className = 'temp-fresh';
+                    } else {
+                        // Из кэша в памяти
+                        waterSpan.className = weather.waterFromCache ? 'temp-cached' : 'temp-fresh';
+                    }
+
                     div.appendChild(waterSpan);
                 }
             }
         });
     });
+
     bindDetailButtons();
     initTidesForActivities();
 }
