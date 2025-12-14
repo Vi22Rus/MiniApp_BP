@@ -2732,7 +2732,7 @@ async function fetchTidesData(date) {
     try {
         // ✅ ИСПРАВЛЕНО: используем /tides/latest и парсим правильно
         const corsProxy = 'https://api.allorigins.win/raw?url=';
-        const targetUrl = encodeURIComponent(`https://www.tide-forecast.com/locations/Ko-Si-Chang/tides/latest`);
+        const targetUrl = encodeURIComponent(`https://www.tide-forecast.com/tide/Ko-Si-Chang-Thailand/tide-times`);
 
         console.log(`🌊 Загрузка приливов для ${date}`);
 
