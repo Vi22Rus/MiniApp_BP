@@ -514,7 +514,7 @@ async function initApp() {
     document.getElementById('closeModal').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', e => {
         if (e.target.id === 'modalOverlay') closeModal();
-    }); // ← ЗАКРЫЛИ ОБРАБОТЧИК modalOverlay
+    });
 
     // Закрытие модальных окон по клику на затемнённый фон
     const addPlaceModal = document.getElementById('addPlaceModal');
@@ -535,8 +535,7 @@ async function initApp() {
             }
         });
     }
-} // ← ЗАКРЫЛИ initApp
-
+}
 
 function initTabs() {
     document.querySelectorAll('.tab-button').forEach(btn => {

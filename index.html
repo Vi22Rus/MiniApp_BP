@@ -347,7 +347,7 @@ cafe, naklua, Кофейня ABC, Уютное место, https://maps.app.goo.
 </div>
 
 <!-- Модальное окно приливов -->
-<div id="tidesModal" class="modal-overlay" style="display: none;">
+<div id="tidesModal" class="modal-overlay">
   <div class="modal-content tides-modal">
     <button class="modal-close-btn" onclick="closeTidesModal()">✕</button>
     <h3 id="tidesModalTitle">Приливы и отливы</h3>
@@ -362,13 +362,12 @@ cafe, naklua, Кофейня ABC, Уютное место, https://maps.app.goo.
       </div>
     </div>
     <div class="chart-container">
-      anvas id="tidesChart"></canvas>
+      <canvas id="tidesChart"></canvas>
     </div>
     <div class="tides-source">
       <span id="tidesSource">Загрузка...</span>
     </div>
   </div>
 </div>
-
 </body>
 </html>
