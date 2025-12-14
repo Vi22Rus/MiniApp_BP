@@ -1404,111 +1404,6 @@ function showContactModal(contact) {
     document.getElementById('modalOverlay').classList.add('active');
 }
 let currentRatingGeoId = null;
-function initGeoItemButton(button) {
-    const id = parseInt(button.dataset.id, 10);
-    if (isNaN(id)) return;
-
-    // Добавляем кнопку со звёздами как последний элемент блока
-    if (!button.querySelector('.geo-item-rating-button')) {
-        const ratingButton = document.createElement('button');
-        ratingButton.className = 'geo-item-rating-button';
-        ratingButton.innerHTML = '<span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span><span class="star">☆</span>';
-        ratingButton.onclick = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            openRatingModal(id);
-        };
-        // Блокируем обработчики нажатия на кнопке
-        ratingButton.addEventListener('mousedown', (e) => e.stopPropagation());
-        ratingButton.addEventListener('touchstart', (e) => e.stopPropagation());
-        ratingButton.addEventListener('mousemove', (e) => e.stopPropagation());
-        ratingButton.addEventListener('touchmove', (e) => e.stopPropagation());
-        button.appendChild(ratingButton);
-        loadGeoRatingForButton(id, ratingButton);
-    }
-
-    let pressTimer = null;
-    let startX = 0, startY = 0;
-    let hasMoved = false;
-
-    const handleStart = (e) => {
-        // Проверяем, что клик не по кнопке со звёздами
-        if (e.target.closest('.geo-item-rating-button')) {
-            return;
-        }
-
-        hasMoved = false;
-        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        
-        pressTimer = setTimeout(() => {
-            if (!hasMoved) {
-                if (!userCoords) {
-                    alert('Сначала определите местоположение');
-                    return;
-                }
-                const destination = allGeoData[id].coords.join(',');
-                const origin = userCoords.join(',');
-                window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`, '_blank');
-            }
-            pressTimer = null;
-        }, 800);
-    };
-
-    const handleMove = (e) => {
-        if (!pressTimer) return;
-        
-        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        const diffX = Math.abs(currentX - startX);
-        const diffY = Math.abs(currentY - startY);
-
-        // Если палец/мышь сдвинулись больше чем на 10px - это движение, не клик
-        if (diffX > 10 || diffY > 10) {
-            hasMoved = true;
-            clearTimeout(pressTimer);
-            pressTimer = null;
-        }
-    };
-
-    const handleEnd = (e) => {
-        // Проверяем, что клик не по кнопке со звёздами
-        if (e.target.closest('.geo-item-rating-button')) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-            return;
-        }
-        
-        if (pressTimer && !hasMoved) {
-            clearTimeout(pressTimer);
-            // Обычный клик
-            if (allGeoData[id] && allGeoData[id].type === 'playground') {
-                showPlaygroundModal(allGeoData[id]);
-            } else if (allGeoData[id] && allGeoData[id].type === 'park') {
-                showParkModal(allGeoData[id]);
-            } else {
-                window.open(allGeoData[id].link, '_blank');
-            }
-        }
-        pressTimer = null;
-        hasMoved = false;
-    };
-
-    const handleCancel = () => {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-        hasMoved = false;
-    };
-
-    button.addEventListener('mousedown', handleStart);
-    button.addEventListener('mousemove', handleMove);
-    button.addEventListener('mouseup', handleEnd);
-    button.addEventListener('mouseleave', handleCancel);
-    button.addEventListener('touchstart', handleStart, { passive: true });
-    button.addEventListener('touchmove', handleMove, { passive: true });
-    button.addEventListener('touchend', handleEnd);
-    button.addEventListener('touchcancel', handleCancel);
-}
 
 function openRatingModal(geoId) {
     currentRatingGeoId = geoId;
@@ -1802,9 +1697,6 @@ async function uploadPhoto(geoId, file) {
     }
 }
 
-
-
-// Прямой доступ к камере через MediaDevices API
 // Прямой доступ к камере через MediaDevices API
 async function openNativeCamera(geoId) {
     try {
@@ -2717,7 +2609,6 @@ async function ensureFxLoaded(force = false) {
 const STORMGLASS_API_KEY = '2262b22e-a819-11f0-bfe4-0242ac130006-2262b2a6-a819-11f0-bfe4-0242ac130006'; // Получи на stormglass.io
 let tidesChartInstance = null;
 
-// Получение данных приливов с кэшированием
 async function fetchTidesData(date) {
   const apiDate = formatDateForAPI(date); // YYYY-MM-DD
   const cacheKey = `tides_${apiDate}`;
@@ -2736,8 +2627,10 @@ async function fetchTidesData(date) {
 
   // Загружаем с Storm Glass API
   try {
-    const start = `${apiDate}T00:00`;
-    const end = `${apiDate}T23:59`;
+    // ✅ ИСПРАВЛЕНО: Указываем таймзону Бангкока (UTC+7)
+    const start = `${apiDate}T00:00:00+07:00`;
+    const end = `${apiDate}T23:59:59+07:00`;
+
     const url = `https://api.stormglass.io/v2/tide/extremes/point?lat=12.9236&lng=100.8825&start=${start}&end=${end}`;
 
     const response = await fetch(url, {
@@ -2770,6 +2663,17 @@ async function fetchTidesData(date) {
 async function renderTidesChart(tidesData, date) {
   const canvas = document.getElementById('tidesChart');
   if (!canvas) return;
+
+  // ✅ ДОБАВЬ ЭТО:
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js не загружен');
+    const ctx = canvas.getContext('2d');
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#ef4444';
+    ctx.textAlign = 'center';
+    ctx.fillText('Ошибка: библиотека графиков не загружена', canvas.width / 2, canvas.height / 2);
+    return;
+  }
 
   const ctx = canvas.getContext('2d');
 
