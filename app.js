@@ -2711,7 +2711,7 @@ let currentTidesDate = null;
 // В app.js замените fetchTidesData на это:
 
 async function fetchTidesData(date) {
-    const apiDate = formatDateForAPI(date);
+    const apiDate = formatDateForAPI(date); // 2025-12-29
     const cacheKey = `tides_v2_${apiDate}`;
 
     const cached = await getStorageItem(cacheKey);
@@ -2725,10 +2725,13 @@ async function fetchTidesData(date) {
     }
 
     try {
-        const corsProxy = 'https://api.allorigins.win/raw?url=';
-        const targetUrl = encodeURIComponent('https://www.tide-forecast.com/locations/Ko-Si-Chang-Thailand/tides/latest');
+        // ✅ ИСПРАВЛЕНО: Формируем URL с конкретной датой
+        const dateForUrl = apiDate.replace(/-/g, ''); // 2025-12-29 -> 20251229
 
-        console.log(`🌊 Загрузка приливов через прокси для ${apiDate}`);
+        const corsProxy = 'https://api.allorigins.win/raw?url=';
+        const targetUrl = encodeURIComponent(`https://www.tide-forecast.com/locations/Ko-Si-Chang-Thailand/tides/${dateForUrl}`);
+
+        console.log(`🌊 Загрузка приливов для ${date} (${dateForUrl})`);
 
         const response = await fetch(corsProxy + targetUrl);
         const html = await response.text();
@@ -2738,7 +2741,6 @@ async function fetchTidesData(date) {
 
         const tides = [];
 
-        // ✅ ПРАВИЛЬНЫЙ СЕЛЕКТОР
         const table = doc.querySelector('.tide-day-tides');
 
         if (table) {
@@ -2747,7 +2749,6 @@ async function fetchTidesData(date) {
             for (const row of rows) {
                 const cells = row.querySelectorAll('td');
 
-                // Пропускаем заголовок (если есть th)
                 if (cells.length < 3) continue;
 
                 const typeCell = cells[0];
@@ -2756,16 +2757,13 @@ async function fetchTidesData(date) {
 
                 if (!typeCell || !timeCell || !heightCell) continue;
 
-                // Извлекаем тип (Low Tide / High Tide)
                 const typeText = typeCell.textContent.trim();
                 const type = typeText.includes('High') ? 'high' : 'low';
 
-                // Извлекаем время из <b> тега
                 const timeB = timeCell.querySelector('b');
                 if (!timeB) continue;
-                const timeText = timeB.textContent.trim(); // "4:50 AM"
+                const timeText = timeB.textContent.trim();
 
-                // Извлекаем высоту из span с классом tide-day-tides__secondary
                 const heightSpan = heightCell.querySelector('.js-two-units-length-value__secondary');
                 if (!heightSpan) continue;
 
@@ -2782,7 +2780,7 @@ async function fetchTidesData(date) {
             }
         }
 
-        console.log(`✅ Найдено ${tides.length} записей приливов`);
+        console.log(`✅ Найдено ${tides.length} записей приливов для ${date}`);
 
         if (tides.length > 0) {
             await setStorageItem(cacheKey, JSON.stringify(tides));
