@@ -2733,97 +2733,62 @@ async function fetchTidesData(date) {
         const response = await fetch(corsProxy + targetUrl);
         const html = await response.text();
 
-        // Парсим HTML с DOMParser
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
         const tides = [];
 
-        // ✅ ИСПРАВЛЕННЫЙ ПАРСИНГ: ищем все строки таблицы
-        const tables = doc.querySelectorAll('table.tide-table, table');
+        // ✅ ПРАВИЛЬНЫЙ СЕЛЕКТОР
+        const table = doc.querySelector('.tide-day-tides');
 
-        for (const table of tables) {
-            const rows = table.querySelectorAll('tr');
+        if (table) {
+            const rows = table.querySelectorAll('tbody tr');
 
             for (const row of rows) {
-                // Ищем ячейки времени и типа прилива
                 const cells = row.querySelectorAll('td');
 
-                if (cells.length >= 3) {
-                    let timeText = null;
-                    let heightText = null;
-                    let typeText = null;
+                // Пропускаем заголовок (если есть th)
+                if (cells.length < 3) continue;
 
-                    // Проходим по всем ячейкам
-                    for (const cell of cells) {
-                        const text = cell.textContent.trim();
+                const typeCell = cells[0];
+                const timeCell = cells[1];
+                const heightCell = cells[2];
 
-                        // Время (формат: 2:08 AM, 10:35 AM)
-                        if (/^\d{1,2}:\d{2}\s*[AP]M$/i.test(text)) {
-                            timeText = text;
-                        }
+                if (!typeCell || !timeCell || !heightCell) continue;
 
-                        // Высота (формат: 3.15 ft (0.96 m) или просто число с m)
-                        if (/\([\d.]+\s*m\)/.test(text) || /[\d.]+\s*m/.test(text)) {
-                            heightText = text;
-                        }
+                // Извлекаем тип (Low Tide / High Tide)
+                const typeText = typeCell.textContent.trim();
+                const type = typeText.includes('High') ? 'high' : 'low';
 
-                        // Тип прилива
-                        if (/high\s*tide/i.test(text)) {
-                            typeText = 'high';
-                        } else if (/low\s*tide/i.test(text)) {
-                            typeText = 'low';
-                        }
-                    }
+                // Извлекаем время из <b> тега
+                const timeB = timeCell.querySelector('b');
+                if (!timeB) continue;
+                const timeText = timeB.textContent.trim(); // "4:50 AM"
 
-                    // Если нашли все компоненты, добавляем запись
-                    if (timeText && heightText && typeText) {
-                        // Извлекаем высоту в метрах
-                        const heightMatch = heightText.match(/\(([\d.]+)\s*m\)/);
-                        const height = heightMatch ? parseFloat(heightMatch[1]) : null;
+                // Извлекаем высоту из span с классом tide-day-tides__secondary
+                const heightSpan = heightCell.querySelector('.js-two-units-length-value__secondary');
+                if (!heightSpan) continue;
 
-                        if (height !== null) {
-                            tides.push({
-                                time: convertToISO(timeText, date),
-                                type: typeText,
-                                height: height
-                            });
-                        }
-                    }
-                }
+                const heightMatch = heightSpan.textContent.match(/\(([\d.]+)\s*m\)/);
+                if (!heightMatch) continue;
+
+                const height = parseFloat(heightMatch[1]);
+
+                tides.push({
+                    time: convertToISO(timeText, date),
+                    type: type,
+                    height: height
+                });
             }
         }
 
         console.log(`✅ Найдено ${tides.length} записей приливов`);
 
-        if (tides.length === 0) {
-            console.warn('⚠️ Парсинг не нашел данные. Проверяем альтернативный метод...');
-
-            // Альтернативный метод: регулярные выражения
-            const timeMatches = html.matchAll(/(\d{1,2}:\d{2}\s*[AP]M)/g);
-            const heightMatches = html.matchAll(/\(([\d.]+)\s*m\)/g);
-            const typeMatches = html.matchAll(/(High|Low)\s*Tide/gi);
-
-            const times = Array.from(timeMatches).map(m => m[1]);
-            const heights = Array.from(heightMatches).map(m => parseFloat(m[1]));
-            const types = Array.from(typeMatches).map(m => m[1].toLowerCase());
-
-            const minLength = Math.min(times.length, heights.length, types.length);
-
-            for (let i = 0; i < minLength; i++) {
-                tides.push({
-                    time: convertToISO(times[i], date),
-                    type: types[i],
-                    height: heights[i]
-                });
-            }
-
-            console.log(`✅ Альтернативный парсинг нашел ${tides.length} записей`);
-        }
-
         if (tides.length > 0) {
             await setStorageItem(cacheKey, JSON.stringify(tides));
             console.log(`💾 Приливы для ${apiDate} сохранены в кэш`);
+        } else {
+            console.warn('⚠️ Данные не найдены. Проверьте структуру HTML.');
         }
 
         return { data: tides, fromCache: false };
@@ -2833,6 +2798,19 @@ async function fetchTidesData(date) {
         return { data: [], fromCache: false, error: e.message };
     }
 }
+
+function convertToISO(timeStr, date) {
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+
+    if (period && period.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if (period && period.toUpperCase() === 'AM' && hours === 12) hours = 0;
+
+    const [day, month, year] = date.split('.');
+
+    return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:00+07:00`;
+}
+
 
 function convertToISO(timeStr, date) {
     const [time, period] = timeStr.split(' ');
