@@ -3177,7 +3177,7 @@ function initTidesForActivities() {
 }
 
 // ============================================================
-// 🏛️ LONG-PRESS ДЛЯ ЭКСКУРСИЙ (открытие расширенной информации)
+// 🏛️ LONG-PRESS ДЛЯ ЭКСКУРСИЙ (открытие приливов на дату экскурсии)
 // ============================================================
 
 function initLongPressForSights() {
@@ -3210,12 +3210,8 @@ function initLongPressForSights() {
                         const date = dateEl.textContent.trim();
                         const name = nameEl.textContent.replace(/^[🏛️🐘🌴🦖🎨🏰🌊🎢]+\s*/, ''); // Убираем все эмодзи
 
-                        // Ищем активность в массиве activities
-                        const activity = activities.find(a => a.name === name && a.date === date);
-
-                        if (activity) {
-                            openSightModal(activity);
-                        }
+                        // Открываем модалку приливов для этой даты
+                        openTidesModal(name, date);
                     }
                 }
             }, 500);
@@ -3256,50 +3252,6 @@ function initLongPressForSights() {
     });
 
     console.log(`✅ Long-press для экскурсий инициализирован на ${cards.length} карточках`);
-}
-
-// Открытие модального окна с информацией об экскурсии
-function openSightModal(activity) {
-    const modal = document.getElementById('modalOverlay');
-    const modalBody = document.getElementById('modalBody');
-
-    if (!modal || !modalBody) return;
-
-    let content = `<h3>${getIconForActivity(activity.name)} ${activity.name}</h3>`;
-
-    // Дата
-    content += `<p><strong>📅 Дата:</strong> ${activity.date}</p>`;
-
-    // Описание/советы
-    if (activity.tips) {
-        content += `<p style="margin-top: 12px; line-height: 1.6;">${activity.tips}</p>`;
-    }
-
-    // Координаты и маршрут
-    if (activity.coords) {
-        const fromHome = `${homeCoords.lat},${homeCoords.lng}`;
-        const to = `${activity.coords.lat},${activity.coords.lng}`;
-
-        content += `<div style="margin-top: 16px;">`;
-        content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${fromHome}&destination=${to}" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: 600;">🗺️ Маршрут из дома</a></p>`;
-
-        // Если есть геолокация пользователя
-        if (userCoords) {
-            const userFrom = `${userCoords[0]},${userCoords[1]}`;
-            content += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${userFrom}&destination=${to}" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: 600;">📍 Маршрут от меня</a></p>`;
-
-            const distance = getDistance(userCoords[0], userCoords[1], activity.coords.lat, activity.coords.lng);
-            content += `<p style="color: var(--muted);">📏 Расстояние: ${distance} км</p>`;
-        }
-
-        content += `</div>`;
-    }
-
-    // Кнопка закрытия
-    content += `<button onclick="closeModal()" style="margin-top: 20px; padding: 10px 20px; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Закрыть</button>`;
-
-    modalBody.innerHTML = content;
-    modal.classList.add('active');
 }
 
 
