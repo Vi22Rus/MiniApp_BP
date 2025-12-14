@@ -2699,9 +2699,6 @@ async function fetchTidesData(date) {
   }
 }
 
-// Глобальная переменная для хранения текущей даты модального окна
-let currentTidesDate = null;
-
 // Функция принудительного обновления данных приливов
 async function refreshTidesData() {
   if (!currentTidesDate) return;
