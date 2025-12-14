@@ -272,16 +272,33 @@ function formatDateForAPI(dateStr) {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
+// Парсинг температуры воды с seatemperature.info
+async function fetchSeaTemperaturePattaya() {
+  try {
+    const response = await fetch('https://seatemperature.info/pattaya-water-temperature.html');
+    const html = await response.text();
+
+    // Ищем: "Water temperature in Pattaya today is 29.8°C"
+    const match = html.match(/Water temperature in Pattaya today is ([\d.]+)°C/);
+    if (match) {
+      return parseFloat(match[1]);
+    }
+    return null;
+  } catch (e) {
+    console.error('seatemperature.info fetch error:', e);
+    return null;
+  }
+}
+
 
 async function fetchWeatherData(date) {
-  const apiDate = formatDateForAPI(date); // ожидается DD.MM.YYYY -> YYYY-MM-DD
+  const apiDate = formatDateForAPI(date);
 
   if (weatherCache[apiDate]) {
     console.log(`✓ Погода взята из кэша для ${apiDate}`);
     return weatherCache[apiDate];
   }
 
-  // Ограничение прогноза: 16 дней
   const requestDate = new Date(apiDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -289,7 +306,7 @@ async function fetchWeatherData(date) {
   maxForecastDate.setDate(today.getDate() + 16);
 
   if (requestDate > maxForecastDate) {
-    console.warn(`⚠ Дата ${apiDate} выходит за пределы прогноза API (макс. 16 дней). Используются климатические нормы.`);
+    console.warn(`⚠ Дата ${apiDate} за пределами прогноза. Используются климатические нормы.`);
     const [, month] = date.split('.');
     const monthNum = parseInt(month, 10);
 
@@ -310,60 +327,26 @@ async function fetchWeatherData(date) {
   }
 
   try {
-    // Валидируем ISO-дату и строим корректные URL через URLSearchParams
     assertIsoDate(apiDate);
 
-    const airTempUrl = buildAirUrl(PATTAYA_LAT, PATTAYA_LON, apiDate);           // daily=temperature_2m_max
-    let waterTempUrl = buildMarineUrl(PATTAYA_LAT, PATTAYA_LON, apiDate, 'daily'); // daily=sea_surface_temperature_max
-
-    // Запрашиваем воздух и воду параллельно
-    let [airResponse, waterResponse] = await Promise.all([
-      fetch(airTempUrl),
-      fetch(waterTempUrl),
-    ]);
-
+    // Только температура воздуха
+    const airTempUrl = buildAirUrl(PATTAYA_LAT, PATTAYA_LON, apiDate);
+    const airResponse = await fetch(airTempUrl);
     const airData = await airResponse.json();
-
-    let waterData = null;
-    if (!waterResponse.ok) {
-      // Считываем reason и пробуем hourly fallback
-      let errBody = {};
-      try { errBody = await waterResponse.json(); } catch (_) {}
-      console.warn('Marine daily error:', waterResponse.status, errBody?.reason || errBody);
-
-      // Fallback на hourly=sea_surface_temperature, берём максимум
-      waterTempUrl = buildMarineUrl(PATTAYA_LAT, PATTAYA_LON, apiDate, 'hourly');
-      waterResponse = await fetch(waterTempUrl);
-      if (!waterResponse.ok) {
-        let err2 = {};
-        try { err2 = await waterResponse.json(); } catch (_) {}
-        console.error('Marine hourly error:', waterResponse.status, err2?.reason || err2);
-      } else {
-        waterData = await waterResponse.json();
-      }
-    } else {
-      waterData = await waterResponse.json();
-    }
-
-    // Парсим воздух: daily.temperature_2m_max[0]
     let airTemp = airData?.daily?.temperature_2m_max?.[0] ?? null;
 
-    // Парсим воду:
-    // 1) daily sea_surface_temperature_max
-    let waterTemp = waterData?.daily?.sea_surface_temperature_max?.[0] ?? null;
+    // Вода: сегодня с seatemperature.info, остальное - статика
+    let waterTemp = null;
+    const isToday = requestDate.getTime() === today.getTime();
 
-    // 2) если это hourly fallback — берём максимум из hourly.sea_surface_temperature
-    if (waterTemp == null) {
-      const hourly = waterData?.hourly?.sea_surface_temperature;
-      if (Array.isArray(hourly) && hourly.length) {
-        const numeric = hourly.filter((v) => Number.isFinite(v));
-        if (numeric.length) {
-          waterTemp = Math.max(...numeric);
-        }
+    if (isToday) {
+      waterTemp = await fetchSeaTemperaturePattaya();
+      if (waterTemp !== null) {
+        console.log(`✓ Вода с seatemperature.info: ${waterTemp}°C`);
       }
     }
 
-    // Фолбэк на климатические нормы, если чего-то нет
+    // Фолбэк на статику
     if (airTemp == null || waterTemp == null) {
       const [, month] = date.split('.');
       const monthNum = parseInt(month, 10);
@@ -395,6 +378,7 @@ async function fetchWeatherData(date) {
   }
 }
 
+
 function assertIsoDate(d) {
   // строго YYYY-MM-DD, без пробелов и лишних символов
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error(`Bad ISO date: ${d}`);
@@ -402,26 +386,6 @@ function assertIsoDate(d) {
   // проверяем валидность календарной даты
   const iso = new Date(Date.UTC(y, m - 1, day)).toISOString().slice(0, 10);
   if (iso !== d) throw new Error(`Bad calendar date: ${d}`);
-}
-
-function buildMarineUrl(lat, lon, isoDate, mode = 'daily') {
-  assertIsoDate(isoDate);
-  const u = new URL('https://marine-api.open-meteo.com/v1/marine');
-  u.searchParams.set('latitude', String(lat));
-  u.searchParams.set('longitude', String(lon));
-  if (mode === 'daily') {
-    // daily-агрегат SST: в некоторых конфигурациях доступен как sea_surface_temperature_max
-    u.searchParams.set('daily', 'sea_surface_temperature_max');
-  } else if (mode === 'hourly') {
-    // hourly SST, берём максимум вручную
-    u.searchParams.set('hourly', 'sea_surface_temperature');
-  } else {
-    throw new Error(`Unknown marine mode: ${mode}`);
-  }
-  u.searchParams.set('timezone', 'Asia/Bangkok');
-  u.searchParams.set('start_date', isoDate);
-  u.searchParams.set('end_date', isoDate);
-  return u.toString();
 }
 
 function buildAirUrl(lat, lon, isoDate) {
