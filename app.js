@@ -420,50 +420,48 @@ async function fetchWeatherData(date) {
 
 // Функция для получения времени восхода и заката солнца
 async function fetchSunTimes(date) {
-  const apiDate = formatDateForAPI(date); // YYYY-MM-DD
+    const apiDate = formatDateForAPI(date); // YYYY-MM-DD
 
-  try {
-    assertIsoDate(apiDate);
+    try {
+        assertIsoDate(apiDate);
 
-    const u = new URL('https://api.open-meteo.com/v1/forecast');
-    u.searchParams.set('latitude', String(PATTAYA_LAT));
-    u.searchParams.set('longitude', String(PATTAYA_LON));
-    u.searchParams.set('daily', 'sunrise,sunset');
-    u.searchParams.set('timezone', 'Asia/Bangkok');
-    u.searchParams.set('start_date', apiDate);
-    u.searchParams.set('end_date', apiDate);
+        const u = new URL('https://api.open-meteo.com/v1/forecast');
+        u.searchParams.set('latitude', String(PATTAYA_LAT));
+        u.searchParams.set('longitude', String(PATTAYA_LON));
+        u.searchParams.set('daily', 'sunrise,sunset');
+        u.searchParams.set('timezone', 'Asia/Bangkok');
+        u.searchParams.set('start_date', apiDate);
+        u.searchParams.set('end_date', apiDate);
 
-    const url = u.toString();
-    const response = await fetch(url);
+        const url = u.toString();
+        const response = await fetch(url);
 
-    if (!response.ok) {
-      console.warn(`⚠️ ${date} - Open-Meteo вернул ошибку ${response.status} для восхода/заката`);
-      console.warn(`⚠️ ${date} - Восход/закат: используются средние значения`);
-      return { sunrise: '06:42', sunset: '18:05' };
+        if (!response.ok) {
+            console.warn(`⚠️ ${date} - Open-Meteo вернул ошибку ${response.status} для восхода/заката`);
+            return null; // ✅ ИЗМЕНЕНО: возвращаем null вместо средних значений
+        }
+
+        const data = await response.json();
+
+        if (data?.daily?.sunrise?.[0] && data?.daily?.sunset?.[0]) {
+            const sunrise = data.daily.sunrise[0]; // "2025-12-29T06:42"
+            const sunset = data.daily.sunset[0];   // "2025-12-29T18:05"
+            const sunriseTime = sunrise.split('T')[1]; // "06:42"
+            const sunsetTime = sunset.split('T')[1];   // "18:05"
+
+            console.log(`✅ ${date} - Восход/закат получены из Open-Meteo API (${sunriseTime} / ${sunsetTime})`);
+            return { sunrise: sunriseTime, sunset: sunsetTime };
+        }
+
+        console.warn(`⚠️ ${date} - Восход/закат: нет данных в ответе API`);
+        return null; // ✅ ИЗМЕНЕНО: возвращаем null вместо средних значений
+
+    } catch (error) {
+        console.error(`❌ ${date} - Ошибка получения восхода/заката:`, error.message);
+        return null; // ✅ ИЗМЕНЕНО: возвращаем null вместо средних значений
     }
-
-    const data = await response.json();
-
-    if (data?.daily?.sunrise?.[0] && data?.daily?.sunset?.[0]) {
-      const sunrise = data.daily.sunrise[0]; // "2025-12-29T06:42"
-      const sunset = data.daily.sunset[0];   // "2025-12-29T18:05"
-
-      const sunriseTime = sunrise.split('T')[1]; // "06:42"
-      const sunsetTime = sunset.split('T')[1];   // "18:05"
-
-      console.log(`✅ ${date} - Восход/закат получены из Open-Meteo API (${sunriseTime} / ${sunsetTime})`);
-
-      return { sunrise: sunriseTime, sunset: sunsetTime };
-    }
-
-    console.warn(`⚠️ ${date} - Восход/закат: используются средние значения (нет данных в ответе)`);
-    return { sunrise: '06:42', sunset: '18:05' };
-  } catch (error) {
-    console.error(`❌ ${date} - Ошибка получения восхода/заката:`, error.message);
-    console.warn(`⚠️ ${date} - Восход/закат: используются средние значения`);
-    return { sunrise: '06:42', sunset: '18:05' };
-  }
 }
+
 
 function assertIsoDate(d) {
   // строго YYYY-MM-DD, без пробелов и лишних символов
@@ -1190,17 +1188,16 @@ function renderActivities(list) {
     const displayName = (a.date === '26.01.2026' && a.type === 'sea') ? 'В Бангкок!' : a.name;
     let icon = a.type === 'sea' ? '🏖️' : getIconForActivity(a.name);
 
-    // ✅ ИСПРАВЛЕНО: Символ БАТА ฿ вместо рубля ₽
     const prices = {
-  'Mini Siam': '<p class="price">Взрослый 230 ฿ / Детский 130 ฿</p>',
-  'Деревня слонов': '<p class="price">Взрослый 650 ฿ / Детский 500 ฿</p>',
-  'Дельфинариум': '<p class="price">Взрослый 630 ฿ / Детский 450 ฿</p>',
-  'Аютайя': '<p class="price">Взрослый 420 ฿ / Детский 320 ฿</p>',
-  'Нонг Нуч': '<p class="price">Взрослый 840 ฿ / Детский 420 ฿</p>',
-  'Ко Лан': '<p class="price">Паром 30 ฿ / Общие расходы 1,500 ฿</p>',
-  '3D-музей': '<p class="price">Взрослый 235 ฿ / Детский 180 ฿</p>',
-  'Плавучий рынок': '<p class="price">Взрослый 350 ฿ / Детский 120 ฿</p>',
-  'Зоопарк Кхао Кхео': '<p class="price">Взрослый 450 ฿ / Детский 225 ฿</p>'
+      'Mini Siam': '<p class="price">Взрослый 230 ฿ / Детский 130 ฿</p>',
+      'Деревня слонов': '<p class="price">Взрослый 650 ฿ / Детский 500 ฿</p>',
+      'Дельфинариум': '<p class="price">Взрослый 630 ฿ / Детский 450 ฿</p>',
+      'Аютайя': '<p class="price">Взрослый 420 ฿ / Детский 320 ฿</p>',
+      'Нонг Нуч': '<p class="price">Взрослый 840 ฿ / Детский 420 ฿</p>',
+      'Ко Лан': '<p class="price">Паром 30 ฿ / Общие расходы 1,500 ฿</p>',
+      '3D-музей': '<p class="price">Взрослый 235 ฿ / Детский 180 ฿</p>',
+      'Плавучий рынок': '<p class="price">Взрослый 350 ฿ / Детский 120 ฿</p>',
+      'Зоопарк Кхао Кхео': '<p class="price">Взрослый 450 ฿ / Детский 225 ฿</p>'
     };
     const priceLine = prices[a.name] || '';
 
@@ -1230,8 +1227,8 @@ function renderActivities(list) {
   grid.innerHTML = future.map(a => renderCard(a, false)).join('') +
                    past.map(a => renderCard(a, true)).join('');
 
-  // Загружаем погоду
-  list.forEach(async (activity) => {
+  // ✅ ИСПРАВЛЕНО: Параллельная загрузка погоды
+  Promise.all(list.map(async (activity) => {
     const weather = await fetchWeatherData(activity.date);
     const weatherDivs = document.querySelectorAll(`.weather[data-date="${activity.date}"]`);
 
@@ -1254,22 +1251,24 @@ function renderActivities(list) {
         }
       }
     });
-  });
+  }));
 
-  // ✅ ДОБАВЛЕНО: Загружаем время восхода/заката
-  list.forEach(async (activity) => {
+  // ✅ ИСПРАВЛЕНО: Параллельная загрузка времени восхода/заката
+  Promise.all(list.map(async activity => {
     const sunTimes = await fetchSunTimes(activity.date);
     const sunDivs = document.querySelectorAll(`.sun-times[data-date="${activity.date}"]`);
 
     sunDivs.forEach(div => {
-      if (sunTimes) {
+      if (sunTimes && sunTimes.sunrise && sunTimes.sunset) {
         div.innerHTML = `
-          <span class="sunrise">🌅 Восход: ${sunTimes.sunrise}</span>
-          <span class="sunset">🌇 Закат: ${sunTimes.sunset}</span>
+          <span class="sunrise">🌅 ${sunTimes.sunrise}</span>
+          <span class="sunset">🌇 ${sunTimes.sunset}</span>
         `;
+      } else {
+        div.innerHTML = '<span style="color: #9ca3af; font-size: 12px;">—</span>';
       }
     });
-  });
+  }));
 
   bindDetailButtons();
 }
