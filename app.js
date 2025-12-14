@@ -1261,8 +1261,8 @@ function renderActivities(list) {
     sunDivs.forEach(div => {
       if (sunTimes && sunTimes.sunrise && sunTimes.sunset) {
         div.innerHTML = `
-          <span class="sunrise">🌅 ${sunTimes.sunrise}</span>
-          <span class="sunset">🌇 ${sunTimes.sunset}</span>
+          <span class="sunrise">🌅 Восход: ${sunTimes.sunrise}</span>
+          <span class="sunset">🌇 Закат: ${sunTimes.sunset}</span>
         `;
       } else {
         div.innerHTML = '<span style="color: #9ca3af; font-size: 12px;">—</span>';
@@ -1271,6 +1271,7 @@ function renderActivities(list) {
   }));
 
   bindDetailButtons();
+  initTidesForActivities();
 }
 
 function bindDetailButtons() {
@@ -2707,137 +2708,151 @@ const STORMGLASS_API_KEY = '2262b22e-a819-11f0-bfe4-0242ac130006-2262b2a6-a819-1
 let tidesChartInstance = null;
 let currentTidesDate = null;
 
+// В app.js замените fetchTidesData на это:
+
 async function fetchTidesData(date) {
-  const apiDate = formatDateForAPI(date); // YYYY-MM-DD
-  const cacheKey = `tides_v2_${apiDate}`;
+    const apiDate = formatDateForAPI(date);
+    const cacheKey = `tides_v2_${apiDate}`;
 
-  // Проверяем кэш
-  const cached = await getStorageItem(cacheKey);
-  if (cached) {
-    console.log(`✓ Приливы взяты из кэша для ${apiDate}`);
+    const cached = await getStorageItem(cacheKey);
+    if (cached) {
+        console.log(`✅ ${apiDate} - Приливы из кэша`);
+        return { data: JSON.parse(cached), fromCache: true };
+    }
+
     try {
-      const parsed = JSON.parse(cached);
-      return { data: parsed, fromCache: true };
+        // Используем CORS-прокси
+        const corsProxy = 'https://api.allorigins.win/raw?url=';
+        const targetUrl = encodeURIComponent('https://www.tide-forecast.com/locations/Ko-Si-Chang-Thailand/tides/latest');
+
+        console.log(`🌊 Загрузка приливов через прокси для ${apiDate}`);
+
+        const response = await fetch(corsProxy + targetUrl);
+        const html = await response.text();
+
+        // Парсим HTML прямо в браузере
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        const tides = [];
+        const rows = doc.querySelectorAll('tr.tide-row-odd, tr.tide-row-even');
+
+        rows.forEach(row => {
+            const timeEl = row.querySelector('td.time');
+            const heightEl = row.querySelector('b');
+            const typeEl = row.textContent;
+
+            if (timeEl && heightEl) {
+                const timeStr = timeEl.textContent.trim();
+                const heightMatch = heightEl.textContent.match(/\(([0-9.]+)\s*m\)/);
+                const type = typeEl.includes('High Tide') ? 'high' : 'low';
+
+                if (heightMatch) {
+                    tides.push({
+                        time: convertToISO(timeStr, date),
+                        type: type,
+                        height: parseFloat(heightMatch[1])
+                    });
+                }
+            }
+        });
+
+        console.log(`✅ Найдено ${tides.length} записей приливов`);
+
+        if (tides.length > 0) {
+            await setStorageItem(cacheKey, JSON.stringify(tides));
+        }
+
+        return { data: tides, fromCache: false };
+
     } catch (e) {
-      console.error('Ошибка парсинга кэша приливов:', e);
+        console.error('❌ Ошибка загрузки приливов:', e);
+        return { data: [], fromCache: false, error: e.message };
     }
-  }
-
-  try {
-    // Конвертируем локальную дату Бангкока (UTC+7) в UTC
-    const [year, month, day] = apiDate.split('-').map(Number);
-
-    const bangkokStartDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-    const bangkokEndDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
-
-    const startUtc = new Date(bangkokStartDate.getTime() - (7 * 60 * 60 * 1000));
-    const endUtc = new Date(bangkokEndDate.getTime() - (7 * 60 * 60 * 1000));
-
-    const start = startUtc.toISOString().slice(0, 19);
-    const end = endUtc.toISOString().slice(0, 19);
-
-    console.log('🌊 Запрос приливов:', { apiDate, start, end });
-
-    const url = `https://api.stormglass.io/v2/tide/extremes/point?lat=12.9236&lng=100.8825&start=${start}&end=${end}`;
-
-    const response = await fetch(url, {
-      headers: { 'Authorization': STORMGLASS_API_KEY }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Storm Glass error:', response.status, errorText);
-      throw new Error(`Storm Glass API error: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('✅ Приливы получены:', result.data.length, 'точек');
-
-    // ✅ Конвертация из MSL в LAT (смещение к положительным значениям)
-    const rawTides = result.data;
-    const minHeight = Math.min(...rawTides.map(t => t.height));
-    const offset = minHeight < 0 ? Math.abs(minHeight) + 0.1 : 0;
-
-    const tides = rawTides.map(t => ({
-      time: t.time,
-      type: t.type,
-      height: t.height + offset
-    }));
-
-    if (offset > 0) {
-      console.log(`🔄 Конвертация MSL → LAT: смещение +${offset.toFixed(2)} м`);
-    }
-
-    // Сохраняем в кэш
-    await setStorageItem(cacheKey, JSON.stringify(tides));
-    console.log(`✓ Приливы сохранены в кэш для ${apiDate}`);
-
-    return { data: tides, fromCache: false };
-  } catch (e) {
-    console.error('Ошибка загрузки приливов:', e);
-    return { data: [], fromCache: false, error: e.message };
-  }
 }
+
+function convertToISO(timeStr, date) {
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    const [day, month, year] = date.split('.');
+
+    return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:00+07:00`;
+}
+
 
 // Функция принудительного обновления данных приливов
 async function refreshTidesData() {
-  if (!currentTidesDate) return;
+    if (!currentTidesDate) return;
 
-  const btn = document.getElementById('refreshTidesBtn');
-  const sourceEl = document.getElementById('tidesSource');
+    const btn = document.getElementById('refreshTidesBtn');
+    const sourceEl = document.getElementById('tidesSource');
 
-  if (!btn) return;
+    if (!btn) return;
 
-  // Блокируем кнопку на время загрузки
-  btn.disabled = true;
-  btn.classList.add('loading');
-  btn.textContent = '⏳ Загрузка...';
-  sourceEl.textContent = 'Загрузка свежих данных...';
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.textContent = 'Обновление...';
+    if (sourceEl) sourceEl.textContent = '⏳ Загрузка...';
 
-  try {
-    const apiDate = formatDateForAPI(currentTidesDate);
-    const cacheKey = `tides_v2_${apiDate}`;
+    try {
+        const apiDate = formatDateForAPI(currentTidesDate);
 
-    // Удаляем старый кэш
-    await removeStorageItem(cacheKey);
-    console.log(`🗑️ Кэш удалён для ${apiDate}`);
+        // Удаляем кэш для принудительного обновления
+        const cacheKey = `tides_v2_${apiDate}`;
+        await removeStorageItem(cacheKey);
+        console.log(`🗑️ Кэш удалён для ${apiDate}`);
 
-    // Загружаем свежие данные
-    const result = await fetchTidesData(currentTidesDate);
+        const result = await fetchTidesData(currentTidesDate);
 
-    if (result.error) {
-      sourceEl.textContent = `Ошибка: ${result.error}`;
-      alert('Не удалось загрузить данные. Проверьте подключение к интернету.');
-      return;
+        if (result.error || result.data.length === 0) {
+            if (sourceEl) sourceEl.textContent = `❌ ${result.error || 'Нет данных'}`;
+            alert('Не удалось загрузить данные приливов.');
+            return;
+        }
+
+        const tides = result.data;
+        if (sourceEl) {
+            sourceEl.textContent = result.fromCache ? '💾 Кэш' : '🌐 tide-forecast.com';
+        }
+
+        // Находим следующий прилив/отлив
+        const now = new Date();
+        const nextHigh = tides.find(t => t.type === 'high' && new Date(t.time) > now);
+        const nextLow = tides.find(t => t.type === 'low' && new Date(t.time) > now);
+
+        const nextHighEl = document.getElementById('nextHighTide');
+        const nextLowEl = document.getElementById('nextLowTide');
+
+        if (nextHighEl) {
+            nextHighEl.textContent = nextHigh
+                ? new Date(nextHigh.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                : '----';
+        }
+
+        if (nextLowEl) {
+            nextLowEl.textContent = nextLow
+                ? new Date(nextLow.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                : '----';
+        }
+
+        // Отрисовываем график
+        await renderTidesChart(tides, currentTidesDate);
+
+        console.log(`✅ Приливы успешно обновлены для ${currentTidesDate}`);
+
+    } catch (error) {
+        console.error('❌ Ошибка обновления приливов:', error);
+        if (sourceEl) sourceEl.textContent = '❌ Ошибка';
+        alert('Не удалось обновить приливы.');
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+        btn.textContent = '🔄 Обновить';
     }
-
-    const tides = result.data;
-    sourceEl.textContent = '🌐 Данные обновлены с Storm Glass API';
-
-    // Обновляем следующие приливы/отливы
-    const now = new Date();
-    const nextHigh = tides.find(t => t.type === 'high' && new Date(t.time) > now);
-    const nextLow = tides.find(t => t.type === 'low' && new Date(t.time) > now);
-
-    document.getElementById('nextHighTide').textContent =
-      nextHigh ? new Date(nextHigh.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '--:--';
-    document.getElementById('nextLowTide').textContent =
-      nextLow ? new Date(nextLow.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '--:--';
-
-    // Перерисовываем график
-    await renderTidesChart(tides, currentTidesDate);
-
-    console.log('✅ Данные приливов обновлены для', currentTidesDate);
-  } catch (error) {
-    console.error('Ошибка обновления данных приливов:', error);
-    sourceEl.textContent = '❌ Ошибка обновления';
-    alert('Произошла ошибка при обновлении данных.');
-  } finally {
-    // Разблокируем кнопку
-    btn.disabled = false;
-    btn.classList.remove('loading');
-    btn.textContent = '🔄 Обновить данные';
-  }
 }
 
 // Построение графика приливов
@@ -2984,13 +2999,11 @@ async function openTidesModal(activityName, date) {
 
   if (!modal || !title) return;
 
-  // Сохраняем текущую дату для кнопки обновления
   currentTidesDate = date;
 
   title.textContent = `${activityName} — ${date}`;
   sourceEl.textContent = 'Загрузка данных...';
 
-  // Сбрасываем состояние кнопки
   if (btn) {
     btn.disabled = false;
     btn.classList.remove('loading');
@@ -2999,7 +3012,6 @@ async function openTidesModal(activityName, date) {
 
   modal.classList.add('active');
 
-  // Загружаем данные
   const result = await fetchTidesData(date);
 
   if (result.error) {
@@ -3010,9 +3022,10 @@ async function openTidesModal(activityName, date) {
   }
 
   const tides = result.data;
-  sourceEl.textContent = result.fromCache ? '📦 Данные из кэша' : '🌐 Данные с Storm Glass API';
 
-  // Обновляем следующие приливы/отливы
+  // ✅ ИЗМЕНИТЕ ЭТУ СТРОКУ:
+  sourceEl.textContent = result.fromCache ? '💾 Данные из кэша' : '🌐 tide-forecast.com';
+
   const now = new Date();
   const nextHigh = tides.find(t => t.type === 'high' && new Date(t.time) > now);
   const nextLow = tides.find(t => t.type === 'low' && new Date(t.time) > now);
@@ -3022,59 +3035,84 @@ async function openTidesModal(activityName, date) {
   document.getElementById('nextLowTide').textContent =
     nextLow ? new Date(nextLow.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
-  // Рендерим график
   await renderTidesChart(tides, date);
 }
 
-
 // Закрытие модального окна
 function closeTidesModal() {
-  const modal = document.getElementById('tidesModal');
-  if (modal) modal.classList.remove('active'); // ✅ ПРАВИЛЬНО
+    const modal = document.getElementById('tidesModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    currentTidesDate = null;
 }
 
 // Добавь обработчик долгого нажатия на карточки активностей
 function initTidesForActivities() {
-  document.querySelectorAll('.card').forEach(card => {
-    let pressTimer = null;
-    let hasMoved = false;
+    const cards = document.querySelectorAll('.card.activity-sea');
 
-    const handleStart = (e) => {
-      hasMoved = false;
-      pressTimer = setTimeout(() => {
-        if (!hasMoved) {
-          // Получаем данные из карточки
-          const dateEl = card.querySelector('p');
-          const nameEl = card.querySelector('h3');
+    cards.forEach(card => {
+        let pressTimer = null;
+        let startX = 0, startY = 0;
+        let hasMoved = false;
 
-          if (dateEl && nameEl) {
-            const date = dateEl.textContent.trim();
-            const name = nameEl.textContent.trim();
-            openTidesModal(name, date);
-          }
-        }
-      }, 800); // 800ms для долгого нажатия
-    };
+        const handleStart = (e) => {
+            hasMoved = false;
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
 
-    const handleMove = () => {
-      hasMoved = true;
-      clearTimeout(pressTimer);
-    };
+            pressTimer = setTimeout(() => {
+                if (!hasMoved) {
+                    // ✅ Извлекаем дату и название
+                    const dateEl = card.querySelector('p');
+                    const nameEl = card.querySelector('h3');
 
-    const handleEnd = () => {
-      clearTimeout(pressTimer);
-    };
+                    if (dateEl && nameEl) {
+                        const date = dateEl.textContent.trim();
+                        const name = nameEl.textContent.replace(/^🏖️\s*/, ''); // Убираем эмодзи
 
-    card.addEventListener('mousedown', handleStart);
-    card.addEventListener('mousemove', handleMove);
-    card.addEventListener('mouseup', handleEnd);
-    card.addEventListener('touchstart', handleStart, { passive: true });
-    card.addEventListener('touchmove', handleMove, { passive: true });
-    card.addEventListener('touchend', handleEnd);
-  });
+                        openTidesModal(name, date);
+                    }
+                }
+            }, 800);
+        };
+
+        const handleMove = (e) => {
+            if (!pressTimer) return;
+
+            const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+            const diffX = Math.abs(currentX - startX);
+            const diffY = Math.abs(currentY - startY);
+
+            if (diffX > 10 || diffY > 10) {
+                hasMoved = true;
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        const handleEnd = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        card.addEventListener('mousedown', handleStart);
+        card.addEventListener('mousemove', handleMove);
+        card.addEventListener('mouseup', handleEnd);
+        card.addEventListener('mouseleave', handleEnd);
+
+        card.addEventListener('touchstart', handleStart, { passive: true });
+        card.addEventListener('touchmove', handleMove, { passive: true });
+        card.addEventListener('touchend', handleEnd);
+        card.addEventListener('touchcancel', handleEnd);
+    });
+
+    console.log(`✅ Long-press для приливов инициализирован на ${cards.length} карточках`);
 }
-
-// Закрытие модальных окон по клику на затемнённый фон
 
 
 
