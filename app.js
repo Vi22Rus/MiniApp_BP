@@ -2886,7 +2886,7 @@ async function openTidesModal(activityName, date) {
 
   title.textContent = `${activityName} — ${date}`;
   sourceEl.textContent = 'Загрузка данных...';
-  modal.style.display = 'flex';
+  modal.classList.add('active');
 
   // Загружаем данные
   const result = await fetchTidesData(date);
@@ -2962,8 +2962,27 @@ function initTidesForActivities() {
   });
 }
 
-// Вызови в initApp():
-// Добавь в конец функции initApp():
-// initTidesForActivities(); // <- после renderActivities
+// Закрытие модальных окон по клику на затемнённый фон
+document.addEventListener('DOMContentLoaded', () => {
+    const addPlaceModal = document.getElementById('addPlaceModal');
+    const tidesModal = document.getElementById('tidesModal');
+
+    if (addPlaceModal) {
+        addPlaceModal.addEventListener('click', (e) => {
+            if (e.target.id === 'addPlaceModal') {
+                closeAddPlaceModal();
+            }
+        });
+    }
+
+    if (tidesModal) {
+        tidesModal.addEventListener('click', (e) => {
+            if (e.target.id === 'tidesModal') {
+                closeTidesModal();
+            }
+        });
+    }
+});
+
 
 
