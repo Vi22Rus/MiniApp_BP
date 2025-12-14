@@ -2698,4 +2698,272 @@ async function ensureFxLoaded(force = false) {
     // При ошибке не трогаем старый fxState, чтобы не ломать отображение
   }
 }
+// ========== ПРИЛИВЫ И ОТЛИВЫ ==========
+
+const STORMGLASS_API_KEY = '2262b22e-a819-11f0-bfe4-0242ac130006-2262b2a6-a819-11f0-bfe4-0242ac130006'; // Получи на stormglass.io
+let tidesChartInstance = null;
+
+// Получение данных приливов с кэшированием
+async function fetchTidesData(date) {
+  const apiDate = formatDateForAPI(date); // YYYY-MM-DD
+  const cacheKey = `tides_${apiDate}`;
+
+  // Проверяем Firebase кэш
+  const cached = await getStorageItem(cacheKey);
+  if (cached) {
+    console.log(`✓ Приливы взяты из кэша для ${apiDate}`);
+    try {
+      const parsed = JSON.parse(cached);
+      return { data: parsed, fromCache: true };
+    } catch (e) {
+      console.error('Ошибка парсинга кэша приливов:', e);
+    }
+  }
+
+  // Загружаем с Storm Glass API
+  try {
+    const start = `${apiDate}T00:00`;
+    const end = `${apiDate}T23:59`;
+    const url = `https://api.stormglass.io/v2/tide/extremes/point?lat=12.9236&lng=100.8825&start=${start}&end=${end}`;
+
+    const response = await fetch(url, {
+      headers: { 'Authorization': STORMGLASS_API_KEY }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Storm Glass API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const tides = result.data.map(t => ({
+      time: t.time,
+      type: t.type, // 'high' или 'low'
+      height: t.height
+    }));
+
+    // Сохраняем в Firebase
+    await setStorageItem(cacheKey, JSON.stringify(tides));
+    console.log(`✓ Приливы сохранены в кэш для ${apiDate}`);
+
+    return { data: tides, fromCache: false };
+  } catch (e) {
+    console.error('Ошибка загрузки приливов:', e);
+    return { data: [], fromCache: false, error: e.message };
+  }
+}
+
+// Построение графика приливов
+async function renderTidesChart(tidesData, date) {
+  const canvas = document.getElementById('tidesChart');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+
+  // Удаляем старый график
+  if (tidesChartInstance) {
+    tidesChartInstance.destroy();
+  }
+
+  if (!tidesData || tidesData.length === 0) {
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#999';
+    ctx.textAlign = 'center';
+    ctx.fillText('Нет данных о приливах', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  // Интерполяция между экстремумами для плавной кривой
+  const chartData = [];
+  for (let i = 0; i < tidesData.length - 1; i++) {
+    const start = tidesData[i];
+    const end = tidesData[i + 1];
+
+    const startTime = new Date(start.time).getTime();
+    const endTime = new Date(end.time).getTime();
+    const duration = endTime - startTime;
+    const steps = 20; // Количество промежуточных точек
+
+    for (let j = 0; j <= steps; j++) {
+      const t = j / steps;
+      const time = new Date(startTime + duration * t);
+      // Синусоидальная интерполяция для плавности
+      const height = start.height + (end.height - start.height) * Math.sin(t * Math.PI / 2);
+
+      chartData.push({ x: time, y: height });
+    }
+  }
+
+  // Точки экстремумов для меток
+  const annotations = tidesData.map(t => ({
+    x: new Date(t.time),
+    y: t.height,
+    type: t.type
+  }));
+
+  tidesChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Уровень воды (м)',
+        data: chartData,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }, {
+        label: 'Экстремумы',
+        data: annotations,
+        pointBackgroundColor: (context) => {
+          const index = context.dataIndex;
+          return annotations[index].type === 'high' ? '#16a34a' : '#dc2626';
+        },
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 6,
+        showLine: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              if (context.datasetIndex === 1) {
+                const ann = annotations[context.dataIndex];
+                const time = ann.x.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const typeText = ann.type === 'high' ? 'Прилив' : 'Отлив';
+                return `${typeText}: ${ann.y.toFixed(2)} м (${time})`;
+              }
+              return `${context.parsed.y.toFixed(2)} м`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour',
+            displayFormats: {
+              hour: 'HH:mm'
+            }
+          },
+          title: {
+            display: true,
+            text: 'Время'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Высота (м)'
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toFixed(1) + ' м';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Открытие модального окна приливов
+async function openTidesModal(activityName, date) {
+  const modal = document.getElementById('tidesModal');
+  const title = document.getElementById('tidesModalTitle');
+  const sourceEl = document.getElementById('tidesSource');
+
+  if (!modal || !title) return;
+
+  title.textContent = `${activityName} — ${date}`;
+  sourceEl.textContent = 'Загрузка данных...';
+  modal.style.display = 'flex';
+
+  // Загружаем данные
+  const result = await fetchTidesData(date);
+
+  if (result.error) {
+    sourceEl.textContent = `Ошибка: ${result.error}`;
+    document.getElementById('nextHighTide').textContent = '--:--';
+    document.getElementById('nextLowTide').textContent = '--:--';
+    return;
+  }
+
+  const tides = result.data;
+  sourceEl.textContent = result.fromCache ? '📦 Данные из кэша' : '🌐 Данные с Storm Glass API';
+
+  // Обновляем следующие приливы/отливы
+  const now = new Date();
+  const nextHigh = tides.find(t => t.type === 'high' && new Date(t.time) > now);
+  const nextLow = tides.find(t => t.type === 'low' && new Date(t.time) > now);
+
+  document.getElementById('nextHighTide').textContent =
+    nextHigh ? new Date(nextHigh.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+  document.getElementById('nextLowTide').textContent =
+    nextLow ? new Date(nextLow.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+  // Рендерим график
+  await renderTidesChart(tides, date);
+}
+
+// Закрытие модального окна
+function closeTidesModal() {
+  const modal = document.getElementById('tidesModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Добавь обработчик долгого нажатия на карточки активностей
+function initTidesForActivities() {
+  document.querySelectorAll('.card').forEach(card => {
+    let pressTimer = null;
+    let hasMoved = false;
+
+    const handleStart = (e) => {
+      hasMoved = false;
+      pressTimer = setTimeout(() => {
+        if (!hasMoved) {
+          // Получаем данные из карточки
+          const dateEl = card.querySelector('p');
+          const nameEl = card.querySelector('h3');
+
+          if (dateEl && nameEl) {
+            const date = dateEl.textContent.trim();
+            const name = nameEl.textContent.trim();
+            openTidesModal(name, date);
+          }
+        }
+      }, 800); // 800ms для долгого нажатия
+    };
+
+    const handleMove = () => {
+      hasMoved = true;
+      clearTimeout(pressTimer);
+    };
+
+    const handleEnd = () => {
+      clearTimeout(pressTimer);
+    };
+
+    card.addEventListener('mousedown', handleStart);
+    card.addEventListener('mousemove', handleMove);
+    card.addEventListener('mouseup', handleEnd);
+    card.addEventListener('touchstart', handleStart, { passive: true });
+    card.addEventListener('touchmove', handleMove, { passive: true });
+    card.addEventListener('touchend', handleEnd);
+  });
+}
+
+// Вызови в initApp():
+// Добавь в конец функции initApp():
+// initTidesForActivities(); // <- после renderActivities
+
 

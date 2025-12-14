@@ -1295,6 +1295,93 @@ body {
   font-size: 0.85rem;
   margin-top: 4px;
 }
+/* Модальное окно приливов */
+.tides-modal {
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  position: relative;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: rgba(0,0,0,0.1);
+}
+
+.tides-info-row {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.tide-info-item {
+  flex: 1;
+  background: var(--card-bg);
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.tide-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.tide-time {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin: 20px 0;
+}
+
+.tides-source {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 12px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
 
 
 
