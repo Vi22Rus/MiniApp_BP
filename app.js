@@ -641,7 +641,7 @@ function initCalendarFilters() {
 
 function initGeoFeatures() {
     document.getElementById('locateBtn').addEventListener('click', () => {
-        if (!navigator.geolocation) {
+        if (!navigator.geoаn) {
             alert('Геолокация не поддерживается.');
             return resetGeoState();
         }
@@ -1056,6 +1056,13 @@ const kidsLeisure = [
         type: 'sight'
     },
     {
+        name: 'Аюттайя',
+        date: '09.01.2026',
+        coords: { lat: 14.35741905, lng: 100.56757512 },
+        tips: 'Древняя столица Сиама, объект всемирного наследия ЮНЕСКО. Руины храмов XIV-XVIII веков. Знаменитая голова Будды в корнях дерева в Wat Mahathat. Расстояние от Паттайи: 150 км (2.5 часа езды). Планируйте полный день с рано утра. Лучше брать экскурсию с гидом. Обязательно: Wat Chaiwatthanaram, Wat Phra Si Sanphet. Удобная обувь обязательна!',
+        type: 'sight'
+    },
+    {
         name: 'Сад Нонг Нуч',
         date: '11.01.2026',
         coords: { lat: 12.76575858, lng: 100.93505629 },
@@ -1105,7 +1112,7 @@ function generateBeachDays() {
     const used = kidsLeisure.map(x => x.date);
     const days = [];
     const start = new Date('2025-12-29'), end = new Date('2026-01-26');
-    const transferDates = ['09.01.2026', '15.01.2026', '23.01.2026'];
+    const transferDates = ['10.01.2026', '15.01.2026', '23.01.2026'];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const date = d.toLocaleDateString('ru-RU');
         if (!used.includes(date)) {
