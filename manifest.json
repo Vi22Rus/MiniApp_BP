@@ -1,24 +1,30 @@
 {
-  "name": "Pattaya Plans",
-  "short_name": "Pattaya",
-  "description": "Планировщик поездки в Паттайю с приливами, погодой и активностями",
-  "start_url": "/",
-  "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
-  "orientation": "portrait",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "vi22rus.github",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "vi22rus.github",
+  "start_url": "/",
+  "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "https://vi22rus.github.io/MiniApp_BP/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "1024x1024",
+      "isSquare": true,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 1024,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
     }
+  ],
+  "prefer_related_applications": true,
+  "categories": [
+    "lifestyle"
   ]
 }
